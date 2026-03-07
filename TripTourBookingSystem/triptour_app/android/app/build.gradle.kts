@@ -10,7 +10,7 @@ plugins {
 android {
     namespace = "com.example.triptour_app"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -44,8 +44,12 @@ android {
 flutter {
     source = "../.."
 }
-buildscript {
-    dependencies {
-        classpath("com.google.gms:google-services:4.3.15")
-    }
+dependencies {
+    // Import the Firebase BoM
+    implementation(platform("com.google.firebase:firebase-bom:34.7.0"))
+
+    // Firebase dependencies (เลือกตามที่ใช้จริง)
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-analytics")
 }
