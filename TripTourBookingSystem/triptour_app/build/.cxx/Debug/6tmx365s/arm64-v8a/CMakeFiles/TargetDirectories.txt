@@ -1,0 +1,2 @@
+D:/TripTouBookingSystem/TripTourBookingSystem/triptour_app/build/.cxx/Debug/6tmx365s/arm64-v8a/CMakeFiles/edit_cache.dir
+D:/TripTouBookingSystem/TripTourBookingSystem/triptour_app/build/.cxx/Debug/6tmx365s/arm64-v8a/CMakeFiles/rebuild_cache.dir
