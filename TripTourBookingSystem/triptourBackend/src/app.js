@@ -1,6 +1,7 @@
 import express from "express";
 import {router as index} from "../controller/index.js";       
-
+import dotenv from 'dotenv';
+dotenv.config();
 export const app = express();
 
 //app.use("/api", require("./routes/api"));

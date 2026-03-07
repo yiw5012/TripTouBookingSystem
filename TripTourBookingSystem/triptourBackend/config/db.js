@@ -2,10 +2,10 @@ import { createPool } from "mysql2/promise";
 
 export const conn = createPool({
   connectionLimit: 10,
-  host: 'sql.freedb.tech',
-  user: 'freedb_triptour',   
-  password: 'K2Wym%#W#U7WtdK',
-  database: 'freedb_triptourBooking',
-  port: 3306,                        
-  connectTimeout: 10000              
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT,
+  connectTimeout: 10000
 });
