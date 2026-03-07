@@ -9,3 +9,5 @@ build/
 *.apk
 *.aab
 *.ipa
+.idea/
+.vscode/
