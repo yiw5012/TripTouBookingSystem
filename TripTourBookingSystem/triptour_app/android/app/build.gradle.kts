@@ -26,7 +26,7 @@ android {
         applicationId = "com.example.triptour_app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        minSdk = 23
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -44,10 +44,8 @@ android {
 flutter {
     source = "../.."
 }
-dependencies {
-  // ...
-
-  // Import the Firebase BoM
-  implementation(platform("com.google.firebase:firebase-bom:34.7.0"))
-
+buildscript {
+    dependencies {
+        classpath("com.google.gms:google-services:4.3.15")
+    }
 }

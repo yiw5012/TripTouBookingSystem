@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:triptour_app/page/registerPage.dart';
 
@@ -14,6 +15,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: const Text("Login")),
       backgroundColor: Colors.grey,
       body: Center(
         child: SingleChildScrollView(
@@ -43,7 +45,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
               SizedBox(height: 10),
               ElevatedButton(
-                onPressed: () => login(),
+                onPressed: () => sigIn(),
                 child: Text("เข้าสู่ระบบ"),
               ),
 
@@ -58,11 +60,14 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
       ),
-      appBar: AppBar(title: Text("Login")),
     );
   }
 
-  login() {
+  sigIn() async {
     print("email: ${emailctl.text} password: ${passwordctl.text}");
+    await FirebaseAuth.instance.signInWithEmailAndPassword(
+      email: emailctl.text,
+      password: passwordctl.text,
+    );
   }
 }
