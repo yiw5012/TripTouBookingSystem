@@ -3,3 +3,9 @@
 
 # Node modules
 node_modules/
+
+# Flutter build outputs
+build/
+*.apk
+*.aab
+*.ipa
