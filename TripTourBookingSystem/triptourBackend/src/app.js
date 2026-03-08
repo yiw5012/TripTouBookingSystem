@@ -1,7 +1,7 @@
 import express from "express";
 import {router as index} from "../controller/index.js";  
-import {router as checkUser} from "../controller/checkUser.js";   
-import {router as register} from "../controller/register.js";  
+import {router as checkUser} from "../controller/user/checkUser.js";   
+import {router as register} from "../controller/user/register.js";  
 import dotenv from 'dotenv';
 dotenv.config();
 export const app = express();
