@@ -13,6 +13,22 @@ class RegisterPage extends StatefulWidget {
 class _RegisterPageState extends State<RegisterPage> {
   final emailctl = TextEditingController();
   final passwordctl = TextEditingController();
+  final firstnamectl = TextEditingController();
+  final lastnamectl = TextEditingController();
+  final phonectl = TextEditingController();
+
+  String? google_id;
+
+  @override
+  void initState() {
+    super.initState();
+    // รับข้อมูลจากหน้า LoginPage ผ่าน Get.arguments
+    final args = Get.arguments;
+    if (args != null) {
+      emailctl.text = args["email"] ?? "";
+      google_id = args["google_id"];
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,28 +39,27 @@ class _RegisterPageState extends State<RegisterPage> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              TextField(
-                controller: emailctl,
-                decoration: const InputDecoration(
-                  labelText: "Email",
-                  border: OutlineInputBorder(),
+              if (google_id != null)
+                TextField(
+                  controller: emailctl,
+                  decoration: const InputDecoration(
+                    labelText: "Email",
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              ),
               const SizedBox(height: 10),
-              TextField(
-                controller: passwordctl,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: "Password",
-                  border: OutlineInputBorder(),
+              if (google_id ==
+                  null) // ถ้าไม่ได้มาจาก Google ให้แสดงช่องรหัสผ่าน
+                TextField(
+                  controller: passwordctl,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: "Password",
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              ),
               const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () => signUp(),
-                child: const Text("สมัครสมาชิก"),
-              ),
-              const SizedBox(height: 20),
+
               const TextField(
                 decoration: InputDecoration(
                   labelText: "ชื่อผู้ใช้",
@@ -67,9 +82,16 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
               const SizedBox(height: 20),
               ElevatedButton(
+                onPressed: () => signUp(),
+                child: const Text("สมัครสมาชิก"),
+              ),
+
+              const SizedBox(height: 20),
+              ElevatedButton(
                 onPressed: () {
-                  // TODO: ไปหน้าอื่น เช่น Profile Setup
+                  Get.offAll(() => const Wrapper());
                 },
+
                 child: const Text("NEXT ->"),
               ),
             ],
@@ -81,16 +103,19 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Future<void> signUp() async {
     try {
-      if (passwordctl.text.trim().length < 6) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร")),
+      if (google_id == null) {
+        if (passwordctl.text.trim().length < 6) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร")),
+          );
+          return;
+        }
+        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: emailctl.text.trim(),
+          password: passwordctl.text.trim(),
         );
-        return;
       }
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: emailctl.text.trim(),
-        password: passwordctl.text.trim(),
-      );
+
       Get.offAll(() => const Wrapper());
     } catch (e) {
       ScaffoldMessenger.of(
