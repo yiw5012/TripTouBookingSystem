@@ -9,6 +9,7 @@ dotenv.config();
 export const app = express();
 app.use(express.json());  
 //app.use("/api", require("./routes/api"));
+app.use(express.json());
 app.use("/", index);
 app.use("/checkuser", checkUser);
 app.use("/register", register);

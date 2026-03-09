@@ -6,6 +6,7 @@ import 'package:triptour_app/page/forgetpassword.dart';
 import 'package:triptour_app/page/homepage.dart';
 import 'package:triptour_app/page/registerPage.dart';
 import 'package:triptour_app/page/wrapper.dart';
+import 'package:triptour_app/page/wrapper.dart';
 import 'package:triptour_app/serverApi.dart';
 
 class LoginPage extends StatefulWidget {
@@ -17,6 +18,7 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final emailforgetclt = TextEditingController();
+
   final emailctl = TextEditingController();
   final passwordctl = TextEditingController();
 
@@ -182,7 +184,7 @@ Future<void> callForgetPassword(BuildContext context) async {
         ),
         TextButton(
           onPressed: () {
-            reset(emailforgetpass.text, context);
+            // reset(emailforgetpass.text, context);
           },
           child: Text("ตกลง"),
         ),
@@ -234,4 +236,84 @@ Future<void> reset(String emailforget, BuildContext context) async {
       context,
     ).showSnackBar(SnackBar(content: Text("Error: $e")));
   }
+
+  Future<void> callForgetPassword(BuildContext context) async {
+    final emailforgetpass = TextEditingController();
+    showDialog(
+      context: context, // ต้องส่ง context มาด้วย
+      builder: (context) => SimpleDialog(
+        title: ListTile(title: Text("ลืมรหัสผ่าน")),
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+
+            child: Column(
+              children: [
+                Text("กรุณากรอกอีเมลที่คุณลืมรหัสผ่าน"),
+                SizedBox(height: 10),
+                TextField(
+                  controller: emailforgetpass,
+                  decoration: const InputDecoration(
+                    labelText: "อีเมล",
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              reset(emailforgetpass.text, context);
+            },
+            child: Text("ตกลง"),
+          ),
+          TextButton(
+            onPressed: () {
+              navigator?.pop();
+            },
+            child: Text("ยกเลิก"),
+          ),
+        ],
+      ),
+    );
+  }
 }
+
+// Future<void> reset(String emailforget, BuildContext context) async {
+//   if (emailforget.trim().isEmpty) {
+//     ScaffoldMessenger.of(
+//       context,
+//     ).showSnackBar(const SnackBar(content: Text("กรุณากรอกอีเมล")));
+//     return;
+//   }
+
+//   try {
+//     await FirebaseAuth.instance.sendPasswordResetEmail(
+//       email: emailforget.trim(),
+//     );
+
+//     ScaffoldMessenger.of(context).showSnackBar(
+//       const SnackBar(content: Text("ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลแล้ว")),
+//     );
+
+//     Navigator.pop(context); // ปิด dialog
+//   } on FirebaseAuthException catch (e) {
+//     String message = "เกิดข้อผิดพลาด";
+
+//     if (e.code == "user-not-found") {
+//       message = "ไม่พบอีเมลนี้ในระบบ";
+//     }
+
+//     if (e.code == "invalid-email") {
+//       message = "รูปแบบอีเมลไม่ถูกต้อง";
+//     }
+
+//     ScaffoldMessenger.of(
+//       context,
+//     ).showSnackBar(SnackBar(content: Text(message)));
+//   } catch (e) {
+//     ScaffoldMessenger.of(
+//       context,
+//     ).showSnackBar(SnackBar(content: Text("Error: $e")));
+//   }
+// }
