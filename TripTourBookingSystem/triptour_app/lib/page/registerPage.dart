@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:triptour_app/page/loginPage.dart';
 import 'package:triptour_app/page/wrapper.dart';
 import 'package:triptour_app/serverApi.dart';
 
@@ -94,7 +95,7 @@ class _RegisterPageState extends State<RegisterPage> {
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
-                  Get.offAll(() => const Wrapper());
+                  Get.offAll(() => const LoginPage());
                 },
 
                 child: const Text("NEXT ->"),
@@ -108,7 +109,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Future<void> signUp() async {
     try {
-      //print(google_id);
+      print(google_id);
       if (google_id == null) {
         if (passwordctl.text.trim().length < 6) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -117,26 +118,35 @@ class _RegisterPageState extends State<RegisterPage> {
           return;
         }
 
-        //print("process 1 - สร้างบัญชีใหม่ด้วย Email/Password");
+        print("process 1 - สร้างบัญชีใหม่ด้วย Email/Password");
         await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: emailctl.text.trim(),
           password: passwordctl.text.trim(),
         );
-        //print("สร้างบัญชีสำเร็จ");
-        //print("process 2 - รับ Google ID จาก Firebase");
+        print("สร้างบัญชีสำเร็จ");
+        print("process 2 - รับ Google ID จาก Firebase");
         google_id = FirebaseAuth.instance.currentUser?.uid;
       }
 
-      //print("process 3 - ลงทะเบียนผู้ใช้ในระบบด้วย Google ID และข้อมูลเพิ่มเติม");
-      await Serverapi.registerUser(
+      print(
+        "process 3 - ลงทะเบียนผู้ใช้ในระบบด้วย Google ID และข้อมูลเพิ่มเติม",
+      );
+      final result = await Serverapi.registerUser(
         google_id!,
         emailctl.text.trim(),
         firstnamectl.text.trim(),
         lastnamectl.text.trim(),
         phonectl.text.trim(),
       );
-      //print("process 4 - ไปหน้า Wrapper เพื่อเช็คข้อมูลผู้ใช้และเข้าสู่ระบบ");
-      Get.offAll(() => const Wrapper());
+      if (result != null && result['status'] == 'success') {
+        print("process 4 - ไปหน้า Wrapper เพื่อเช็คข้อมูลผู้ใช้และเข้าสู่ระบบ");
+        Get.offAll(() => const Wrapper());
+      } else {
+        print(result);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("สมัครสมาชิกไม่สำเร็จ")));
+      }
     } catch (e) {
       ScaffoldMessenger.of(
         context,

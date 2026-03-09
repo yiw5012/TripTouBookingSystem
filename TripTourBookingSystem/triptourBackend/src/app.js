@@ -4,7 +4,9 @@ import {router as index} from "../controller/index.js";
 import {router as checkUser} from "../controller/user/checkUser.js";   
 import {router as register} from "../controller/user/register.js"; 
 import { router as addtour } from "../controller/tour/addtour.js"; 
-import { router as addguide } from "../controller/guide/addguide.js";
+import { router as addguide } from "../controller/guide/addguide.js"; 
+import {router as otp} from "../controller/user/Otp.js";  
+
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -18,6 +20,7 @@ app.use(express.json());
 app.use("/", index);
 app.use("/checkuser", checkUser);
 app.use("/register", register);
+app.use("/otp" , otp)
 app.use("/add-tour", addtour);
 app.use("/add-guide", addguide);
 

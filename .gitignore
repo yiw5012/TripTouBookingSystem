@@ -2,6 +2,7 @@
 .env
 
 firebase-admin-key.json
+**/config/firebase-admin-key.json
 
 # Node modules
 node_modules/
@@ -13,3 +14,5 @@ build/
 *.ipa
 .idea/
 .vscode/
+
+triptourbookingsystem-5f7d7-firebase-adminsdk-fbsvc-9dcffd80fa.json
