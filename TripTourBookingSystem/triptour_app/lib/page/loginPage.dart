@@ -2,8 +2,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/route_manager.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:triptour_app/page/forgetpassword.dart';
 import 'package:triptour_app/page/homepage.dart';
 import 'package:triptour_app/page/registerPage.dart';
+import 'package:triptour_app/page/wrapper.dart';
+import 'package:triptour_app/page/wrapper.dart';
 import 'package:triptour_app/serverApi.dart';
 
 class LoginPage extends StatefulWidget {
@@ -14,6 +17,8 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final emailforgetclt = TextEditingController();
+
   final emailctl = TextEditingController();
   final passwordctl = TextEditingController();
 
@@ -69,43 +74,11 @@ class _LoginPageState extends State<LoginPage> {
                   if (userCredential != null) {
                     String? google_id = userCredential.user?.uid;
                     String? gmail = userCredential.user?.email;
-
                     print(
-                      "เข้าสู่ระบบด้วย Google สำเร็จ: ${google_id}, ${gmail}",
+                      "Google Sign In Success: ID=${google_id}, Email=${gmail}",
                     );
-                    //insert google , email  to database
-                    //defult role = user
-                    if (google_id != null && gmail != null) {
-                      //ตรวจสอบว่ามีข้อมูลผู้ใช้ในระบบหรือไม่
-                      Serverapi.checkuser(gmail, google_id).then((response) {
-                        if (response['statusCode'] == 200) {
-                          //มีข้อมูลผู้ใช้ในระบบแล้ว
-                          print("ผู้ใช้มีอยู่ในระบบแล้ว: ${response['body']}");
-                          //เข้าสู่ระบบได้เลย
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const Homepage(),
-                            ),
-                          );
-                        } else {
-                          //ไม่มีข้อมูลผู้ใช้ในระบบ
-                          print("ผู้ใช้ไม่มีอยู่ในระบบ: ${response['body']}");
-                          //ให้ไปกรอกข้อมูลเพิ่มเติมเพื่อสมัครสมาชิก
-                          callRegister();
-                        }
-                      });
-                      //ถ้ามีแล้วก็เข้าสู่ระบบได้เลย
-                      //สมัครครั้งแรกก็ให้กรอกข้อมูลให้ครบ แล้วค่อยบันทึกลง database
-                      print(
-                        "ข้อมูลผู้ใช้ Google สมบูรณ์: ID=${google_id}, Email=${gmail}",
-                      );
-                    } else {
-                      print(
-                        "ข้อมูลผู้ใช้ Google ไม่สมบูรณ์: ID=${google_id}, Email=${gmail}",
-                      );
-                      //ทำการ register ให้ครบ
-                    }
+
+                    Get.offAll(() => Wrapper());
                   }
                 },
                 child: const Text("สมัคร/เข้าสู่ระบบด้วย Google"),
@@ -128,7 +101,10 @@ class _LoginPageState extends State<LoginPage> {
 
               /// FORGOT PASSWORD
               TextButton(
-                onPressed: () {},
+                onPressed: () {
+                  //callForgetPassword(context);
+                  Get.offAll(Forgetpassword());
+                },
                 child: const Text("Forgot password?"),
               ),
             ],
@@ -144,10 +120,12 @@ class _LoginPageState extends State<LoginPage> {
         email: emailctl.text.trim(),
         password: passwordctl.text.trim(),
       );
+      // String uidlogin = userCredential.user!.uid;
+      // var res = await Serverapi.getRole(uidlogin);
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const Homepage()),
+        MaterialPageRoute(builder: (context) => const Wrapper()),
       );
     } catch (e) {
       ScaffoldMessenger.of(
@@ -178,14 +156,164 @@ class _LoginPageState extends State<LoginPage> {
       return null;
     }
   }
+}
 
-  Future<void> callRegister() async {
-    Get.to(
-      () => const RegisterPage(),
-      arguments: {
-        "email": FirebaseAuth.instance.currentUser?.email,
-        "google_id": FirebaseAuth.instance.currentUser?.uid,
-      },
+Future<void> callForgetPassword(BuildContext context) async {
+  final emailforgetpass = TextEditingController();
+  showDialog(
+    context: context, // ต้องส่ง context มาด้วย
+    builder: (context) => SimpleDialog(
+      title: ListTile(title: Text("ลืมรหัสผ่าน")),
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+
+          child: Column(
+            children: [
+              Text("กรุณากรอกอีเมลที่คุณลืมรหัสผ่าน"),
+              SizedBox(height: 10),
+              TextField(
+                controller: emailforgetpass,
+                decoration: const InputDecoration(
+                  labelText: "อีเมล",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        TextButton(
+          onPressed: () {
+            // reset(emailforgetpass.text, context);
+          },
+          child: Text("ตกลง"),
+        ),
+        TextButton(
+          onPressed: () {
+            navigator?.pop();
+          },
+          child: Text("ยกเลิก"),
+        ),
+      ],
+    ),
+  );
+}
+
+Future<void> reset(String emailforget, BuildContext context) async {
+  if (emailforget.trim().isEmpty) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text("กรุณากรอกอีเมล")));
+    return;
+  }
+
+  try {
+    await FirebaseAuth.instance.sendPasswordResetEmail(
+      email: emailforget.trim(),
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลแล้ว")),
+    );
+
+    Navigator.pop(context); // ปิด dialog
+  } on FirebaseAuthException catch (e) {
+    String message = "เกิดข้อผิดพลาด";
+
+    if (e.code == "user-not-found") {
+      message = "ไม่พบอีเมลนี้ในระบบ";
+    }
+
+    if (e.code == "invalid-email") {
+      message = "รูปแบบอีเมลไม่ถูกต้อง";
+    }
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  } catch (e) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text("Error: $e")));
+  }
+
+  Future<void> callForgetPassword(BuildContext context) async {
+    final emailforgetpass = TextEditingController();
+    showDialog(
+      context: context, // ต้องส่ง context มาด้วย
+      builder: (context) => SimpleDialog(
+        title: ListTile(title: Text("ลืมรหัสผ่าน")),
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+
+            child: Column(
+              children: [
+                Text("กรุณากรอกอีเมลที่คุณลืมรหัสผ่าน"),
+                SizedBox(height: 10),
+                TextField(
+                  controller: emailforgetpass,
+                  decoration: const InputDecoration(
+                    labelText: "อีเมล",
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              reset(emailforgetpass.text, context);
+            },
+            child: Text("ตกลง"),
+          ),
+          TextButton(
+            onPressed: () {
+              navigator?.pop();
+            },
+            child: Text("ยกเลิก"),
+          ),
+        ],
+      ),
     );
   }
 }
+
+// Future<void> reset(String emailforget, BuildContext context) async {
+//   if (emailforget.trim().isEmpty) {
+//     ScaffoldMessenger.of(
+//       context,
+//     ).showSnackBar(const SnackBar(content: Text("กรุณากรอกอีเมล")));
+//     return;
+//   }
+
+//   try {
+//     await FirebaseAuth.instance.sendPasswordResetEmail(
+//       email: emailforget.trim(),
+//     );
+
+//     ScaffoldMessenger.of(context).showSnackBar(
+//       const SnackBar(content: Text("ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลแล้ว")),
+//     );
+
+//     Navigator.pop(context); // ปิด dialog
+//   } on FirebaseAuthException catch (e) {
+//     String message = "เกิดข้อผิดพลาด";
+
+//     if (e.code == "user-not-found") {
+//       message = "ไม่พบอีเมลนี้ในระบบ";
+//     }
+
+//     if (e.code == "invalid-email") {
+//       message = "รูปแบบอีเมลไม่ถูกต้อง";
+//     }
+
+//     ScaffoldMessenger.of(
+//       context,
+//     ).showSnackBar(SnackBar(content: Text(message)));
+//   } catch (e) {
+//     ScaffoldMessenger.of(
+//       context,
+//     ).showSnackBar(SnackBar(content: Text("Error: $e")));
+//   }
+// }
