@@ -8,7 +8,7 @@ router.post("/", async (req, res) => {
   try{
     
     const [result] = await conn.query(
-      "INSERT INTO Member (google_id, email, firstname, lastname, phone) VALUES (?, ?, ?, ?, ?)",
+      "INSERT INTO Member (google_id, email, first_name, last_name, phone) VALUES (?, ?, ?, ?, ?)",
       [google_id, email, firstname, lastname, phone]
     );
 

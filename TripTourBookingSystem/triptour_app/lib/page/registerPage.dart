@@ -1,7 +1,10 @@
+import 'dart:math';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:triptour_app/page/wrapper.dart';
+import 'package:triptour_app/serverApi.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -33,13 +36,12 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("สมัครสมาชิก")),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              if (google_id != null)
+              if (google_id == null)
                 TextField(
                   controller: emailctl,
                   decoration: const InputDecoration(
@@ -60,22 +62,25 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
               const SizedBox(height: 20),
 
-              const TextField(
-                decoration: InputDecoration(
+              TextField(
+                controller: firstnamectl,
+                decoration: const InputDecoration(
                   labelText: "ชื่อผู้ใช้",
                   border: OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 10),
-              const TextField(
-                decoration: InputDecoration(
+              TextField(
+                controller: lastnamectl,
+                decoration: const InputDecoration(
                   labelText: "นามสกุล",
                   border: OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 10),
-              const TextField(
-                decoration: InputDecoration(
+              TextField(
+                controller: phonectl,
+                decoration: const InputDecoration(
                   labelText: "เบอร์โทรศัพท์",
                   border: OutlineInputBorder(),
                 ),
@@ -103,6 +108,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Future<void> signUp() async {
     try {
+      //print(google_id);
       if (google_id == null) {
         if (passwordctl.text.trim().length < 6) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -110,12 +116,26 @@ class _RegisterPageState extends State<RegisterPage> {
           );
           return;
         }
+
+        //print("process 1 - สร้างบัญชีใหม่ด้วย Email/Password");
         await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: emailctl.text.trim(),
           password: passwordctl.text.trim(),
         );
+        //print("สร้างบัญชีสำเร็จ");
+        //print("process 2 - รับ Google ID จาก Firebase");
+        google_id = FirebaseAuth.instance.currentUser?.uid;
       }
 
+      //print("process 3 - ลงทะเบียนผู้ใช้ในระบบด้วย Google ID และข้อมูลเพิ่มเติม");
+      await Serverapi.registerUser(
+        google_id!,
+        emailctl.text.trim(),
+        firstnamectl.text.trim(),
+        lastnamectl.text.trim(),
+        phonectl.text.trim(),
+      );
+      //print("process 4 - ไปหน้า Wrapper เพื่อเช็คข้อมูลผู้ใช้และเข้าสู่ระบบ");
       Get.offAll(() => const Wrapper());
     } catch (e) {
       ScaffoldMessenger.of(
