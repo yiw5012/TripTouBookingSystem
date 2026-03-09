@@ -5,3 +5,4 @@ router.get("/", async (req, res) => {
    const [rows] = await conn.query("SELECT email,password FROM Member");
    res.send(rows);
 });
+

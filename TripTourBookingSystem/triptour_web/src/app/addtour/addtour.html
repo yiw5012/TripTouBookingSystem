@@ -1,0 +1,130 @@
+<div style="max-width: 900px; margin: 20px auto; font-family: sans-serif; background-color: #fcfcfc; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+  <h2 style="color: #333; text-align: center;">🗺️ เพิ่มข้อมูลทัวร์ใหม่ (Add Tour)</h2>
+
+  <form [formGroup]="tourForm" (ngSubmit)="onSubmit()">
+    
+    <div style="background-color: white; border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+      <h3 style="margin-top: 0; color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 10px;">ข้อมูลทั่วไป</h3>
+      
+      <div style="margin-bottom: 15px;">
+        <label><b>ชื่อทัวร์: *</b></label><br>
+        <input type="text" formControlName="tour_name" placeholder="เช่น ทัวร์ญี่ปุ่น โตเกียว ฟูจิ 5 วัน 3 คืน" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+      </div>
+
+      <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+        <div style="flex: 1;">
+          <label><b>รหัสประเทศ (country_id): *</b></label><br>
+          <input type="number" formControlName="country_id" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+        </div>
+        
+        <div style="flex: 1;">
+          <label><b>ประเภททัวร์ (type):</b></label><br>
+          <select formControlName="type" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+            <option value="">-- กรุณาเลือกประเภท --</option>
+            <option value="ในประเทศ">ในประเทศ</option>
+            <option value="ต่างประเทศ">ต่างประเทศ</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+        <div style="flex: 1;">
+          <label><b>ระยะเวลา (วัน): *</b></label><br>
+          <input type="number" formControlName="duration_day" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+        </div>
+        <div style="flex: 1;">
+          <label><b>ราคา (price): *</b></label><br>
+          <input type="number" formControlName="price" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+        <div style="flex: 1;">
+          <label><b>รวมตั๋วเครื่องบิน (include_flight):</b></label><br>
+<select formControlName="include_flight" ...>
+  <option value="">-- กรุณาเลือก --</option>
+  <option value="รวม">รวมตั๋วเครื่องบิน</option> <option value="ไม่รวม">ไม่รวมตั๋วเครื่องบิน</option>
+</select>
+        </div>
+        <div style="flex: 1;">
+  <label><b>สถานะทัวร์ (status): *</b></label><br>
+  <select formControlName="status" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+    <option value="open">เปิดให้บริการ (open)</option>
+    <option value="closed">ปิดชั่วคราว (closed)</option>
+  </select>
+</div>
+      </div>
+
+      <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+        <div style="flex: 1;">
+          <label>ลิงก์วีดีโอโปรโมท (video):</label><br>
+          <input type="text" formControlName="video" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+        </div>
+        <div style="flex: 1;">
+          <label>โปรโมชั่น (promotion):</label><br>
+          <input type="text" formControlName="promotion" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+        </div>
+      </div>
+
+      <div style="margin-bottom: 15px;">
+        <label>เงื่อนไขเพิ่มเติม (condition_detail):</label><br>
+        <textarea formControlName="condition_detail" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;" rows="2"></textarea>
+      </div>
+
+    </div>
+
+    <div formArrayName="tour_details">
+      <h3 style="color: #17a2b8; border-bottom: 2px solid #17a2b8; padding-bottom: 10px;">📅 รายละเอียดการเดินทาง (รายวัน)</h3>
+      
+      <div *ngFor="let detail of tourDetails.controls; let i = index" [formGroupName]="i" 
+           style="background-color: white; border: 1px solid #17a2b8; padding: 20px; border-radius: 8px; margin-bottom: 20px; position: relative;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+          <h4 style="margin: 0; color: #17a2b8; background: #e0f7fa; padding: 5px 15px; border-radius: 20px;">วันที่ {{ i + 1 }}</h4>
+          
+          <button type="button" (click)="removeDay(i)" *ngIf="tourDetails.length > 1" style="background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold;">
+            🗑️ ลบวันที่ {{ i + 1 }}
+          </button>
+        </div>
+
+        <div style="display: flex; gap: 15px; margin-bottom: 10px;">
+          <div style="flex: 1;">
+            <label>สถานที่ (location):</label><br>
+            <input type="text" formControlName="location" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+          </div>
+          <div style="flex: 1;">
+            <label>การเดินทาง (travel):</label><br>
+            <input type="text" formControlName="travel" placeholder="เช่น รถบัส, เครื่องบิน" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+          </div>
+        </div>
+
+        <div style="margin-bottom: 10px;">
+          <label>รายละเอียดกิจกรรม (day_detail):</label><br>
+          <textarea formControlName="day_detail" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;" rows="2"></textarea>
+        </div>
+
+        <div style="display: flex; gap: 15px; margin-bottom: 10px;">
+          <div style="flex: 1;">
+            <label>โรงแรม (hotel):</label><br>
+            <input type="text" formControlName="hotel" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+          </div>
+          <div style="flex: 1;">
+            <label>อาหาร (meal_detail):</label><br>
+            <input type="text" formControlName="meal_detail" placeholder="เช่น เช้า, กลางวัน, เย็น" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 15px; margin-top: 30px;">
+      <button type="button" (click)='addDay()' style="background-color: #17a2b8; color: white; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold;">
+        + เพิ่มรายละเอียดวันถัดไป
+      </button>
+      
+      <button type="submit" [disabled]="tourForm.invalid" style="background-color: #28a745; color: white; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; flex-grow: 1; font-size: 16px; font-weight: bold;">
+        💾 บันทึกข้อมูลทัวร์
+      </button>
+    </div>
+
+  </form>
+</div>
