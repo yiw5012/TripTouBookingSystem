@@ -1,0 +1,17 @@
+/* สไตล์สำหรับปุ่มที่กำลังใช้งานอยู่ */
+.active-link {
+  background-color: white !important;
+  color: #007bff !important;
+  font-weight: bold;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.nav-buttons .btn {
+  transition: all 0.3s ease;
+  border-radius: 20px;
+  padding: 8px 20px;
+}
+
+.nav-buttons .btn:hover {
+  transform: translateY(-2px);
+}
