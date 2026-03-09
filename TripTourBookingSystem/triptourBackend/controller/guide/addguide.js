@@ -1,19 +1,11 @@
 import express from "express"; 
-import admin from "firebase-admin";
 import { conn } from "../../config/db.js"; 
 import { readFileSync } from 'fs';
-
+import  admin  from "../../config/firebase.js"
 
 export const router = express.Router(); 
 
-if (!admin.apps.length) {
-    const serviceAccount = JSON.parse(
-        readFileSync(new URL('../../config/firebase-admin-key.json', import.meta.url))
-    );
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount)
-    });
-}
+
 
 router.post("/", async (req, res) => {
     const { 

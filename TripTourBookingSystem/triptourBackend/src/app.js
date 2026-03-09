@@ -6,6 +6,8 @@ import {router as register} from "../controller/user/register.js";
 import { router as addtour } from "../controller/tour/addtour.js"; 
 import { router as addguide } from "../controller/guide/addguide.js"; 
 import {router as otp} from "../controller/user/Otp.js";  
+import { router as tourAll } from "../controller/tour/tourAll.js"; 
+
 
 import dotenv from 'dotenv';
 
@@ -23,6 +25,8 @@ app.use("/register", register);
 app.use("/otp" , otp)
 app.use("/add-tour", addtour);
 app.use("/add-guide", addguide);
+
+app.use("/tourAll", tourAll);
 
 app.use((req, res) => {
     res.status(404).json({ error: "Not found" });

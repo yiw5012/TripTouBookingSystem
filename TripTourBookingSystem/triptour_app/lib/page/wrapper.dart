@@ -18,6 +18,8 @@ class Wrapper extends StatefulWidget {
 
 class _WrapperState extends State<Wrapper> {
   Future<Widget> checkUser() async {
+    // await FirebaseAuth.instance.signOut();
+    // await GoogleSignIn().signOut();
     print("process 0");
     String? google_id = FirebaseAuth.instance.currentUser?.uid;
     String? email = FirebaseAuth.instance.currentUser?.email;
@@ -33,7 +35,7 @@ class _WrapperState extends State<Wrapper> {
           return const Guidehome();
         }
         //เข้าสู่ระบบได้เลย
-        return const Homepage();
+        return Homepage();
       } else {
         print(response);
         print("ผู้ใช้ใหม่ ไปสมัคร");

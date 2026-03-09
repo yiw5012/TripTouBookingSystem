@@ -26,7 +26,7 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Login")),
-      backgroundColor: Colors.grey,
+      backgroundColor: Colors.white,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -34,7 +34,7 @@ class _LoginPageState extends State<LoginPage> {
             children: [
               const SizedBox(height: 20),
 
-              Image.asset("assets/images/login.png", height: 200),
+              Image.asset("assets/logo.png", height: 200),
 
               const SizedBox(height: 20),
 

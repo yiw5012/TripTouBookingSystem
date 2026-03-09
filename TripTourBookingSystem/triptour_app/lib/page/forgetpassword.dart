@@ -212,7 +212,7 @@ class _ForgetpasswordState extends State<Forgetpassword> {
                                     ),
                                     TextButton(
                                       onPressed: () {
-                                        Get.back();
+                                        Get.offAll(Wrapper());
                                       },
                                       child: Text("ยกเลิก"),
                                     ),
