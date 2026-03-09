@@ -1,6 +1,9 @@
 # Environment files
 .env
 
+firebase-admin-key.json
+**/config/firebase-admin-key.json
+
 # Node modules
 node_modules/
 
