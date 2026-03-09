@@ -20,6 +20,7 @@ class _HomepageState extends State<Homepage> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const LoginPage()),
+        result: (route) => false,
       );
     } catch (e) {
       print("Error signing out: $e");
