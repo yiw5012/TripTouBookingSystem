@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "55014903883-fr1piv09475e2krj9tpi2q0fdrqdd2hl.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.triptour_app",
+            "certificate_hash": "9fb03c80b4302880fb1b0779ee59831079bd65ad"
+          }
+        },
+        {
           "client_id": "55014903883-s3q6l0lcfcjlomq6iofvuf6e64va2suq.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

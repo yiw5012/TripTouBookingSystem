@@ -101,7 +101,15 @@ class _ForgetpasswordState extends State<Forgetpassword> {
                                 return;
                               }
                               //เรียก api ส่ง otp ไป email
-                              await Serverapi.sendOtp(emailCtl.text);
+                              final otpSent = await Serverapi.sendOtp(emailCtl.text);
+                              if (!otpSent) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("ไม่สามารถส่ง OTP ได้ กรุณาลองอีกครั้ง"),
+                                  ),
+                                );
+                                return;
+                              }
                               showDialog(
                                 barrierColor: Color.fromARGB(1, 0, 0, 0),
                                 context: context,

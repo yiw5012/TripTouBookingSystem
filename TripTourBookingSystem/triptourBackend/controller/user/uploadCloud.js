@@ -1,0 +1,29 @@
+import express from "express";
+import { upload } from "../middleware/upload.js";
+
+export const router = express.Router();
+
+router.post('/upload', upload.fields([
+  { name: 'image', maxCount: 1 },
+  { name: 'passport', maxCount: 1 },
+]), async (req, res) => {
+  try {
+    const imageFile = req.files?.image?.[0];
+    const passportFile = req.files?.passport?.[0];
+
+    if (!imageFile && !passportFile) {
+      return res.status(400).json({ success: false, error: 'No file uploaded' });
+    }
+
+    const imageUrl = imageFile?.path ?? null;
+    const passportUrl = passportFile?.path ?? null;
+
+    console.log('Image uploaded:', imageUrl);
+    console.log('Passport uploaded:', passportUrl);
+
+    return res.json({ success: true, imageUrl, passportUrl });
+  } catch (error) {
+    console.error('Error uploading file:', error);
+    return res.status(500).json({ success: false, error: 'Failed to upload file' });
+  }
+});

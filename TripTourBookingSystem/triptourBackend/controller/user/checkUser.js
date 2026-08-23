@@ -6,7 +6,7 @@ router.post("/", async (req, res) => {
 
   try {
     
-    const [MemberRows] = await conn.query("SELECT email FROM Member WHERE google_id = ?", [google_id]);
+    const [MemberRows] = await conn.query("SELECT email FROM member WHERE google_id = ?", [google_id]);
 
 
      if (MemberRows.length > 0) {
@@ -17,7 +17,7 @@ router.post("/", async (req, res) => {
       });
     }
      const [guideRows] = await conn.query(
-      "SELECT email FROM Guide WHERE email = ?",
+      "SELECT email FROM guide WHERE email = ?",
       [email]
     );
 
