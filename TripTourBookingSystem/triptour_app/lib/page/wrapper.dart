@@ -34,7 +34,11 @@ class _WrapperState extends State<Wrapper> {
         if (response['body']['role'] == 'guide') {
           return const Guidehome();
         }
-        //เข้าสู่ระบบได้เลย
+        // //เข้าสู่ระบบได้เลย
+        // SnackBar snackBar = const SnackBar(
+        //   content: Text('มีผู้ใช้ในระบบแล้ว เข้าสู่ระบบเรียบร้อย'),
+        //   duration: Duration(seconds: 2),
+        // );
         return Homepage();
       } else {
         print(response);
@@ -70,11 +74,17 @@ class _WrapperState extends State<Wrapper> {
             return FutureBuilder<Widget>(
               future: checkUser(),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                //หลังจากเช็คข้อมูลผู้ใช้ในระบบแล้ว ให้ไปหน้า Homepage
-                return snapshot.data!;
+
+                if (snapshot.hasError) {
+                  return const Center(
+                    child: Text('เกิดข้อผิดพลาดในการตรวจสอบผู้ใช้'),
+                  );
+                }
+
+                return snapshot.data ?? const LoginPage();
               },
             );
           }

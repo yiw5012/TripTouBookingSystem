@@ -153,6 +153,11 @@ class _LoginPageState extends State<LoginPage> {
       return await FirebaseAuth.instance.signInWithCredential(credential);
     } catch (e) {
       print("Google Sign In Error: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Google Sign In Error: $e")));
+      }
       return null;
     }
   }
