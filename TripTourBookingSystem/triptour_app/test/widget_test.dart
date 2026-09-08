@@ -8,7 +8,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:triptour_app/page/registerPage.dart';
+import 'package:triptour_app/page/auth/registerPage.dart';
 
 void main() {
   test('duplicate email error maps to a clear warning message', () {

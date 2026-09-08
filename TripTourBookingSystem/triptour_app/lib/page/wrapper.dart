@@ -5,8 +5,8 @@ import 'package:get/get_navigation/get_navigation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:triptour_app/page/guideHome.dart';
 import 'package:triptour_app/page/homepage.dart';
-import 'package:triptour_app/page/loginPage.dart';
-import 'package:triptour_app/page/registerPage.dart';
+import 'package:triptour_app/page/auth/loginPage.dart';
+import 'package:triptour_app/page/auth/registerPage.dart';
 import 'package:triptour_app/serverApi.dart';
 
 class Wrapper extends StatefulWidget {
