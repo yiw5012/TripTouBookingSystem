@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 class Serverapi {
-  static const String _baseUrl = 'http://192.168.1.17:4000';
+  static const String _baseUrl = 'http://192.168.1.6:4000';
 
   static Future<Map<String, dynamic>> checkuser(
     String google_id,
@@ -204,6 +204,27 @@ class Serverapi {
       }
     } catch (e) {
       print('Image upload error: $e');
+      return null;
+    }
+  }
+
+  static Future<Map<String, dynamic>?> getMemberDetail(String uid) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/member/detail'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'targetUid': uid}),
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        if (body['success'] == true) {
+          return body['data'] as Map<String, dynamic>;
+        }
+      }
+      return null;
+    } catch (e) {
+      print("Error: $e");
       return null;
     }
   }

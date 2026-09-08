@@ -28,16 +28,16 @@ router.post("/", async (req, res) => {
         });
 
         console.log(`Successfully created new user in Firebase: ${userRecord.uid}`);
-
+        const google_id = userRecord.uid;
         const sql = `
-            INSERT INTO Guide (
-                guide_code, first_name, last_name, email,
+            INSERT INTO guide (
+                google_id, guide_code, first_name, last_name, email,
                 age, birthday, phone, address, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Active')
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
         `;
 
         const values = [
-            guide_code, first_name, last_name, email,
+            google_id, guide_code, first_name, last_name, email,
             age, birthday, phone, address
         ];
 
