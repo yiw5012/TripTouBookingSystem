@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 class Serverapi {
-  static const String _baseUrl = 'http://192.168.1.17:4000';
+  static const String _baseUrl = 'http://192.168.1.131:4000';
 
   static Future<Map<String, dynamic>> checkuser(
     String google_id,
@@ -50,22 +50,8 @@ class Serverapi {
     List<int>? favoriteCountries,
   }) async {
     try {
-      // google_id!,
-      //   emailctl.text.trim(),
-      //   firstName,
-      //   lastName,
-      //   phonectl.text.trim(),
-      //   number_idctl.text.trim(),
-      //   birthdayctl.text.trim(),
-      //   addressctl.text.trim(),
-      //   genderctl.text.trim(),
-      //   medicinectl.text.trim(),
-      //   congenital_diseasectl.text.trim(),
-      //   allergic_listctl.text.trim(),
-      //   otherctl.text.trim(),
-      print(
-        "Registering user with data: google_id=$google_id, email=$email, first_name=$first_name, last_name=$last_name, phone=$phone, number_id=$number_id, birthday=$birthday, address=$address, gender=$gender, medicine=$medicine, congenital_disease=$congenital_disease, allergic_list=$allergic_list, other=$other, imageProfileUrl=$imageProfileUrl, passportUrl=$passportUrl",
-      );
+      print("REGISTER URL: $_baseUrl/register");
+
       final res = await http.post(
         Uri.parse("$_baseUrl/register"),
         headers: {"Content-Type": "application/json"},
@@ -148,63 +134,108 @@ class Serverapi {
     return data["success"];
   }
 
-  static Future<List<dynamic>> getTours() async {
-    final response = await http.get(Uri.parse("$_baseUrl/tourAll"));
+  static Future<Map<String, dynamic>> getTours() async {
+    try {
+      final res = await http.get(
+        Uri.parse("$_baseUrl/add-tour"),
+        headers: {"Content-Type": "application/json"},
+      );
 
-    if (response.statusCode == 200) {
-      var data = jsonDecode(response.body);
-      return data;
-    } else {
-      throw Exception("Failed to load tours");
+      final data = jsonDecode(res.body);
+
+      print("Get tours: $data");
+
+      return {'statusCode': res.statusCode, 'body': data};
+    } catch (e) {
+      print('Get tours error: $e');
+
+      return {
+        'statusCode': 500,
+        'body': {'message': 'Server error'},
+      };
     }
   }
 
-  static Future<Map<String, dynamic>?> uploadImage(
-    File? selectedImage,
-    File? selectedImage_passport,
-  ) async {
-    if (selectedImage == null && selectedImage_passport == null) {
-      print("No image selected for upload. ");
-      return null;
-    }
-
-    final request = http.MultipartRequest(
-      'POST',
-      Uri.parse("$_baseUrl/uploads/upload"),
-    );
-    if (selectedImage != null) {
-      request.files.add(
-        await http.MultipartFile.fromPath('image', selectedImage.path),
-      );
-    }
-    if (selectedImage_passport != null) {
-      request.files.add(
-        await http.MultipartFile.fromPath(
-          'passport',
-          selectedImage_passport.path,
-        ),
-      );
-    }
-
+  static Future<Map<String, dynamic>> getSearchCountries() async {
     try {
-      final response = await request.send();
+      final res = await http.get(
+        Uri.parse("$_baseUrl/add-tour/search-options/countries"),
+        headers: {"Content-Type": "application/json"},
+      );
 
-      if (response.statusCode == 200) {
-        final responseBody = await response.stream.bytesToString();
-        final Map<String, dynamic> data =
-            jsonDecode(responseBody) as Map<String, dynamic>;
-        print("Image uploaded successfully: $data");
-        return {
-          'imageUrl': data['imageUrl'],
-          'passportUrl': data['passportUrl'],
-        };
-      } else {
-        print("Image upload failed with status: ${response.statusCode}");
-        return null;
-      }
+      final data = jsonDecode(res.body);
+
+      print("Search countries: $data");
+
+      return {'statusCode': res.statusCode, 'body': data};
     } catch (e) {
-      print('Image upload error: $e');
-      return null;
+      print("Get search countries error: $e");
+
+      return {
+        'statusCode': 500,
+        'body': {'success': false, 'message': 'Server error'},
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> getSearchAirlines() async {
+    try {
+      final res = await http.get(
+        Uri.parse("$_baseUrl/add-tour/search-options/airlines"),
+        headers: {"Content-Type": "application/json"},
+      );
+
+      final data = jsonDecode(res.body);
+
+      print("Search airlines: $data");
+
+      return {'statusCode': res.statusCode, 'body': data};
+    } catch (e) {
+      print("Get search airlines error: $e");
+
+      return {
+        'statusCode': 500,
+        'body': {'success': false, 'message': 'Server error'},
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> searchTours({
+    String? keyword,
+    int? countryId,
+    List<String>? airlines,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    try {
+      final res = await http.post(
+        Uri.parse("$_baseUrl/add-tour/search-tour"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "keyword": keyword,
+          "countryId": countryId,
+          "airlines": airlines ?? [],
+          "startDate": startDate == null
+              ? null
+              : startDate.toIso8601String().split('T').first,
+          "endDate": endDate == null
+              ? null
+              : endDate.toIso8601String().split('T').first,
+        }),
+      );
+
+      final data = jsonDecode(res.body);
+
+      print("Search tours: $data");
+
+      return {"statusCode": res.statusCode, "body": data};
+    } catch (e) {
+      print("Search tours error: $e");
+
+      return {
+        "statusCode": 500,
+        "body": {"success": false, "message": "Server error"},
+      };
     }
   }
 }
