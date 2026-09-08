@@ -332,7 +332,7 @@
     },
     {
       "name": "image_picker_macos",
-      "version": "0.2.2+1",
+      "version": "0.2.2",
       "dependencies": [
         "file_selector_macos",
         "file_selector_platform_interface",
@@ -352,7 +352,7 @@
     },
     {
       "name": "image_picker_ios",
-      "version": "0.8.13+6",
+      "version": "0.8.13",
       "dependencies": [
         "flutter",
         "image_picker_platform_interface"
@@ -371,12 +371,11 @@
     },
     {
       "name": "image_picker_android",
-      "version": "0.8.13+19",
+      "version": "0.8.13+1",
       "dependencies": [
         "flutter",
         "flutter_plugin_android_lifecycle",
-        "image_picker_platform_interface",
-        "meta"
+        "image_picker_platform_interface"
       ]
     },
     {
@@ -607,17 +606,6 @@
       ]
     },
     {
-      "name": "leak_tracker",
-      "version": "11.0.2",
-      "dependencies": [
-        "clock",
-        "collection",
-        "meta",
-        "path",
-        "vm_service"
-      ]
-    },
-    {
       "name": "term_glyph",
       "version": "1.2.2",
       "dependencies": []
@@ -686,7 +674,7 @@
     },
     {
       "name": "file_selector_macos",
-      "version": "0.9.5",
+      "version": "0.9.4+4",
       "dependencies": [
         "cross_file",
         "file_selector_platform_interface",
@@ -709,7 +697,7 @@
     },
     {
       "name": "flutter_plugin_android_lifecycle",
-      "version": "2.0.35",
+      "version": "2.0.31",
       "dependencies": [
         "flutter"
       ]
@@ -751,6 +739,17 @@
       "dependencies": [
         "meta",
         "web"
+      ]
+    },
+    {
+      "name": "leak_tracker",
+      "version": "11.0.2",
+      "dependencies": [
+        "clock",
+        "collection",
+        "meta",
+        "path",
+        "vm_service"
       ]
     },
     {
