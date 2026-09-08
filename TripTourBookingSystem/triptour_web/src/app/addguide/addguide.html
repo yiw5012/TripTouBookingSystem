@@ -1,84 +1,90 @@
-<div class="add-guide-container">
-  <div class="card">
-    <div class="card-header">
-      <h3>👷 เพิ่มข้อมูลบัญชีไกด์ (Admin)</h3>
-      <p *ngIf="!isSubmitting">ข้อมูลจะถูกส่งไปยัง Firebase Auth และฐานข้อมูลระบบ</p>
-      <p *ngIf="isSubmitting" class="text-warning">⌛ กำลังส่งข้อมูลไปยังเซิร์ฟเวอร์...</p>
-    </div>
+<div style="max-width: 900px; margin: 20px auto; font-family: sans-serif; background-color: #fcfcfc; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+  <h2 style="color: #333; text-align: center;">เพิ่มข้อมูลบัญชีไกด์</h2>
+  
+  <p *ngIf="isSubmitting" style="text-align: center; color: #ffc107; font-weight: bold;">
+    กำลังส่งข้อมูลไปยังเซิร์ฟเวอร์...
+  </p>
+
+  <form [formGroup]="guideForm" (ngSubmit)="onSubmit()">
     
-    <div class="card-body">
-      <form [formGroup]="guideForm" (ngSubmit)="onSubmit()">
+    <div style="background-color: white; border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+      <h3 style="margin-top: 0; color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 10px;">ข้อมูลบัญชี</h3>
+      
+      <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+        <div style="flex: 1;">
+          <label><b>อีเมล (Email): *</b></label><br>
+          <input type="email" formControlName="email" placeholder="example@mail.com" 
+                 style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+          <small style="color: red;" *ngIf="guideForm.get('email')?.invalid && guideForm.get('email')?.touched">รูปแบบอีเมลไม่ถูกต้อง</small>
+        </div>
         
-        <h5 class="section-title">🔐 ข้อมูลบัญชี (Login Info)</h5>
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            <label>อีเมล (Email) *</label>
-            <input type="email" formControlName="email" class="form-control" placeholder="example@mail.com">
-            <small class="text-danger" *ngIf="guideForm.get('email')?.errors?.['required'] && guideForm.get('email')?.touched">
-              จำเป็นต้องระบุอีเมล
-            </small>
-            <small class="text-danger" *ngIf="guideForm.get('email')?.errors?.['email'] && guideForm.get('email')?.touched">
-              รูปแบบอีเมลไม่ถูกต้อง
-            </small>
-          </div>
-          <div class="col-md-6 mb-3">
-            <label>รหัสผ่าน (Password) *</label>
-            <input type="password" formControlName="password" class="form-control" placeholder="อย่างน้อย 6 ตัวอักษร">
-            <small class="text-danger" *ngIf="guideForm.get('password')?.invalid && guideForm.get('password')?.touched">
-              รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร
-            </small>
-          </div>
+        <div style="flex: 1;">
+          <label><b>รหัสผ่าน (Password): *</b></label><br>
+          <input type="password" formControlName="password" placeholder="อย่างน้อย 6 ตัวอักษร" 
+                 style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+          <small style="color: red;" *ngIf="guideForm.get('password')?.invalid && guideForm.get('password')?.touched">รหัสผ่านสั้นเกินไป</small>
         </div>
-
-        <hr>
-
-        <h5 class="section-title">👤 ข้อมูลส่วนตัว (Personal Info)</h5>
-        <div class="row">
-          <div class="col-md-4 mb-3">
-            <label>รหัสไกด์ (Guide Code) *</label>
-            <input type="text" formControlName="guide_code" class="form-control" placeholder="G-001">
-          </div>
-          <div class="col-md-4 mb-3">
-            <label>ชื่อ (First Name) *</label>
-            <input type="text" formControlName="first_name" class="form-control">
-          </div>
-          <div class="col-md-4 mb-3">
-            <label>นามสกุล (Last Name) *</label>
-            <input type="text" formControlName="last_name" class="form-control">
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="col-md-4 mb-3">
-            <label>เบอร์โทรศัพท์ *</label>
-            <input type="text" formControlName="phone" class="form-control" placeholder="08xxxxxxxx">
-          </div>
-          <div class="col-md-4 mb-3">
-            <label>อายุ *</label>
-            <input type="number" formControlName="age" class="form-control">
-          </div>
-          <div class="col-md-4 mb-3">
-            <label>วันเกิด (Birthday) *</label>
-            <input type="date" formControlName="birthday" class="form-control">
-          </div>
-        </div>
-
-        <div class="mb-3">
-          <label>ที่อยู่ (Address) *</label>
-          <textarea formControlName="address" class="form-control" rows="3" placeholder="เลขที่บ้าน, ถนน, ตำบล, อำเภอ..."></textarea>
-        </div>
-
-        <div class="d-grid gap-2 mt-4">
-          <button type="submit" class="btn btn-primary btn-lg" [disabled]="guideForm.invalid || isSubmitting">
-            {{ isSubmitting ? '⌛ กำลังบันทึก...' : '🚀 บันทึกและสร้างบัญชีไกด์' }}
-          </button>
-          
-          <button type="button" class="btn btn-light" (click)="guideForm.reset()" [disabled]="isSubmitting">
-            ล้างข้อมูล
-          </button>
-        </div>
-
-      </form>
+      </div>
     </div>
-  </div>
+
+    <div style="background-color: white; border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+      <h3 style="margin-top: 0; color: #17a2b8; border-bottom: 2px solid #17a2b8; padding-bottom: 10px;">ข้อมูลส่วนตัว</h3>
+      
+      <div style="margin-bottom: 15px;">
+        <label><b>รหัสไกด์ (Guide Code): *</b></label><br>
+        <input type="text" formControlName="guide_code" placeholder="เช่น G-001" 
+               style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+      </div>
+
+      <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+        <div style="flex: 1;">
+          <label><b>ชื่อ (First Name): *</b></label><br>
+          <input type="text" formControlName="first_name" 
+                 style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+        </div>
+        <div style="flex: 1;">
+          <label><b>นามสกุล (Last Name): *</b></label><br>
+          <input type="text" formControlName="last_name" 
+                 style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+        <div style="flex: 1;">
+          <label><b>เบอร์โทรศัพท์: *</b></label><br>
+          <input type="text" formControlName="phone" placeholder="08xxxxxxxx" 
+                 style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+        </div>
+        <div style="flex: 1;">
+          <label><b>อายุ: *</b></label><br>
+          <input type="number" formControlName="age" 
+                 style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+        </div>
+        <div style="flex: 1;">
+          <label><b>วันเกิด (Birthday): *</b></label><br>
+          <input type="date" formControlName="birthday" 
+                 style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+        </div>
+      </div>
+
+      <div style="margin-bottom: 15px;">
+        <label><b>ที่อยู่ (Address): *</b></label><br>
+        <textarea formControlName="address" rows="3" 
+                  style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;"></textarea>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 15px; margin-top: 1.5rem;">
+      <button type="button" (click)="guideForm.reset()" [disabled]="isSubmitting"
+              style="background-color: #f8f9fa; color: #333; padding: 12px 20px; border: 1px solid #ccc; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold;">
+        ล้างข้อมูล
+      </button>
+
+      <button type="submit" [disabled]="guideForm.invalid || isSubmitting" 
+              style="background-color: #28a745; color: white; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; flex-grow: 1; font-size: 16px; font-weight: bold;">
+        {{ isSubmitting ? 'กำลังบันทึก...' : 'บันทึกและสร้างบัญชีไกด์' }}
+      </button>
+    </div>
+
+  </form>
 </div>

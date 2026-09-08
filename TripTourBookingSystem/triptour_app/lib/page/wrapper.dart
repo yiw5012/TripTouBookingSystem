@@ -5,8 +5,8 @@ import 'package:get/get_navigation/get_navigation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:triptour_app/page/guideHome.dart';
 import 'package:triptour_app/page/homepage.dart';
-import 'package:triptour_app/page/loginPage.dart';
-import 'package:triptour_app/page/registerPage.dart';
+import 'package:triptour_app/page/auth/loginPage.dart';
+import 'package:triptour_app/page/auth/registerPage.dart';
 import 'package:triptour_app/serverApi.dart';
 
 class Wrapper extends StatefulWidget {
@@ -18,6 +18,8 @@ class Wrapper extends StatefulWidget {
 
 class _WrapperState extends State<Wrapper> {
   Future<Widget> checkUser() async {
+    // await FirebaseAuth.instance.signOut();
+    // await GoogleSignIn().signOut();
     print("process 0");
     String? google_id = FirebaseAuth.instance.currentUser?.uid;
     String? email = FirebaseAuth.instance.currentUser?.email;
@@ -32,8 +34,12 @@ class _WrapperState extends State<Wrapper> {
         if (response['body']['role'] == 'guide') {
           return const Guidehome();
         }
-        //เข้าสู่ระบบได้เลย
-        return const Homepage();
+        // //เข้าสู่ระบบได้เลย
+        // SnackBar snackBar = const SnackBar(
+        //   content: Text('มีผู้ใช้ในระบบแล้ว เข้าสู่ระบบเรียบร้อย'),
+        //   duration: Duration(seconds: 2),
+        // );
+        return Homepage();
       } else {
         print(response);
         print("ผู้ใช้ใหม่ ไปสมัคร");
@@ -68,11 +74,17 @@ class _WrapperState extends State<Wrapper> {
             return FutureBuilder<Widget>(
               future: checkUser(),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                //หลังจากเช็คข้อมูลผู้ใช้ในระบบแล้ว ให้ไปหน้า Homepage
-                return snapshot.data!;
+
+                if (snapshot.hasError) {
+                  return const Center(
+                    child: Text('เกิดข้อผิดพลาดในการตรวจสอบผู้ใช้'),
+                  );
+                }
+
+                return snapshot.data ?? const LoginPage();
               },
             );
           }

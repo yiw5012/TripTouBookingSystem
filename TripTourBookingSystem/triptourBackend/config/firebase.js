@@ -1,10 +1,12 @@
-import admin from  "firebase-admin"
+import admin from  "firebase-admin";
 import { createRequire } from "module";
 
 const require = createRequire(import.meta.url);
-const serviceAccount = require("../triptourbookingsystem-5f7d7-firebase-adminsdk-fbsvc-9dcffd80fa.json");
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-});
+const serviceAccount = require("./firebase-admin-key.json");
+if (admin.apps.length === 0) {
+    admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+    });
+}
 
 export default admin;

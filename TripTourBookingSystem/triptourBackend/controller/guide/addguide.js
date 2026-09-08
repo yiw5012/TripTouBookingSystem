@@ -1,19 +1,11 @@
 import express from "express"; 
-import admin from "firebase-admin";
 import { conn } from "../../config/db.js"; 
 import { readFileSync } from 'fs';
-
+import  admin  from "../../config/firebase.js"
 
 export const router = express.Router(); 
 
-if (!admin.apps.length) {
-    const serviceAccount = JSON.parse(
-        readFileSync(new URL('../../config/firebase-admin-key.json', import.meta.url))
-    );
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount)
-    });
-}
+
 
 router.post("/", async (req, res) => {
     const { 
@@ -36,16 +28,16 @@ router.post("/", async (req, res) => {
         });
 
         console.log(`Successfully created new user in Firebase: ${userRecord.uid}`);
-
+        const google_id = userRecord.uid;
         const sql = `
-            INSERT INTO Guide (
-                guide_code, first_name, last_name, email,
+            INSERT INTO guide (
+                google_id, guide_code, first_name, last_name, email,
                 age, birthday, phone, address, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Active')
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
         `;
 
         const values = [
-            guide_code, first_name, last_name, email,
+            google_id, guide_code, first_name, last_name, email,
             age, birthday, phone, address
         ];
 

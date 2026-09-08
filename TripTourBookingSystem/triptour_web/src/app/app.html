@@ -1,5 +1,16 @@
-<div style="background-color: #007bff; color: white; padding: 15px; margin-bottom: 20px;">
+<div style="background-color: #007bff; color: white; padding: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
   <h1 style="margin: 0;">TripTour Admin Panel</h1>
+  
+  <div class="nav-buttons">
+    <button class="btn btn-outline-light me-2" routerLink="/add-tour" routerLinkActive="active-link">
+      +AddTour
+    </button>
+    <button class="btn btn-outline-light" routerLink="/add-guide" routerLinkActive="active-link">
+      +AddGuide
+    </button>
+  </div>
 </div>
 
-<router-outlet></router-outlet>
+<div class="container-fluid">
+  <router-outlet></router-outlet>
+</div>
