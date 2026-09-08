@@ -14,8 +14,8 @@ class Homepage extends StatefulWidget {
 }
 
 class _HomepageState extends State<Homepage> {
-  late Future<List<dynamic>>
-  tours; // ตัวแปร Future สำหรับเก็บข้อมูลทัวร์จาก API
+  //late Future<List<dynamic>>
+  //tours; // ตัวแปร Future สำหรับเก็บข้อมูลทัวร์จาก API
   final user = FirebaseAuth.instance.currentUser;
 
   // =====================================================
