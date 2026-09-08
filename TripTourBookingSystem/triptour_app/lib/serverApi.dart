@@ -178,6 +178,55 @@ class Serverapi {
     }
   }
 
+  static Future<Map<String, dynamic>?> uploadImage(
+    File? selectedImage,
+    File? selectedImage_passport,
+  ) async {
+    if (selectedImage == null && selectedImage_passport == null) {
+      print("No image selected for upload. ");
+      return null;
+    }
+
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse("$_baseUrl/uploads/upload"),
+    );
+    if (selectedImage != null) {
+      request.files.add(
+        await http.MultipartFile.fromPath('image', selectedImage.path),
+      );
+    }
+    if (selectedImage_passport != null) {
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'passport',
+          selectedImage_passport.path,
+        ),
+      );
+    }
+
+    try {
+      final response = await request.send();
+
+      if (response.statusCode == 200) {
+        final responseBody = await response.stream.bytesToString();
+        final Map<String, dynamic> data =
+            jsonDecode(responseBody) as Map<String, dynamic>;
+        print("Image uploaded successfully: $data");
+        return {
+          'imageUrl': data['imageUrl'],
+          'passportUrl': data['passportUrl'],
+        };
+      } else {
+        print("Image upload failed with status: ${response.statusCode}");
+        return null;
+      }
+    } catch (e) {
+      print('Image upload error: $e');
+      return null;
+    }
+  }
+
   static Future<Map<String, dynamic>> getSearchAirlines() async {
     try {
       final res = await http.get(
