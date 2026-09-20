@@ -74,7 +74,7 @@ class _HomepageState extends State<Homepage> {
     // รวมรายการหน้าทั้งหมด โดยหน้า 0 คือเนื้อหา Home
     final List<Widget> pages = [
       _buildHomeContent(),
-      const BookingPage(),
+      const Center(child: Text("booking Page")),
       const ChatPage(userRole: 'user'),
       const Center(child: Text("Profile Page")),
     ];
