@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:triptour_app/page/auth/loginPage.dart';
+import 'package:triptour_app/page/booking/bookingPage.dart';
 import 'package:triptour_app/page/navbar/chat.dart';
 import 'package:triptour_app/page/searchPage.dart';
 import 'package:triptour_app/serverApi.dart';
@@ -72,7 +73,7 @@ class _HomepageState extends State<Homepage> {
     // รวมรายการหน้าทั้งหมด โดยหน้า 0 คือเนื้อหา Home
     final List<Widget> pages = [
       _buildHomeContent(),
-      const Center(child: Text("Booking Page")),
+      const BookingPage(),
       const ChatPage(userRole: 'user'),
       const Center(child: Text("Profile Page")),
     ];

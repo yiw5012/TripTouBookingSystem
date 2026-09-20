@@ -10,16 +10,17 @@ import { router as tourAll } from "../controller/tour/tourAll.js";
 import { router as upload } from "../controller/user/uploadCloud.js";
 import {router as country} from "../controller/country/country.js"
 import {router as getUser} from "../controller/user/getUser.js";
+import {router as roundTour} from "../controller/tour/roundTour/roundTour.js"
+import {router as booking} from "../controller/booking/booking.js";
 import dotenv from 'dotenv';
-
+import { Server } from 'socket.io';
 dotenv.config();
 export const app = express();
 
-app.use(cors());
-app.use(express.json());
 
-//app.use("/api", require("./routes/api"));
-app.use(express.json());
+app.use(cors());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use("/", index);
 app.use("/checkuser", checkUser);
 app.use("/register", register);
@@ -30,6 +31,9 @@ app.use("/country",country)
 app.use("/tourAll", tourAll);
 app.use("/uploads", upload); // Serve uploaded files from the 'uploads' directory
 app.use("/member", getUser);
+app.use("/roundTour", roundTour);
+app.use("/api/booking", booking);
+
 app.use((req, res) => {
 
     res.status(404).json({ error: "Not found" });
