@@ -5,6 +5,7 @@ import 'package:triptour_app/page/auth/loginPage.dart';
 import 'package:triptour_app/page/booking/bookingPage.dart';
 import 'package:triptour_app/page/navbar/chat.dart';
 import 'package:triptour_app/page/searchPage.dart';
+import 'package:triptour_app/page/detailTour.dart';
 import 'package:triptour_app/serverApi.dart';
 
 class Homepage extends StatefulWidget {
@@ -291,8 +292,13 @@ class _HomepageState extends State<Homepage> {
   }
 
   Widget buildTourSection() {
-    if (isLoading) return const Center(child: CircularProgressIndicator());
-    if (tours.isEmpty) return const Center(child: Text("ยังไม่มีทริป"));
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (tours.isEmpty) {
+      return const Center(child: Text("ยังไม่มีทริป"));
+    }
 
     return SizedBox(
       height: 220,
@@ -301,6 +307,7 @@ class _HomepageState extends State<Homepage> {
         itemCount: tours.length,
         itemBuilder: (context, index) {
           final tour = tours[index];
+
           return Container(
             width: 180,
             margin: const EdgeInsets.only(right: 12),
@@ -308,48 +315,70 @@ class _HomepageState extends State<Homepage> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.grey.shade300),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  height: 100,
-                  width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFE0E0E0),
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(12),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () {
+                final int tourId = int.parse(tour['tour_id'].toString());
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DetailTour(tourId: tourId),
+                  ),
+                );
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 100,
+                    width: double.infinity,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFE0E0E0),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(12),
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.image,
+                      size: 40,
+                      color: Colors.grey,
                     ),
                   ),
-                  child: const Icon(Icons.image, size: 40, color: Colors.grey),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        tour['tour_name'] ?? 'ไม่มีชื่อทริป',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        "${tour['duration_day'] ?? '-'} วัน",
-                        style: TextStyle(color: Colors.grey.shade600),
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        "${tour['price'] ?? '-'} บาท",
-                        style: const TextStyle(
-                          color: Colors.orange,
-                          fontWeight: FontWeight.bold,
+
+                  Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          tour['tour_name'] ?? 'ไม่มีชื่อทริป',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                      ),
-                    ],
+
+                        const SizedBox(height: 5),
+
+                        Text(
+                          "${tour['duration_day'] ?? '-'} วัน",
+                          style: TextStyle(color: Colors.grey.shade600),
+                        ),
+
+                        const SizedBox(height: 5),
+
+                        Text(
+                          "${tour['price'] ?? '-'} บาท",
+                          style: const TextStyle(
+                            color: Colors.orange,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           );
         },

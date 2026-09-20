@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 class Serverapi {
-  static const String _baseUrl = 'http://192.168.1.6:4000';
+  static const String _baseUrl = 'http://192.168.1.159:4000';
 
   static Future<Map<String, dynamic>> checkuser(
     String google_id,
@@ -306,6 +306,28 @@ class Serverapi {
     } catch (e) {
       print("Error: $e");
       return null;
+    }
+  }
+
+  static Future<Map<String, dynamic>> getTourDetail(int tourId) async {
+    try {
+      final res = await http.get(
+        Uri.parse("$_baseUrl/add-tour/detail/$tourId"),
+        headers: {"Content-Type": "application/json"},
+      );
+
+      final data = jsonDecode(res.body);
+
+      print("Tour detail: $data");
+
+      return {"statusCode": res.statusCode, "body": data};
+    } catch (e) {
+      print("Get tour detail error: $e");
+
+      return {
+        "statusCode": 500,
+        "body": {"success": false, "message": "Server error"},
+      };
     }
   }
 }

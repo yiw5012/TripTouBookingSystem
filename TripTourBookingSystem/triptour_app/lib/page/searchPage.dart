@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:triptour_app/serverApi.dart';
+import 'package:triptour_app/page/detailTour.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -474,139 +475,154 @@ class _SearchPageState extends State<SearchPage> {
 
         ListView.builder(
           shrinkWrap: true,
-
           physics: const NeverScrollableScrollPhysics(),
-
           itemCount: searchResults.length,
 
           itemBuilder: (context, index) {
             final tour = searchResults[index];
 
-            return Container(
-              width: double.infinity,
+            return GestureDetector(
+              onTap: () {
+                final int tourId = int.parse(tour['tour_id'].toString());
 
-              margin: const EdgeInsets.only(bottom: 12),
-
-              padding: const EdgeInsets.all(14),
-
-              decoration: BoxDecoration(
-                color: Colors.white,
-
-                borderRadius: BorderRadius.circular(14),
-
-                border: Border.all(color: Colors.grey.shade300),
-
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 5,
-                    offset: const Offset(0, 2),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DetailTour(tourId: tourId),
                   ),
-                ],
-              ),
+                );
+              },
 
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Container(
+                width: double.infinity,
 
-                children: [
-                  // =====================================
-                  // ชื่อทริป
-                  // =====================================
-                  Text(
-                    tour['tour_name'] ?? 'ไม่มีชื่อทริป',
+                margin: const EdgeInsets.only(bottom: 12),
 
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
+                padding: const EdgeInsets.all(14),
+
+                decoration: BoxDecoration(
+                  color: Colors.white,
+
+                  borderRadius: BorderRadius.circular(14),
+
+                  border: Border.all(color: Colors.grey.shade300),
+
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 5,
+                      offset: const Offset(0, 2),
                     ),
-                  ),
+                  ],
+                ),
 
-                  const SizedBox(height: 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
 
-                  // =====================================
-                  // ประเทศ
-                  // =====================================
-                  Row(
-                    children: [
-                      const Icon(Icons.public, size: 18, color: Colors.green),
+                  children: [
+                    // =====================================
+                    // ชื่อทริป
+                    // =====================================
+                    Text(
+                      tour['tour_name'] ?? 'ไม่มีชื่อทริป',
 
-                      const SizedBox(width: 6),
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
 
-                      Expanded(
-                        child: Text(
-                          'ประเทศ: '
-                          '${tour['country_name_th'] ?? '-'}',
+                    const SizedBox(height: 10),
+
+                    // =====================================
+                    // ประเทศ
+                    // =====================================
+                    Row(
+                      children: [
+                        const Icon(Icons.public, size: 18, color: Colors.green),
+
+                        const SizedBox(width: 6),
+
+                        Expanded(
+                          child: Text(
+                            'ประเทศ: '
+                            '${tour['country_name_th'] ?? '-'}',
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
 
-                  const SizedBox(height: 6),
+                    const SizedBox(height: 6),
 
-                  // =====================================
-                  // สายการบิน
-                  // =====================================
-                  Row(
-                    children: [
-                      const Icon(Icons.flight, size: 18, color: Colors.blue),
+                    // =====================================
+                    // สายการบิน
+                    // =====================================
+                    Row(
+                      children: [
+                        const Icon(Icons.flight, size: 18, color: Colors.blue),
 
-                      const SizedBox(width: 6),
+                        const SizedBox(width: 6),
 
-                      Expanded(
-                        child: Text(
-                          'สายการบิน: '
-                          '${tour['airline'] ?? '-'}',
+                        Expanded(
+                          child: Text(
+                            'สายการบิน: '
+                            '${tour['airline'] ?? '-'}',
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
 
-                  const SizedBox(height: 6),
+                    const SizedBox(height: 6),
 
-                  // =====================================
-                  // วันเดินทาง
-                  // =====================================
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.calendar_month,
-                        size: 18,
-                        color: Colors.orange,
-                      ),
-
-                      const SizedBox(width: 6),
-
-                      Expanded(
-                        child: Text(
-                          'เดินทาง: '
-                          '${tour['start_date'] ?? '-'}'
-                          ' - '
-                          '${tour['end_date'] ?? '-'}',
+                    // =====================================
+                    // วันเดินทาง
+                    // =====================================
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.calendar_month,
+                          size: 18,
+                          color: Colors.orange,
                         ),
-                      ),
-                    ],
-                  ),
 
-                  const SizedBox(height: 6),
+                        const SizedBox(width: 6),
 
-                  // =====================================
-                  // ราคา
-                  // =====================================
-                  Row(
-                    children: [
-                      const Icon(Icons.payments, size: 18, color: Colors.green),
+                        Expanded(
+                          child: Text(
+                            'เดินทาง: '
+                            '${tour['start_date'] ?? '-'}'
+                            ' - '
+                            '${tour['end_date'] ?? '-'}',
+                          ),
+                        ),
+                      ],
+                    ),
 
-                      const SizedBox(width: 6),
+                    const SizedBox(height: 6),
 
-                      Text(
-                        'ราคา: '
-                        '${tour['price'] ?? '-'} บาท',
+                    // =====================================
+                    // ราคา
+                    // =====================================
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.payments,
+                          size: 18,
+                          color: Colors.green,
+                        ),
 
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(width: 6),
+
+                        Text(
+                          'ราคา: '
+                          '${tour['price'] ?? '-'} บาท',
+
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             );
           },

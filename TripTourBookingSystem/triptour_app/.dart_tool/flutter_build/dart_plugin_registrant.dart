@@ -6,17 +6,17 @@
 // @dart = 3.8
 
 import 'dart:io'; // flutter_ignore: dart_io_import.
-import 'package:google_sign_in_android/google_sign_in_android.dart' as google_sign_in_android;
-import 'package:image_picker_android/image_picker_android.dart' as image_picker_android;
-import 'package:google_sign_in_ios/google_sign_in_ios.dart' as google_sign_in_ios;
-import 'package:image_picker_ios/image_picker_ios.dart' as image_picker_ios;
-import 'package:file_selector_linux/file_selector_linux.dart' as file_selector_linux;
-import 'package:image_picker_linux/image_picker_linux.dart' as image_picker_linux;
-import 'package:file_selector_macos/file_selector_macos.dart' as file_selector_macos;
-import 'package:google_sign_in_ios/google_sign_in_ios.dart' as google_sign_in_ios;
-import 'package:image_picker_macos/image_picker_macos.dart' as image_picker_macos;
-import 'package:file_selector_windows/file_selector_windows.dart' as file_selector_windows;
-import 'package:image_picker_windows/image_picker_windows.dart' as image_picker_windows;
+import 'package:google_sign_in_android/google_sign_in_android.dart';
+import 'package:image_picker_android/image_picker_android.dart';
+import 'package:google_sign_in_ios/google_sign_in_ios.dart';
+import 'package:image_picker_ios/image_picker_ios.dart';
+import 'package:file_selector_linux/file_selector_linux.dart';
+import 'package:image_picker_linux/image_picker_linux.dart';
+import 'package:file_selector_macos/file_selector_macos.dart';
+import 'package:google_sign_in_ios/google_sign_in_ios.dart';
+import 'package:image_picker_macos/image_picker_macos.dart';
+import 'package:file_selector_windows/file_selector_windows.dart';
+import 'package:image_picker_windows/image_picker_windows.dart';
 
 @pragma('vm:entry-point')
 class _PluginRegistrant {
@@ -25,7 +25,7 @@ class _PluginRegistrant {
   static void register() {
     if (Platform.isAndroid) {
       try {
-        google_sign_in_android.GoogleSignInAndroid.registerWith();
+        GoogleSignInAndroid.registerWith();
       } catch (err) {
         print(
           '`google_sign_in_android` threw an error: $err. '
@@ -34,7 +34,7 @@ class _PluginRegistrant {
       }
 
       try {
-        image_picker_android.ImagePickerAndroid.registerWith();
+        ImagePickerAndroid.registerWith();
       } catch (err) {
         print(
           '`image_picker_android` threw an error: $err. '
@@ -44,7 +44,7 @@ class _PluginRegistrant {
 
     } else if (Platform.isIOS) {
       try {
-        google_sign_in_ios.GoogleSignInIOS.registerWith();
+        GoogleSignInIOS.registerWith();
       } catch (err) {
         print(
           '`google_sign_in_ios` threw an error: $err. '
@@ -53,7 +53,7 @@ class _PluginRegistrant {
       }
 
       try {
-        image_picker_ios.ImagePickerIOS.registerWith();
+        ImagePickerIOS.registerWith();
       } catch (err) {
         print(
           '`image_picker_ios` threw an error: $err. '
@@ -63,7 +63,7 @@ class _PluginRegistrant {
 
     } else if (Platform.isLinux) {
       try {
-        file_selector_linux.FileSelectorLinux.registerWith();
+        FileSelectorLinux.registerWith();
       } catch (err) {
         print(
           '`file_selector_linux` threw an error: $err. '
@@ -72,7 +72,7 @@ class _PluginRegistrant {
       }
 
       try {
-        image_picker_linux.ImagePickerLinux.registerWith();
+        ImagePickerLinux.registerWith();
       } catch (err) {
         print(
           '`image_picker_linux` threw an error: $err. '
@@ -82,7 +82,7 @@ class _PluginRegistrant {
 
     } else if (Platform.isMacOS) {
       try {
-        file_selector_macos.FileSelectorMacOS.registerWith();
+        FileSelectorMacOS.registerWith();
       } catch (err) {
         print(
           '`file_selector_macos` threw an error: $err. '
@@ -91,7 +91,7 @@ class _PluginRegistrant {
       }
 
       try {
-        google_sign_in_ios.GoogleSignInIOS.registerWith();
+        GoogleSignInIOS.registerWith();
       } catch (err) {
         print(
           '`google_sign_in_ios` threw an error: $err. '
@@ -100,7 +100,7 @@ class _PluginRegistrant {
       }
 
       try {
-        image_picker_macos.ImagePickerMacOS.registerWith();
+        ImagePickerMacOS.registerWith();
       } catch (err) {
         print(
           '`image_picker_macos` threw an error: $err. '
@@ -110,7 +110,7 @@ class _PluginRegistrant {
 
     } else if (Platform.isWindows) {
       try {
-        file_selector_windows.FileSelectorWindows.registerWith();
+        FileSelectorWindows.registerWith();
       } catch (err) {
         print(
           '`file_selector_windows` threw an error: $err. '
@@ -119,7 +119,7 @@ class _PluginRegistrant {
       }
 
       try {
-        image_picker_windows.ImagePickerWindows.registerWith();
+        ImagePickerWindows.registerWith();
       } catch (err) {
         print(
           '`image_picker_windows` threw an error: $err. '

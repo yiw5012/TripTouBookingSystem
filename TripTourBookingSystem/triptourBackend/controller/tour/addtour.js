@@ -332,3 +332,142 @@ router.post("/search-tour", async (req, res) => {
     });
   }
 });
+
+router.get("/detail/:tourId", async (req, res) => {
+  try {
+    const { tourId } = req.params;
+
+    // ==========================================================
+    // 1. ตรวจสอบ tour_id
+    // ==========================================================
+
+    if (!tourId || isNaN(Number(tourId))) {
+      return res.status(400).json({
+        success: false,
+        message: "tour_id ไม่ถูกต้อง",
+      });
+    }
+
+    const tourIdNumber = Number(tourId);
+
+    // ==========================================================
+    // 2. ดึงข้อมูลหลักของทัวร์
+    // ==========================================================
+
+    const [tourRows] = await conn.query(
+      `
+      SELECT
+        t.tour_id,
+        t.tour_name,
+        t.country_id,
+        c.country_name_th,
+        c.country_name_en,
+        t.type,
+        t.duration_day,
+        t.price,
+        t.promotion,
+        t.status
+      FROM tour t
+      INNER JOIN country c
+        ON c.country_id = t.country_id
+      WHERE t.tour_id = ?
+      LIMIT 1
+      `,
+      [tourIdNumber]
+    );
+
+    // ถ้าไม่เจอทัวร์
+    if (tourRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "ไม่พบข้อมูลทัวร์",
+      });
+    }
+
+    // ==========================================================
+    // 3. ดึงรูปภาพทัวร์
+    // ==========================================================
+
+    const [imageRows] = await conn.query(
+      `
+      SELECT
+        image
+      FROM tour_image
+      WHERE tour_id = ?
+      `,
+      [tourIdNumber]
+    );
+
+    // ==========================================================
+    // 4. ดึงรอบทัวร์ทั้งหมด
+    // ==========================================================
+
+    const [roundRows] = await conn.query(
+      `
+      SELECT
+        round_id,
+        tour_id,
+        departure,
+        destination,
+        start_date,
+        end_date,
+        airline,
+        flight,
+        flight_time,
+        price_single,
+        price_double,
+        price_triple,
+        status,
+        guide_id
+      FROM tour_round
+      WHERE tour_id = ?
+      ORDER BY start_date ASC, round_id ASC
+      `,
+      [tourIdNumber]
+    );
+
+    // ==========================================================
+    // 5. ดึงรายละเอียดรายวัน
+    // ==========================================================
+
+    const [detailRows] = await conn.query(
+      `
+      SELECT
+        td_id,
+        tour_id,
+        day_number,
+        day_detail,
+        location,
+        travel,
+        hotel,
+        meal_detail,
+        restaurant_detail
+      FROM tour_detail
+      WHERE tour_id = ?
+      ORDER BY day_number ASC, td_id ASC
+      `,
+      [tourIdNumber]
+    );
+
+    // ==========================================================
+    // 6. ส่งข้อมูลกลับ Flutter
+    // ==========================================================
+
+    res.status(200).json({
+      success: true,
+      data: {
+        tour: tourRows[0],
+        images: imageRows,
+        rounds: roundRows,
+        details: detailRows,
+      },
+    });
+  } catch (error) {
+    console.error("Get tour detail error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+});
