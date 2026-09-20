@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:triptour_app/page/booking/bookingPage.dart';
 import 'package:triptour_app/serverApi.dart';
 
 class DetailTour extends StatefulWidget {
@@ -526,7 +528,14 @@ class _DetailTourState extends State<DetailTour>
               ElevatedButton(
                 onPressed: isOpen
                     ? () {
-                        // ยังไม่ทำงาน
+                        Future.microtask(() {
+                          Get.offAll(
+                            () => BookingTourPage(
+                              roundId: round['round_id'].toString(),
+                              tourId: round['tour_id'].toString(),
+                            ),
+                          );
+                        });
                       }
                     : null,
                 child: const Text('จอง'),
