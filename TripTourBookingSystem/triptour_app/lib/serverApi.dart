@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 class Serverapi {
-  static const String _baseUrl = 'http://192.168.1.6:4000';
+  static const String _baseUrl = 'http://192.168.1.123:4000';
 
   static Future<Map<String, dynamic>> checkuser(
     String google_id,
