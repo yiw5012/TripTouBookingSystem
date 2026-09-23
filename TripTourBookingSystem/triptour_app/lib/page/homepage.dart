@@ -4,8 +4,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:triptour_app/page/auth/loginPage.dart';
 import 'package:triptour_app/page/booking/bookingPage.dart';
 import 'package:triptour_app/page/navbar/chat.dart';
-import 'package:triptour_app/page/searchPage.dart';
-import 'package:triptour_app/page/detailTour.dart';
+import 'package:triptour_app/page/SearchPage/searchPage.dart';
+import 'package:triptour_app/page/Tourdetail/detailTour.dart';
 import 'package:triptour_app/serverApi.dart';
 
 class Homepage extends StatefulWidget {
