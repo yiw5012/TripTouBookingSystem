@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 class ServiceBookingApi {
-  static const String _baseUrl = 'http://192.168.1.123:4000';
+  static const String _baseUrl = 'http://192.168.1.8:4000';
 
   static Future<Map<String, dynamic>?> getTourById(String tourId) async {
     try {
@@ -222,19 +222,39 @@ class ServiceBookingApi {
     }
   }
 
-  // ส่งข้อมูลผู้เดินทางทั้งหมดเข้าสู่ระบบหลังชำระเงินสำเร็จ
-  static Future<Map<String, dynamic>> submitPassengers(
-    Map<String, dynamic> payload,
-  ) async {
+  static Future<Map<String, dynamic>> submitPassengers({
+    required Map<String, dynamic> data,
+    File? passpot_passenger,
+  }) async {
     try {
-      final res = await http.post(
-        Uri.parse("$_baseUrl/api/booking/add-passengers"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode(payload),
-      );
+      final uri = Uri.parse("$_baseUrl/api/booking/add-passengers");
 
-      final body = jsonDecode(res.body);
-      return {'statusCode': res.statusCode, 'body': body};
+      // กรณีมีไฟล์รูปพาสปอร์ต
+      if (passpot_passenger != null && await passpot_passenger.exists()) {
+        final request = http.MultipartRequest('POST', uri);
+
+        // ส่งข้อมูล JSON ผ่าน field 'payload'
+        request.fields['payload'] = jsonEncode(data);
+
+        // แนบไฟล์รูปภาพพาสปอร์ต
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'passpot_passenger',
+            passpot_passenger.path,
+          ),
+        );
+
+        final streamedResponse = await request.send();
+        final res = await http.Response.fromStream(streamedResponse);
+        return {'statusCode': res.statusCode, 'body': jsonDecode(res.body)};
+      }
+
+      final res = await http.post(
+        uri,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(data),
+      );
+      return {'statusCode': res.statusCode, 'body': jsonDecode(res.body)};
     } catch (e) {
       print('Submit passengers error: $e');
       return {
@@ -242,5 +262,18 @@ class ServiceBookingApi {
         'body': {'success': false, 'message': 'Server error: $e'},
       };
     }
+  }
+
+  static Future<Map<String, dynamic>> cancelBookingOrder(int bookingId) async {
+    final url = Uri.parse('$_baseUrl/booking/cancel-order');
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'booking_id': bookingId}),
+    );
+    return {
+      'statusCode': response.statusCode,
+      'body': jsonDecode(response.body),
+    };
   }
 }

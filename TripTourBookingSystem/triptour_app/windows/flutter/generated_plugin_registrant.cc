@@ -10,6 +10,7 @@
 #include <firebase_auth/firebase_auth_plugin_c_api.h>
 #include <firebase_core/firebase_core_plugin_c_api.h>
 #include <firebase_database/firebase_database_plugin_c_api.h>
+#include <gal/gal_plugin_c_api.h>
 #include <printing/printing_plugin.h>
 
 void RegisterPlugins(flutter::PluginRegistry* registry) {
@@ -21,6 +22,8 @@ void RegisterPlugins(flutter::PluginRegistry* registry) {
       registry->GetRegistrarForPlugin("FirebaseCorePluginCApi"));
   FirebaseDatabasePluginCApiRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("FirebaseDatabasePluginCApi"));
+  GalPluginCApiRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("GalPluginCApi"));
   PrintingPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("PrintingPlugin"));
 }

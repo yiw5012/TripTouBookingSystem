@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:triptour_app/model/country.dart';
 
 class Severgetapi {
-  static const String _baseUrl = 'http://192.168.1.123:4000';
+  static const String _baseUrl = 'http://192.168.1.8:4000';
   List<Country> countries = [];
   bool isLoading = true;
 

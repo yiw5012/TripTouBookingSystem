@@ -1,15 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:triptour_app/page/booking/widgets/passengerform.dart';
 import 'package:triptour_app/page/booking/widgets/step1_tour_details.dart';
 import 'package:triptour_app/page/booking/widgets/step2_passenger.dart';
 import 'package:triptour_app/page/booking/widgets/step3_payment.dart';
-import 'package:triptour_app/page/homepage.dart';
 import 'package:triptour_app/serverApi.dart';
 import 'package:triptour_app/serviceBookingApi.dart';
 
-////////////////////////////////////////////////////////////////////////////////
 String formatCurrency(dynamic value) {
   if (value == null) return '-';
   final number = num.tryParse(value.toString());
@@ -37,13 +34,13 @@ class BookingTourPage extends StatefulWidget {
 }
 
 class _BookingTourPageState extends State<BookingTourPage> {
-  final GlobalKey? _step3Key = GlobalKey();
   Map<String, dynamic> tourData = {};
   List<dynamic> rounds = [];
   bool isLoading = true;
   int _currentStep = 1;
   List<PassengerFormControllers> passengerForms = [];
   Map<String, dynamic> memberId = {};
+
   // Controllers สำหรับข้อมูลผู้ติดต่อ
   final contactNameCtl = TextEditingController();
   final contactPhoneCtl = TextEditingController();
@@ -59,8 +56,6 @@ class _BookingTourPageState extends State<BookingTourPage> {
     'ผู้ใหญ่ 1 พัก 1 ห้อง',
     'เด็กต่ำกว่า 11 ปี 0 ห้อง',
   ];
-
-  bool _isBooking = false;
 
   Map<String, dynamic> get selectedRound =>
       rounds.isNotEmpty ? Map<String, dynamic>.from(rounds.first) : {};
@@ -101,6 +96,11 @@ class _BookingTourPageState extends State<BookingTourPage> {
       final detail = await Serverapi.getMemberDetail(currentUserId);
       if (detail != null) {
         memberId = detail;
+
+        contactNameCtl.text =
+            "${detail['first_name'] ?? ''} ${detail['last_name'] ?? ''}".trim();
+        contactPhoneCtl.text = (detail['phone'] ?? '').toString();
+        contactEmailCtl.text = (detail['email'] ?? '').toString();
       }
     }
 
@@ -117,31 +117,6 @@ class _BookingTourPageState extends State<BookingTourPage> {
       }
       isLoading = false;
     });
-  }
-
-  void updatePassengerForms() {
-    List<PassengerFormControllers> newForms = [];
-    int passengerIndex = 1;
-
-    for (int i = 0; i < passengerCounts.length; i++) {
-      int count = passengerCounts[i];
-      int totalPeople = count * passengerMultipliers[i];
-
-      for (int j = 0; j < totalPeople; j++) {
-        if (passengerForms.length >= passengerIndex) {
-          newForms.add(passengerForms[passengerIndex - 1]);
-        } else {
-          newForms.add(
-            PassengerFormControllers(
-              passengerIndex: passengerIndex,
-              typeName: passengerTypes[i],
-            ),
-          );
-        }
-        passengerIndex++;
-      }
-    }
-    passengerForms = newForms;
   }
 
   Future<void> _selectDateForPassenger(PassengerFormControllers form) async {
@@ -210,176 +185,34 @@ class _BookingTourPageState extends State<BookingTourPage> {
     };
   }
 
-  set isBooking(bool status) {
-    setState(() {
-      _isBooking = status;
-    });
-  }
-
-  Future<Map<String, dynamic>> _submitPassengerBooking() async {
-    return ServiceBookingApi.submitPassengers(bookingPayload);
-  }
-
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final tourName = tourData['tour_name'] ?? 'Tour ${widget.tourId}';
-
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Booking $tourName'),
-        backgroundColor: Colors.green.shade50,
-        foregroundColor: Colors.green.shade900,
-      ),
+      backgroundColor: const Color(0xFFF9FAFB),
+
       body: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(10),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  _buildStepCircle(1, '[1]'),
-                  _buildStepLine(1),
-                  _buildStepCircle(2, '[2]'),
-                  _buildStepLine(2),
-                  _buildStepCircle(3, '[3]'),
-                ],
-              ),
-              const SizedBox(height: 12),
+              // 1. Step Progress Bar ด้านบน
+              const SizedBox(height: 30),
 
+              _buildStepIndicator(),
+              const SizedBox(height: 20),
+
+              // 2. เนื้อหาตามขั้นตอนที่เลือก
               _buildStepContent(),
 
               const SizedBox(height: 20),
 
-              Row(
-                children: [
-                  if (_currentStep >= 2)
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => {
-                          if (_currentStep == 3)
-                            {
-                              Navigator.of(context).pushAndRemoveUntil(
-                                MaterialPageRoute(
-                                  builder: (context) => const Homepage(),
-                                ),
-                                (route) => false,
-                              ),
-                              //ยกเลิก
-                            }
-                          else
-                            {setState(() => _currentStep--)},
-                        },
-                        child: Text(_currentStep == 3 ? 'ยกเลิก' : 'ย้อนกลับ'),
-                      ),
-                    ),
-
-                  if (_currentStep > 1) const SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        foregroundColor: Colors.white,
-                        backgroundColor: Colors.green,
-                      ),
-                      onPressed: () async {
-                        if (_currentStep == 1) {
-                          final totalSelected = List<int>.generate(
-                            passengerCounts.length,
-                            (i) => passengerCounts[i] * passengerMultipliers[i],
-                          ).fold<int>(0, (sum, v) => sum + v);
-
-                          if (totalSelected == 0) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'กรุณาเลือกจำนวนผู้เดินทางอย่างน้อย 1 รายการ',
-                                ),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            return;
-                          }
-
-                          setState(() {
-                            _currentStep++;
-                          });
-                        } else if (_currentStep == 2) {
-                          final expectedCount = List<int>.generate(
-                            passengerCounts.length,
-                            (i) => passengerCounts[i] * passengerMultipliers[i],
-                          ).fold<int>(0, (sum, v) => sum + v);
-
-                          if (passengerForms.length != expectedCount) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'กรุณาบันทึกผู้เดินทางครบ $expectedCount คน ก่อนเข้าสู่ขั้นตอนถัดไป',
-                                ),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            return;
-                          }
-
-                          final currentMemberId =
-                              memberId['member_id']?.toString() ?? '';
-                          if (currentMemberId.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('กรุณาเข้าสู่ระบบก่อนทำการจอง'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            return;
-                          }
-
-                          setState(() => _currentStep++);
-                        } else if (_currentStep == 3) {
-                          if (_isBooking == true) {
-                            final res = await _submitPassengerBooking();
-                            print(res.toString());
-
-                            Navigator.of(context).pushAndRemoveUntil(
-                              MaterialPageRoute(
-                                builder: (context) => const Homepage(),
-                              ),
-                              (route) => false,
-                            );
-                          } else {
-                            try {
-                              final state = _step3Key?.currentState;
-                              if (state != null) {
-                                (state as dynamic).startBooking();
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('ไม่พบหน้าจอการจ่ายเงิน'),
-                                  ),
-                                );
-                              }
-                            } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('เริ่มการจองล้มเหลว: $e'),
-                                ),
-                              );
-                            }
-                          }
-                        }
-                      },
-                      child: Text(_currentStep == 3 ? 'Confirm' : 'ถัดไป'),
-                    ),
-                  ),
-                ],
-              ),
+              // 3. ปุ่มควบคุมล่างสุด (แสดงเฉพาะ Step 1 และ Step 2)
+              if (_currentStep < 3) _buildNavigationButtons(),
             ],
           ),
         ),
@@ -387,6 +220,76 @@ class _BookingTourPageState extends State<BookingTourPage> {
     );
   }
 
+  // แถบแสดงสถานะขั้นตอน (Step Indicator)
+  Widget _buildStepIndicator() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          _buildStepCircle(1, '1', 'เลือกแพ็กเกจ'),
+          _buildStepLine(1),
+          _buildStepCircle(2, '2', 'ผู้เดินทาง'),
+          _buildStepLine(2),
+          _buildStepCircle(3, '3', 'ชำระเงิน'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepCircle(int step, String label, String title) {
+    final isActive = _currentStep >= step;
+    final isCurrent = _currentStep == step;
+
+    return Expanded(
+      child: Column(
+        children: [
+          CircleAvatar(
+            radius: 14,
+            backgroundColor: isActive ? Colors.green : Colors.grey.shade300,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: isActive ? Colors.white : Colors.black54,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+              color: isActive ? Colors.green.shade800 : Colors.grey,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepLine(int step) {
+    final isActive = _currentStep > step;
+    return Container(
+      width: 20,
+      height: 2,
+      margin: const EdgeInsets.only(bottom: 16),
+      color: isActive ? Colors.green : Colors.grey.shade300,
+    );
+  }
+
+  // แสดงเนื้อหาของแต่ละ Step
   Widget _buildStepContent() {
     switch (_currentStep) {
       case 1:
@@ -409,6 +312,7 @@ class _BookingTourPageState extends State<BookingTourPage> {
           passengerCounts.length,
           (i) => passengerCounts[i] * passengerMultipliers[i],
         ).fold<int>(0, (s, v) => s + v);
+
         final roomSummary = passengerCounts
             .asMap()
             .entries
@@ -422,6 +326,8 @@ class _BookingTourPageState extends State<BookingTourPage> {
         ).fold<int>(0, (sum, v) => sum + v).toString();
 
         return Step2PassengerForm(
+          imageUrl: tourData['image_url'], // รูปภาพทัวร์
+          tourTitle: tourData['tour_name'], // ชื่อทัวร์
           passengerForms: passengerForms,
           genderOptions: selectedGender,
           onSelectDate: _selectDateForPassenger,
@@ -457,9 +363,7 @@ class _BookingTourPageState extends State<BookingTourPage> {
           memberId: currentMemberId,
           roundId: widget.roundId,
           onBookingStatusChanged: (status) {
-            setState(() {
-              _isBooking = status;
-            });
+            // Callback เมื่อสถานะการชำระเงินอัปเดต
           },
         );
       default:
@@ -467,28 +371,96 @@ class _BookingTourPageState extends State<BookingTourPage> {
     }
   }
 
-  Widget _buildStepCircle(int step, String label) {
-    final isActive = _currentStep >= step;
-    return CircleAvatar(
-      radius: 18,
-      backgroundColor: isActive ? Colors.green : Colors.grey.shade300,
-      child: Text(
-        label,
-        style: TextStyle(
-          color: isActive ? Colors.white : Colors.black54,
-          fontWeight: FontWeight.bold,
+  // ปุ่มกดถัดไป / ย้อนกลับ สำหรับ Step 1 และ Step 2
+  Widget _buildNavigationButtons() {
+    return Row(
+      children: [
+        if (_currentStep > 1)
+          Expanded(
+            child: OutlinedButton(
+              onPressed: () => setState(() => _currentStep--),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Text('ย้อนกลับ'),
+            ),
+          ),
+        if (_currentStep > 1) const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              foregroundColor: Colors.white,
+              backgroundColor: Colors.green,
+            ),
+            onPressed: _handleNextStep,
+            child: const Text(
+              'ถัดไป',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 
-  Widget _buildStepLine(int step) {
-    final isActive = _currentStep > step;
-    return Expanded(
-      child: Container(
-        height: 2,
-        color: isActive ? Colors.green : Colors.grey.shade300,
-        margin: const EdgeInsets.symmetric(horizontal: 8),
+  void _handleNextStep() {
+    if (_currentStep == 1) {
+      final totalSelected = List<int>.generate(
+        passengerCounts.length,
+        (i) => passengerCounts[i] * passengerMultipliers[i],
+      ).fold<int>(0, (sum, v) => sum + v);
+
+      if (totalSelected == 0) {
+        _showSnackBar(
+          'กรุณาเลือกจำนวนผู้เดินทางอย่างน้อย 1 รายการ',
+          Colors.red,
+        );
+        return;
+      }
+
+      setState(() => _currentStep++);
+    } else if (_currentStep == 2) {
+      final expectedCount = List<int>.generate(
+        passengerCounts.length,
+        (i) => passengerCounts[i] * passengerMultipliers[i],
+      ).fold<int>(0, (sum, v) => sum + v);
+
+      final requiredPassengers = expectedCount > 1 ? expectedCount - 1 : 0;
+
+      if (passengerForms.length != requiredPassengers) {
+        _showSnackBar(
+          'กรุณาบันทึกผู้ร่วมเดินทางให้ครบ $requiredPassengers คน ก่อนเข้าสู่ขั้นตอนถัดไป',
+          Colors.red,
+        );
+        return;
+      }
+
+      if (contactNameCtl.text.trim().isEmpty ||
+          contactPhoneCtl.text.trim().isEmpty ||
+          contactEmailCtl.text.trim().isEmpty) {
+        _showSnackBar('กรุณากรอกข้อมูลผู้ติดต่อให้ครบถ้วน', Colors.red);
+        return;
+      }
+
+      // ผ่านเงื่อนไข ไป Step 3
+      setState(() => _currentStep++);
+    }
+  }
+
+  void _showSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }

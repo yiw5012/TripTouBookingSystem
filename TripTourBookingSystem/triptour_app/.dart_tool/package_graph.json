@@ -13,6 +13,7 @@
         "firebase_database",
         "firebase_messaging",
         "flutter",
+        "gal",
         "get",
         "google_sign_in",
         "http",
@@ -60,6 +61,13 @@
         "test_api",
         "vector_math",
         "vm_service"
+      ]
+    },
+    {
+      "name": "gal",
+      "version": "2.3.3",
+      "dependencies": [
+        "flutter"
       ]
     },
     {
