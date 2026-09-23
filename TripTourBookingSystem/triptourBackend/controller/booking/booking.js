@@ -34,9 +34,10 @@ router.post('/create-order', async (req, res) => {
     const qrPayload = generatePayload(PROMPTPAY_ID, { amount: Number(total_price) || 0 });
 
     // ตั้งเวลา Timeout 15 นาที หากไม่มีการแนบสลิปจะปรับสถานะเป็น expired
+    // ลบออกเจาก database เมื่อครบเวลา เด้งออก 
     setTimeout(async () => {
       await conn.query(
-        `UPDATE booking SET payment_status = 'expired', status = 'failed'
+        `UPDATE booking SET payment_status = 'expired'
          WHERE booking_id = ? AND payment_status = 'pending'`,
         [bookingId]
       );
@@ -74,6 +75,9 @@ router.get('/status/:bookingId', async (req, res) => {
     }
 
     const booking = rows[0];
+    console.log(booking.payment_status)
+    
+    
     return res.status(200).json({
       success: true,
       data: {
@@ -104,7 +108,7 @@ router.post('/confirm-payment', upload.single('slip_image'), async (req, res) =>
       });
     }
 
-    const slip_image = uploadedFile.path || uploadedFile.secure_url || uploadedFile.url;
+    const slip_image = uploadedFile.path ;
     if (!slip_image) {
       return res.status(400).json({
         success: false,
@@ -184,50 +188,60 @@ router.post('/admin/verify-slip', async (req, res) => {
 
 
 });
-
 // POST /api/booking/add-passengers
-router.post('/add-passengers', async (req, res) => {
+router.post('/add-passengers', upload.single('passpot_passenger'), async (req, res) => {
   try {
-    const rawBody = req.body || {};
+    let payload = {};
 
-    console.log("payload : ",rawBody)
-    let payload = rawBody.payload || rawBody.paylaod || rawBody;
-    if (typeof payload === 'string') {
-      try {
-        payload = JSON.parse(payload);
-      } catch (e) {
-        // keep as string, will fail validation below
+    // 1. แกะ Payload ให้รองรับทั้งแบบ Multipart 
+    if (req.body.payload) {
+      if (typeof req.body.payload === 'string') {
+        try {
+          payload = JSON.parse(req.body.payload);
+        } catch (e) {
+          return res.status(400).json({ success: false, message: 'รูปแบบ JSON Payload ไม่ถูกต้อง' });
+        }
+      } else {
+        payload = req.body.payload;
       }
+    } else {
+      payload = req.body || {};
     }
 
-    const booking_id = payload?.booking_id || payload?.bookingId;
-    const passengers = payload?.passengers || payload?.passenger || [];
+    const bookingId = payload.booking_id;
+    const passengers = payload.passengers || [];
 
-    if (!booking_id || !Array.isArray(passengers) || passengers.length === 0) {
+    // 2. ตรวจสอบไฟล์รูปภาพอย่างปลอดภัย 
+    const passportFile = req.file;
+    const uploadedPassportPath = passportFile ? passportFile.path : null;
+
+    // 3. ตรวจสอบความถูกต้องของข้อมูล
+    if (!bookingId || !Array.isArray(passengers) || passengers.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'booking_id and at least one passenger are required (send inside payload)',
+        message: 'booking_id and at least one passenger are required',
       });
     }
 
-    // เตรียม Data สำหรับ Bulk Insert
-  const values = passengers.map((p) => [
-      booking_id,
+    // 4. เตรียม Data สำหรับ Bulk Insert
+    const values = passengers.map((p) => [
+      bookingId,
       p.first_name || null,
       p.last_name || null,
-      p.id_card || null,            // ตรงกับ id_card ใน payload
+      p.id_card || p.number_id || null,            
       p.gender || null,
-      p.passport_image_path || null,// ตรงกับ passport_image_path ใน payload
+      // ถ้ามีไฟล์อัปโหลดใหม่ให้ใช้ไฟล์อัปโหลด ถ้าไม่มีให้ใช้ path เดิมใน object
+      uploadedPassportPath || p.passport_image_path || null,
       p.congenital_disease || null,
       p.medicine || null,
       p.allergic_list || null,
-      p.other || null ,
-      p.phone || null             // ตรงกับ other ใน payload
+      p.other || p.others || null,
+      p.phone || null             
     ]);
 
     const sql = `
       INSERT INTO passenger 
-      (booking_id, first_name, last_name, number_id, gender, image_passport, congenital_disease, medicine, allergic_list,others,phone)
+      (booking_id, first_name, last_name, number_id, gender, image_passport, congenital_disease, medicine, allergic_list, others, phone)
       VALUES ?
     `;
 
@@ -237,13 +251,17 @@ router.post('/add-passengers', async (req, res) => {
       success: true,
       message: 'Passenger details saved successfully',
       data: {
-        booking_id,
+        booking_id: bookingId,
         insertedRows: result.affectedRows,
       },
     });
   } catch (error) {
     console.error('Add passengers error:', error);
-    return res.status(500).json({ success: false, message: 'Internal server error' });
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Internal server error',
+      error: error.message 
+    });
   }
 });
 

@@ -36,7 +36,6 @@ class _AddPassengerPageState extends State<AddPassengerPage> {
 
   File? _selectedPassportImage;
   final ImagePicker _picker = ImagePicker();
-
   @override
   void initState() {
     super.initState();
@@ -58,6 +57,7 @@ class _AddPassengerPageState extends State<AddPassengerPage> {
       medicineCtl.text = existing.medicineCtl.text;
       allergicListCtl.text = existing.allergicListCtl.text;
       otherCtl.text = existing.otherCtl.text;
+      _selectedPassportImage = existing.passportImage;
     }
   }
 

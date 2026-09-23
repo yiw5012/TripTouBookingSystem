@@ -212,6 +212,12 @@
       "languageVersion": "3.10"
     },
     {
+      "name": "gal",
+      "rootUri": "file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/gal-2.3.3",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
       "name": "get",
       "rootUri": "file:///C:/Users/Admin/AppData/Local/Pub/Cache/hosted/pub.dev/get-4.7.3",
       "packageUri": "lib/",
