@@ -54,6 +54,8 @@ class _SearchPageState extends State<SearchPage> {
   DateTime? startDate;
   DateTime? endDate;
 
+  String selectedSort = 'none';
+
   // =====================================================
   // INIT
   // =====================================================
@@ -217,6 +219,7 @@ class _SearchPageState extends State<SearchPage> {
       airlines: selectedAirlines,
       startDate: startDate,
       endDate: endDate,
+      sortBy: selectedSort,
     );
 
     if (!mounted) return;
@@ -299,6 +302,16 @@ class _SearchPageState extends State<SearchPage> {
                 onSearch: submitSearch,
 
                 formatDate: formatDate,
+
+                selectedSort: selectedSort,
+
+                onSortChanged: (value) {
+                  if (value == null) return;
+
+                  setState(() {
+                    selectedSort = value;
+                  });
+                },
               ),
 
               const SizedBox(height: 25),

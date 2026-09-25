@@ -5,6 +5,7 @@ import 'package:triptour_app/page/auth/loginPage.dart';
 import 'package:triptour_app/page/booking/bookingPage.dart';
 import 'package:triptour_app/page/navbar/booking_history.dart';
 import 'package:triptour_app/page/navbar/chat.dart';
+import 'package:triptour_app/page/navbar/profile.dart';
 import 'package:triptour_app/page/SearchPage/searchPage.dart';
 import 'package:triptour_app/page/Tourdetail/detailTour.dart';
 import 'package:triptour_app/serverApi.dart';
@@ -108,7 +109,7 @@ class _HomepageState extends State<Homepage> {
       _buildHomeContent(),
       BookingHistoryPage(memberId: _memberId),
       const ChatPage(userRole: 'user'),
-      const Center(child: Text("Profile Page")),
+      const ProfilePage(),
     ];
 
     //test
