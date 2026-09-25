@@ -1,6 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:triptour_app/page/auth/loginPage.dart';
 import 'package:triptour_app/page/booking/bookingPage.dart';
+import 'package:triptour_app/page/homepage.dart';
 
 class TourBookingSection extends StatelessWidget {
   final List<dynamic> rounds;
@@ -48,9 +51,19 @@ class TourBookingSection extends StatelessWidget {
   // ROUND CARD
   // ==========================================================
 
+  // void _onItemTapped() {
+  //   final currentUser = FirebaseAuth.instance.currentUser;
+  //   if (currentUser != null) {
+  //          setState(() => _isCurrentUser = true);
+  //   } else {
+  //     Get.offAll(() => Homepage());
+  //   }
+  //   // หน้า Home (index 0) ให้เปิดดูได้โดยไม่ต้องล็อกอิน
+  // }
+
   Widget buildRoundCard(dynamic round) {
     final String status = round['status']?.toString() ?? '';
-
+    final bool _isCurrentUser;
     final bool isOpen = status == 'open';
 
     return Container(
