@@ -230,8 +230,7 @@ class _HomepageState extends State<Homepage> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
-        onTap:
-            _onItemTapped, // 🟢 เปลี่ยนมาเรียกใช้ฟังก์ชันดักจับที่เขียนขึ้นใหม่
+        onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.greenAccent,
         selectedItemColor: Colors.blueGrey,
