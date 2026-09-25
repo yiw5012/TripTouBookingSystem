@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:triptour_app/page/booking/pending_booking.dart';
 import 'package:triptour_app/page/booking/widgets/passengerform.dart';
 import 'package:triptour_app/page/booking/widgets/step1_tour_details.dart';
 import 'package:triptour_app/page/booking/widgets/step2_passenger.dart';
@@ -39,8 +42,7 @@ class _BookingTourPageState extends State<BookingTourPage> {
   bool isLoading = true;
   int _currentStep = 1;
   List<PassengerFormControllers> passengerForms = [];
-  Map<String, dynamic> memberId = {};
-
+  Map<String, dynamic> member = {};
   // Controllers สำหรับข้อมูลผู้ติดต่อ
   final contactNameCtl = TextEditingController();
   final contactPhoneCtl = TextEditingController();
@@ -95,7 +97,7 @@ class _BookingTourPageState extends State<BookingTourPage> {
     if (currentUserId != null && currentUserId.isNotEmpty) {
       final detail = await Serverapi.getMemberDetail(currentUserId);
       if (detail != null) {
-        memberId = detail;
+        member = detail;
 
         contactNameCtl.text =
             "${detail['first_name'] ?? ''} ${detail['last_name'] ?? ''}".trim();
@@ -246,49 +248,6 @@ class _BookingTourPageState extends State<BookingTourPage> {
     );
   }
 
-  Widget _buildStepCircle(int step, String label, String title) {
-    final isActive = _currentStep >= step;
-    final isCurrent = _currentStep == step;
-
-    return Expanded(
-      child: Column(
-        children: [
-          CircleAvatar(
-            radius: 14,
-            backgroundColor: isActive ? Colors.green : Colors.grey.shade300,
-            child: Text(
-              label,
-              style: TextStyle(
-                color: isActive ? Colors.white : Colors.black54,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-              color: isActive ? Colors.green.shade800 : Colors.grey,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStepLine(int step) {
-    final isActive = _currentStep > step;
-    return Container(
-      width: 20,
-      height: 2,
-      margin: const EdgeInsets.only(bottom: 16),
-      color: isActive ? Colors.green : Colors.grey.shade300,
-    );
-  }
-
   // แสดงเนื้อหาของแต่ละ Step
   Widget _buildStepContent() {
     switch (_currentStep) {
@@ -301,9 +260,45 @@ class _BookingTourPageState extends State<BookingTourPage> {
           prices: prices,
           totalPrice: totalPrice,
           onCountChanged: (index, delta) {
+            //     setState(() {
+            //       final newCount = passengerCounts[index] + delta;
+            //       if (newCount >= 0) passengerCounts[index] = newCount;
+            //     });
+            //   },
+            // );
+            final int capacity =
+                int.tryParse(selectedRound['count']?.toString() ?? '0') ?? 0;
+            final int totalPaid =
+                int.tryParse(selectedRound['total_paid']?.toString() ?? '0') ??
+                0;
+            final int availableSeats = capacity - totalPaid;
+
+            // คำนวณจำนวนคนจริงตาม Multiplier
+            final int currentPersons = List.generate(
+              passengerCounts.length,
+              (i) => passengerCounts[i] * passengerMultipliers[i],
+            ).fold(0, (sum, count) => sum + count);
+
+            final int addPersons =
+                passengerMultipliers[index]; // จำนวนที่จะบวกเพิ่มในรอบนี้
+
+            if (delta > 0 && (currentPersons + addPersons > availableSeats)) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'ที่นั่งคงเหลือไม่พอ (เหลืออีกเพียง $availableSeats ที่)',
+                  ),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+              return;
+            }
+
             setState(() {
               final newCount = passengerCounts[index] + delta;
-              if (newCount >= 0) passengerCounts[index] = newCount;
+              if (newCount >= 0) {
+                passengerCounts[index] = newCount;
+              }
             });
           },
         );
@@ -344,7 +339,7 @@ class _BookingTourPageState extends State<BookingTourPage> {
           contactEmailCtl: contactEmailCtl,
         );
       case 3:
-        final currentMemberId = memberId['member_id']?.toString() ?? '';
+        final currentMemberId = member['member_id']?.toString() ?? '';
         if (currentMemberId.isEmpty) {
           return const Center(
             child: Padding(
@@ -462,6 +457,49 @@ class _BookingTourPageState extends State<BookingTourPage> {
         backgroundColor: color,
         behavior: SnackBarBehavior.floating,
       ),
+    );
+  }
+
+  Widget _buildStepCircle(int step, String label, String title) {
+    final isActive = _currentStep >= step;
+    final isCurrent = _currentStep == step;
+
+    return Expanded(
+      child: Column(
+        children: [
+          CircleAvatar(
+            radius: 14,
+            backgroundColor: isActive ? Colors.green : Colors.grey.shade300,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: isActive ? Colors.white : Colors.black54,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+              color: isActive ? Colors.green.shade800 : Colors.grey,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepLine(int step) {
+    final isActive = _currentStep > step;
+    return Container(
+      width: 20,
+      height: 2,
+      margin: const EdgeInsets.only(bottom: 16),
+      color: isActive ? Colors.green : Colors.grey.shade300,
     );
   }
 }

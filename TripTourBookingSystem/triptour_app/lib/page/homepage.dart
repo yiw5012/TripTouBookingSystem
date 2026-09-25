@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:triptour_app/page/auth/loginPage.dart';
 import 'package:triptour_app/page/booking/bookingPage.dart';
+import 'package:triptour_app/page/navbar/booking_history.dart';
 import 'package:triptour_app/page/navbar/chat.dart';
 import 'package:triptour_app/page/navbar/profile.dart';
 import 'package:triptour_app/page/SearchPage/searchPage.dart';
@@ -17,17 +18,48 @@ class Homepage extends StatefulWidget {
 }
 
 class _HomepageState extends State<Homepage> {
-  final user = FirebaseAuth.instance.currentUser;
   int _selectedIndex = 0;
 
   List<dynamic> tours = [];
   bool isLoading = true;
   bool isSearching = false;
-
+  String _memberId = '';
   @override
   void initState() {
     super.initState();
     loadTours();
+    loadData();
+  }
+
+  Future<void> loadData() async {
+    final user = FirebaseAuth.instance.currentUser?.uid;
+    if (user == null) return;
+
+    try {
+      final detail = await Serverapi.getMemberDetail(user);
+
+      if (mounted && detail != null) {
+        debugPrint("Member Detail Data: $detail");
+
+        final memberId = detail['member_id'] ?? detail['id'];
+
+        setState(() {
+          _memberId = memberId?.toString() ?? user;
+        });
+
+        debugPrint("_memberId สำเร็จ: $_memberId");
+      } else {
+        // กรณี API คืนค่า null
+        if (mounted) {
+          setState(() => _memberId = user);
+        }
+      }
+    } catch (e) {
+      debugPrint("Error loading member detail: $e");
+      if (mounted) {
+        setState(() => _memberId = user);
+      }
+    }
   }
 
   Future<void> loadTours() async {
@@ -75,7 +107,7 @@ class _HomepageState extends State<Homepage> {
     // รวมรายการหน้าทั้งหมด โดยหน้า 0 คือเนื้อหา Home
     final List<Widget> pages = [
       _buildHomeContent(),
-      const Center(child: Text("booking Page")),
+      BookingHistoryPage(memberId: _memberId),
       const ChatPage(userRole: 'user'),
       const ProfilePage(),
     ];
