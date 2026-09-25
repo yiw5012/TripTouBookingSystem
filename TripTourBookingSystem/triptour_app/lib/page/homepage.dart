@@ -37,28 +37,16 @@ class _HomepageState extends State<Homepage> {
 
     try {
       final detail = await Serverapi.getMemberDetail(user);
-
       if (mounted && detail != null) {
-        debugPrint("Member Detail Data: $detail");
-
         final memberId = detail['member_id'] ?? detail['id'];
-
         setState(() {
           _memberId = memberId?.toString() ?? user;
         });
-
-        debugPrint("_memberId สำเร็จ: $_memberId");
       } else {
-        // กรณี API คืนค่า null
-        if (mounted) {
-          setState(() => _memberId = user);
-        }
+        if (mounted) setState(() => _memberId = user);
       }
     } catch (e) {
-      debugPrint("Error loading member detail: $e");
-      if (mounted) {
-        setState(() => _memberId = user);
-      }
+      if (mounted) setState(() => _memberId = user);
     }
   }
 
@@ -93,17 +81,77 @@ class _HomepageState extends State<Homepage> {
       await FirebaseAuth.instance.signOut();
       await GoogleSignIn().signOut();
       if (!mounted) return;
-      Navigator.pushReplacement(
+      setState(() {
+        _selectedIndex = 0; // รีเซ็ตกลับไปหน้า Home
+        _memberId = '';
+      });
+      ScaffoldMessenger.of(
         context,
-        MaterialPageRoute(builder: (context) => const LoginPage()),
-      );
+      ).showSnackBar(const SnackBar(content: Text('ออกจากระบบเรียบร้อย')));
     } catch (e) {
       print("Error signing out: $e");
     }
   }
 
+  void _showLoginDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('เข้าสู่ระบบ'),
+        content: const Text(
+          'กรุณาเข้าสู่ระบบก่อนใช้งานส่วนนี้หรือทำการจองทัวร์',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('ยกเลิก', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginPage()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text(
+              'เข้าสู่ระบบ',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _onItemTapped(int index) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    // หน้า Home (index 0) ให้เปิดดูได้โดยไม่ต้องล็อกอิน
+    if (index == 0) {
+      setState(() => _selectedIndex = index);
+      return;
+    }
+
+    // หากเปิดหน้าล้วยังไม่ได้ล็อกอิน ให้เด้งเตือน
+    if (currentUser == null) {
+      _showLoginDialog();
+      return;
+    }
+
+    setState(() => _selectedIndex = index);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final currentUser = FirebaseAuth.instance.currentUser;
     // รวมรายการหน้าทั้งหมด โดยหน้า 0 คือเนื้อหา Home
     final List<Widget> pages = [
       _buildHomeContent(),
@@ -182,11 +230,8 @@ class _HomepageState extends State<Homepage> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
+        onTap:
+            _onItemTapped, // 🟢 เปลี่ยนมาเรียกใช้ฟังก์ชันดักจับที่เขียนขึ้นใหม่
         type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.greenAccent,
         selectedItemColor: Colors.blueGrey,
@@ -201,10 +246,26 @@ class _HomepageState extends State<Homepage> {
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: sigout,
-        child: const Icon(Icons.logout),
-      ),
+      floatingActionButton: currentUser != null
+          ? FloatingActionButton(
+              onPressed: sigout,
+              backgroundColor: Colors.redAccent,
+              child: const Icon(Icons.logout, color: Colors.white),
+            )
+          : FloatingActionButton.extended(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                );
+              },
+              backgroundColor: Colors.green,
+              icon: const Icon(Icons.login, color: Colors.white),
+              label: const Text(
+                'เข้าสู่ระบบ',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
     );
   }
 
