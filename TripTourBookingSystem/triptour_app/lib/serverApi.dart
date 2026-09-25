@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 class Serverapi {
-  static const String _baseUrl = 'http://192.168.1.8:4000';
+  static const String _baseUrl = 'http://172.20.10.7:4000';
 
   static Future<Map<String, dynamic>> checkuser(
     String google_id,
@@ -255,6 +255,7 @@ class Serverapi {
     List<String>? airlines,
     DateTime? startDate,
     DateTime? endDate,
+    String? sortBy,
   }) async {
     try {
       final res = await http.post(
@@ -264,12 +265,16 @@ class Serverapi {
           "keyword": keyword,
           "countryId": countryId,
           "airlines": airlines ?? [],
+
           "startDate": startDate == null
               ? null
               : startDate.toIso8601String().split('T').first,
+
           "endDate": endDate == null
               ? null
               : endDate.toIso8601String().split('T').first,
+
+          "sortBy": sortBy,
         }),
       );
 
@@ -306,6 +311,60 @@ class Serverapi {
     } catch (e) {
       print("Error: $e");
       return null;
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateMember({
+    required String googleId,
+    required String firstName,
+    required String lastName,
+    required String phone,
+    required String numberId,
+    required String birthday,
+    required String address,
+    required String gender,
+    required String medicine,
+    required String congenitalDisease,
+    required String allergicList,
+    required String others,
+    String? imageProfile,
+    String? imagePassport,
+  }) async {
+    try {
+      final res = await http.put(
+        Uri.parse("$_baseUrl/member/update"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "google_id": googleId,
+          "first_name": firstName,
+          "last_name": lastName,
+          "phone": phone,
+          "number_id": numberId,
+          "birthday": birthday,
+          "address": address,
+          "gender": gender,
+          "medicine": medicine,
+          "congenital_disease": congenitalDisease,
+          "allergic_list": allergicList,
+          "others": others,
+          "image_profile": imageProfile,
+          "image_passport": imagePassport,
+        }),
+      );
+
+      final data = jsonDecode(res.body);
+
+      print("Update member status: ${res.statusCode}");
+      print("Update member response: $data");
+
+      return {"statusCode": res.statusCode, "body": data};
+    } catch (e) {
+      print("Update member error: $e");
+
+      return {
+        "statusCode": 500,
+        "body": {"success": false, "message": "Server error"},
+      };
     }
   }
 

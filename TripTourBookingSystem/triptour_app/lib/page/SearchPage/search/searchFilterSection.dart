@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 class SearchFilterSection extends StatelessWidget {
   final TextEditingController keywordController;
 
+  final String selectedSort;
+  final ValueChanged<String?> onSortChanged;
+
   final String? selectedCountry;
   final List<String> selectedAirlines;
 
@@ -30,6 +33,8 @@ class SearchFilterSection extends StatelessWidget {
     required this.onClearDate,
     required this.onSearch,
     required this.formatDate,
+    required this.selectedSort,
+    required this.onSortChanged,
   });
 
   @override
@@ -245,6 +250,12 @@ class SearchFilterSection extends StatelessWidget {
             ),
           ),
         ),
+        const SizedBox(height: 20),
+
+        // ============================================
+        // เรียงตามราคา
+        // ============================================
+        buildSortDropdown(selectedSort: selectedSort, onChanged: onSortChanged),
 
         const SizedBox(height: 30),
 
@@ -266,6 +277,37 @@ class SearchFilterSection extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget buildSortDropdown({
+    required String selectedSort,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'เรียงตามราคา',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+
+        const SizedBox(height: 8),
+
+        DropdownButtonFormField<String>(
+          value: selectedSort,
+          decoration: InputDecoration(
+            prefixIcon: const Icon(Icons.sort, color: Colors.orange),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          items: const [
+            DropdownMenuItem(value: 'none', child: Text('ไม่เรียงราคา')),
+            DropdownMenuItem(value: 'price_asc', child: Text('ราคาต่ำ → สูง')),
+            DropdownMenuItem(value: 'price_desc', child: Text('ราคาสูง → ต่ำ')),
+          ],
+          onChanged: onSortChanged,
         ),
       ],
     );

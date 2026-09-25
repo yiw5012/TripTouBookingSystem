@@ -182,7 +182,9 @@ router.post("/search-tour", async (req, res) => {
       airlines,
       startDate,
       endDate,
+      sortBy,
     } = req.body;
+
 
     let sql = `
       SELECT DISTINCT
@@ -214,19 +216,47 @@ router.post("/search-tour", async (req, res) => {
       INNER JOIN country c
         ON c.country_id = t.country_id
 
-      INNER JOIN tour_round tr
+      LEFT JOIN tour_round tr
         ON tr.tour_id = t.tour_id
+        AND tr.status = 'open'
 
-      WHERE 1 = 1
+      WHERE t.status = 'open'
     `;
 
     const params = [];
 
     // ============================================
+// กำหนดการเรียงผลลัพธ์
+// ============================================
+
+let orderBy = `
+  tr.start_date IS NULL ASC,
+  tr.start_date ASC,
+  t.tour_id ASC
+`;
+
+if (sortBy === 'price_asc') {
+  orderBy = `
+    t.price ASC,
+    tr.start_date IS NULL ASC,
+    tr.start_date ASC,
+    t.tour_id ASC
+  `;
+}
+
+if (sortBy === 'price_desc') {
+  orderBy = `
+    t.price DESC,
+    tr.start_date IS NULL ASC,
+    tr.start_date ASC,
+    t.tour_id ASC
+  `;
+}
+
+    // ============================================
     // 1. Keyword
     // ค้นจาก tour_id หรือ tour_name
     // ============================================
-
     if (keyword && keyword.trim() !== "") {
       const searchKeyword = keyword.trim();
 
@@ -245,8 +275,8 @@ router.post("/search-tour", async (req, res) => {
 
     // ============================================
     // 2. Country
+    // ค้นจาก tour.country_id
     // ============================================
-
     if (countryId != null) {
       sql += `
         AND t.country_id = ?
@@ -256,13 +286,10 @@ router.post("/search-tour", async (req, res) => {
     }
 
     // ============================================
-    // 3. Airline Multi-select
+    // 3. Airline
+    // ค้นจาก tour_round.airline
     // ============================================
-
-    if (
-      Array.isArray(airlines) &&
-      airlines.length > 0
-    ) {
+    if (Array.isArray(airlines) && airlines.length > 0) {
       const placeholders = airlines
         .map(() => "?")
         .join(",");
@@ -276,10 +303,8 @@ router.post("/search-tour", async (req, res) => {
 
     // ============================================
     // 4. Date Range
-    //
-    // รอบทัวร์ต้องอยู่ภายในช่วงวันที่ผู้ใช้เลือก
+    // ค้นจาก tour_round
     // ============================================
-
     if (startDate && endDate) {
       sql += `
         AND tr.start_date >= ?
@@ -293,23 +318,15 @@ router.post("/search-tour", async (req, res) => {
     }
 
     // ============================================
-    // 5. เอาเฉพาะรอบที่เปิด
+    // 5. เรียงข้อมูล
+    // ทัวร์ที่ไม่มีรอบให้อยู่ท้าย
     // ============================================
-
     sql += `
-      AND tr.status = 'open'
-    `;
+  ORDER BY ${orderBy}
+`;
 
-    // ============================================
-    // เรียงข้อมูล
-    // ============================================
-
-    sql += `
-      ORDER BY
-        tr.start_date ASC,
-        t.tour_id ASC
-    `;
-
+    console.log("SQL:", sql);
+    console.log("PARAMS:", params);
     const [rows] = await conn.query(
       sql,
       params

@@ -55,3 +55,116 @@ if (rows.length > 0 && guiderows.length > 0) {
     });
   }
 });
+
+router.put("/update", async (req, res) => {
+  try {
+    const {
+      google_id,
+      first_name,
+      last_name,
+      phone,
+      number_id,
+      birthday,
+      address,
+      gender,
+      medicine,
+      congenital_disease,
+      allergic_list,
+      others,
+      image_profile,
+      image_passport,
+    } = req.body;
+
+    // =====================================================
+    // ตรวจ google_id
+    // =====================================================
+
+    if (!google_id || google_id.trim() === "") {
+      return res.status(400).json({
+        success: false,
+        message: "กรุณาระบุ google_id",
+      });
+    }
+
+    // =====================================================
+    // ตรวจชื่อ
+    // =====================================================
+
+    if (!first_name || first_name.trim() === "") {
+      return res.status(400).json({
+        success: false,
+        message: "กรุณาระบุชื่อ",
+      });
+    }
+
+    // =====================================================
+    // UPDATE ข้อมูลสมาชิก
+    // =====================================================
+
+    const [result] = await conn.query(
+      `
+      UPDATE member
+      SET
+        first_name = ?,
+        last_name = ?,
+        phone = ?,
+        number_id = ?,
+        birthday = ?,
+        address = ?,
+        gender = ?,
+        medicine = ?,
+        congenital_disease = ?,
+        allergic_list = ?,
+        others = ?,
+        image_profile = ?,
+        image_passport = ?
+      WHERE google_id = ?
+      `,
+      [
+        first_name,
+        last_name,
+        phone,
+        number_id,
+        birthday,
+        address,
+        gender,
+        medicine,
+        congenital_disease,
+        allergic_list,
+        others,
+        image_profile,
+        image_passport,
+        google_id,
+      ]
+    );
+
+    // =====================================================
+    // ไม่พบสมาชิก
+    // =====================================================
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "ไม่พบข้อมูลสมาชิก",
+      });
+    }
+
+    // =====================================================
+    // สำเร็จ
+    // =====================================================
+
+    res.status(200).json({
+      success: true,
+      message: "อัปเดตข้อมูลสมาชิกสำเร็จ",
+    });
+
+  } catch (error) {
+    console.error("Update member error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "ไม่สามารถอัปเดตข้อมูลสมาชิกได้",
+      error: error.message,
+    });
+  }
+});
