@@ -31,6 +31,12 @@ class Step1TourDetails extends StatelessWidget {
     final endDate = selectedRound['end_date'] ?? 'N/A';
     final airline = selectedRound['airline'] ?? 'N/A';
 
+    final int capacity =
+        int.tryParse(selectedRound['count']?.toString() ?? '0') ?? 0;
+    final int totalPaid =
+        int.tryParse(selectedRound['total_paid']?.toString() ?? '0') ?? 0;
+    final int availableSeats = capacity - totalPaid;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -53,7 +59,11 @@ class Step1TourDetails extends StatelessWidget {
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: Colors.green.shade200),
+            side: BorderSide(
+              color: availableSeats > 0
+                  ? Colors.green.shade200
+                  : Colors.red.shade200,
+            ),
           ),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -63,6 +73,14 @@ class Step1TourDetails extends StatelessWidget {
                 _infoRow('Route', '$departure → $destination'),
                 _infoRow('Dates', '$startDate ถึง $endDate'),
                 _infoRow('Airline', airline),
+                _infoRow(
+                  'Seats Left',
+                  '$availableSeats / $capacity ที่',
+                  valueColor: availableSeats > 0
+                      ? Colors.green.shade700
+                      : Colors.red,
+                  isBold: true,
+                ),
               ],
             ),
           ),
@@ -110,7 +128,12 @@ class Step1TourDetails extends StatelessWidget {
     );
   }
 
-  Widget _infoRow(String label, String value) {
+  Widget _infoRow(
+    String label,
+    String value, {
+    Color? valueColor,
+    bool isBold = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -123,7 +146,15 @@ class Step1TourDetails extends StatelessWidget {
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
-          Expanded(child: Text(value)),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                color: valueColor ?? Colors.black87,
+                fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ),
         ],
       ),
     );

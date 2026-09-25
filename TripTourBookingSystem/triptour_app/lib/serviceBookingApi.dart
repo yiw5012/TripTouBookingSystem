@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 class ServiceBookingApi {
@@ -66,18 +67,9 @@ class ServiceBookingApi {
         body: jsonEncode({'round_id': roundId}),
       );
 
-      final body = jsonDecode(response.body);
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
 
-      if (response.statusCode == 200 &&
-          body is Map &&
-          body['success'] == true) {
-        return {'statusCode': response.statusCode, 'body': body};
-      }
-
-      return {
-        'statusCode': response.statusCode,
-        'body': body is Map ? body : {'success': false, 'data': []},
-      };
+      return responseData;
     } catch (e) {
       print("Error: $e");
       return {
@@ -86,71 +78,6 @@ class ServiceBookingApi {
       };
     }
   }
-
-  // ส่งไฟล์สลิปโอนเงินชำระเงินจริงไปยัง Server (Multipart Upload)
-  static Future<Map<String, dynamic>> uploadSlipFile({
-    required int bookingId,
-    required File imageFile,
-  }) async {
-    try {
-      final request = http.MultipartRequest(
-        'POST',
-        Uri.parse("$_baseUrl/api/booking/confirm-payment"),
-      );
-
-      // ใส่ fields ข้อมูล text
-      request.fields['booking_id'] = bookingId.toString();
-
-      // ใส่ไฟล์รูปภาพสลิป
-      request.files.add(
-        await http.MultipartFile.fromPath('slip_image', imageFile.path),
-      );
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-      final body = jsonDecode(response.body);
-
-      return {'statusCode': response.statusCode, 'body': body};
-    } catch (e) {
-      print('Upload slip file error: $e');
-      return {
-        'statusCode': 500,
-        'body': {'success': false, 'message': 'Server error: $e'},
-      };
-    }
-  }
-
-  Future<String?> uploadSlipToServer(String imagePath) async {
-    try {
-      final request = http.MultipartRequest(
-        'POST',
-        Uri.parse("$_baseUrl/uploads/upload"),
-      );
-
-      // แนบไฟล์ภาพสลิปในฟิลด์ 'slip'
-      request.files.add(await http.MultipartFile.fromPath('slip', imagePath));
-
-      var streamedResponse = await request.send();
-      var response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200) {
-        var data = jsonDecode(response.body);
-        if (data['success'] == true) {
-          return data['slipUrl']; // ได้ URL รูปภาพ (ยาวไม่เกิน 100-200 ตัวอักษร)
-        }
-      }
-      return null;
-    } catch (e) {
-      print('Upload error: $e');
-      return null;
-    }
-  }
-
-  // static Future<Map<String, dynamic>> createPassernderBooking(Map<String, dynamic> payload) async {
-
-  // }
-
-  //passenger
 
   static Future<Map<String, dynamic>> createBookingOrder(
     Map<String, dynamic> payload,
@@ -264,16 +191,51 @@ class ServiceBookingApi {
     }
   }
 
-  static Future<Map<String, dynamic>> cancelBookingOrder(int bookingId) async {
-    final url = Uri.parse('$_baseUrl/booking/cancel-order');
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'booking_id': bookingId}),
-    );
-    return {
-      'statusCode': response.statusCode,
-      'body': jsonDecode(response.body),
-    };
+  static Future<Map<String, dynamic>> cancelBookingOrder({
+    required int bookingId,
+    required String memberId,
+  }) async {
+    try {
+      final url = Uri.parse('$_baseUrl/api/booking/cancel');
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'booking_id': bookingId, 'member_id': memberId}),
+      );
+
+      final body = jsonDecode(response.body);
+      return {'statusCode': response.statusCode, 'body': body};
+    } catch (e) {
+      print('Cancel booking error: $e');
+      return {
+        'statusCode': 500,
+        'body': {
+          'success': false,
+          'message': 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์: $e',
+        },
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>?> getBookingHistory(
+    String memberId,
+  ) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/api/booking/history/$memberId'),
+        headers: {
+          'Content-Type': 'application/json',
+          // 'Authorization': 'Bearer <token>',
+        },
+      );
+
+      return {
+        'statusCode': response.statusCode,
+        'body': jsonDecode(utf8.decode(response.bodyBytes)),
+      };
+    } catch (e) {
+      debugPrint('Error getBookingHistory: $e');
+      return null;
+    }
   }
 }

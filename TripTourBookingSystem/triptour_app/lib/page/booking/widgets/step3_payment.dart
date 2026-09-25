@@ -1,3 +1,4 @@
+// lib/page/booking/widgets/step3_payment.dart
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
@@ -5,10 +6,10 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:gal/gal.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/route_manager.dart';
+import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:triptour_app/page/booking/pending_booking.dart';
 import 'package:triptour_app/page/homepage.dart';
 import 'package:triptour_app/serviceBookingApi.dart';
 
@@ -42,11 +43,12 @@ Color _statusColor(String paymentStatus) {
 }
 
 class Step3Payment extends StatefulWidget {
-  final int totalPrice;
-  final Map<String, dynamic> bookingPayload;
+  final int? bookingId;
+  final num? totalPrice;
+  final Map<String, dynamic>? bookingPayload;
   final String memberId;
-  final String roundId;
-  final ValueChanged<bool>? onBookingStatusChanged;
+  final String? roundId;
+  final Function(dynamic status)? onBookingStatusChanged;
 
   const Step3Payment({
     super.key,
@@ -55,6 +57,17 @@ class Step3Payment extends StatefulWidget {
     required this.memberId,
     required this.roundId,
     this.onBookingStatusChanged,
+    this.bookingId,
+  });
+
+  const Step3Payment.fromHistory({
+    super.key,
+    required this.bookingId,
+    required this.memberId,
+    this.totalPrice,
+    this.onBookingStatusChanged,
+    this.bookingPayload,
+    this.roundId,
   });
 
   @override
@@ -65,21 +78,87 @@ class _Step3PaymentState extends State<Step3Payment> {
   Timer? _statusTimer;
   Timer? _countdownTimer;
   final GlobalKey _qrkey = GlobalKey();
+
   int? _bookingId;
+  num? _displayPrice;
   String? _qrPayload;
-  String _paymentStatus =
-      'pending'; // 'pending' | 'paid' | 'expired' | 'failed'
+  String _paymentStatus = 'pending';
   bool _isLoading = false;
-  Duration _remainingTime = const Duration(minutes: 15);
+
+  Duration _remainingTime = const Duration(minutes: 3);
   File? _selectedSlipImage;
-  File? passpot_passenger;
+
   @override
   void initState() {
     super.initState();
-    _createBookingOrder();
+    _displayPrice = widget.totalPrice;
+    _initPaymentFlow();
+  }
+
+  Future<void> _initPaymentFlow() async {
+    if (widget.bookingId != null) {
+      _bookingId = widget.bookingId;
+      await _fetchExistingBookingData();
+    } else {
+      await _createBookingOrder();
+    }
+
+    if (_bookingId != null && !PendingBookingManager().hasActivePending()) {
+      PendingBookingManager().setPendingBooking(
+        bookingId: _bookingId!,
+        memberId: widget.memberId,
+        minutes: 3,
+      );
+    }
+
+    _startCountdown();
+    _startPollingStatus();
+  }
+
+  Future<void> _fetchExistingBookingData() async {
+    if (_bookingId == null) return;
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await ServiceBookingApi.getBookingStatus(
+        _bookingId.toString(),
+      );
+      final statusCode = response['statusCode'] ?? 500;
+      final body = response['body'];
+
+      if (statusCode == 200 && body is Map && body['success'] == true) {
+        final data = body['data'];
+        setState(() {
+          _qrPayload = data['qr_code'];
+          _paymentStatus =
+              data['payment_status'] ?? data['status'] ?? 'pending';
+          if (data['total_price'] != null) {
+            _displayPrice =
+                num.tryParse(data['total_price'].toString()) ?? _displayPrice;
+          }
+
+          if (data['expire_at'] != null) {
+            final expireTime = DateTime.parse(
+              data['expire_at'].toString(),
+            ).toLocal();
+            final diff = expireTime.difference(DateTime.now());
+            _remainingTime = diff.isNegative ? Duration.zero : diff;
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching existing booking: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _onPaymentSuccessOrCancelled() {
+    PendingBookingManager().clearPending();
   }
 
   Future<void> _createBookingOrder() async {
+    if (widget.roundId == null || widget.bookingPayload == null) return;
     setState(() => _isLoading = true);
 
     try {
@@ -97,17 +176,26 @@ class _Step3PaymentState extends State<Step3Payment> {
         final createdBookingId = data['booking_id'];
 
         setState(() {
-          _bookingId = createdBookingId;
+          _bookingId = createdBookingId is int
+              ? createdBookingId
+              : int.tryParse(createdBookingId?.toString() ?? '');
           _qrPayload = data['qr_code'];
-          _paymentStatus = data['payment_status'] ?? 'pending';
-          _remainingTime = const Duration(minutes: 15);
+          _paymentStatus =
+              data['payment_status'] ?? data['status'] ?? 'pending';
+
+          if (data['expire_at'] != null) {
+            final expireTime = DateTime.parse(
+              data['expire_at'].toString(),
+            ).toLocal();
+            final diff = expireTime.difference(DateTime.now());
+            _remainingTime = diff.isNegative ? Duration.zero : diff;
+          } else {
+            _remainingTime = const Duration(minutes: 3);
+          }
         });
 
-        _startCountdown();
-        _startPollingStatus();
-
-        if (createdBookingId != null) {
-          await _submitPassengersToServer(createdBookingId);
+        if (_bookingId != null) {
+          await _submitPassengersToServer(_bookingId!);
         }
       } else {
         final message = body is Map
@@ -123,16 +211,16 @@ class _Step3PaymentState extends State<Step3Payment> {
   }
 
   Future<void> _submitPassengersToServer(int bookingId) async {
+    if (widget.bookingPayload == null) return;
     try {
-      final payload = Map<String, dynamic>.from(widget.bookingPayload);
-
+      final payload = Map<String, dynamic>.from(widget.bookingPayload!);
       final List passengers = payload['passengers'] ?? [];
       payload['booking_id'] = bookingId;
+
       if (!payload.containsKey('passengers') && payload['booking'] != null) {
         payload['passengers'] = payload['booking']['passengers'] ?? [];
       }
 
-      // 1. ดึงไฟล์รูปภาพพาสปอร์ตจาก passengers
       File? passportFile;
       if (passengers.isNotEmpty) {
         final String? path = passengers[0]['passport_image_path'];
@@ -140,11 +228,11 @@ class _Step3PaymentState extends State<Step3Payment> {
           passportFile = File(path);
         }
       }
-      final response = await ServiceBookingApi.submitPassengers(
+
+      await ServiceBookingApi.submitPassengers(
         data: payload,
         passpot_passenger: passportFile,
       );
-      debugPrint('Submit passengers response: $response');
     } catch (e) {
       debugPrint('Submit passengers error: $e');
     }
@@ -157,15 +245,29 @@ class _Step3PaymentState extends State<Step3Payment> {
       if (_remainingTime.inSeconds <= 0) {
         timer.cancel();
         _statusTimer?.cancel();
-        if (_paymentStatus == 'pending') {
-          setState(() => _paymentStatus = 'expired');
-        }
+        _handleTimeout();
         return;
       }
       setState(() {
         _remainingTime = _remainingTime - const Duration(seconds: 1);
       });
     });
+  }
+
+  Future<void> _handleTimeout() async {
+    if (!mounted) return;
+
+    setState(() {
+      _paymentStatus = 'expired';
+    });
+    PendingBookingManager().clearPending();
+
+    _showSnackBar('รายการจองหมดอายุแล้ว กำลังกลับสู่หน้าหลัก', Colors.red);
+
+    await Future.delayed(const Duration(seconds: 3));
+    if (mounted) {
+      Get.offAll(() => const Homepage());
+    }
   }
 
   Future<void> _pickSlipImage() async {
@@ -182,11 +284,9 @@ class _Step3PaymentState extends State<Step3Payment> {
     }
   }
 
-  // ฟังก์ชันสำหรับกดปุ่ม "ตรวจสอบสลิป" (ส่งสลิปหรือดึงสถานะล่าสุด)
   Future<void> _checkOrSubmitSlip() async {
     if (_bookingId == null) return;
 
-    // กรณีเลือกสลิปใหม่ -> สั่งอัปโหลดสลิป
     if (_selectedSlipImage != null) {
       setState(() => _isLoading = true);
       try {
@@ -200,7 +300,9 @@ class _Step3PaymentState extends State<Step3Payment> {
 
         if (statusCode == 200 && body is Map && body['success'] == true) {
           _showSnackBar('ส่งสลิปสำเร็จ กำลังตรวจสอบสถานะ...', Colors.blue);
-          await _pollOrderStatus(); // ตรวจสอบสถานะทันที
+          await _pollOrderStatus();
+
+          // ดึงข้อมูลรอบทัวร์ (ถ้ามี)
         } else {
           final message = body is Map
               ? body['message']
@@ -213,17 +315,14 @@ class _Step3PaymentState extends State<Step3Payment> {
         if (mounted) setState(() => _isLoading = false);
       }
     } else {
-      // กรณียังไม่ได้เลือกสลิป -> กดเพื่อรีเฟรชเช็กสถานะจาก Server
       setState(() => _isLoading = true);
       await _pollOrderStatus();
       if (mounted) {
         setState(() => _isLoading = false);
-        _showSnackBar('อัปเดตสถานะล่าสุดเรียบร้อย', Colors.green);
       }
     }
   }
 
-  // ดึงสถานะการจองจาก Server (ไม่มีการเปิด Pop-up กวนใจแล้ว)
   Future<void> _pollOrderStatus() async {
     if (_bookingId == null || !mounted) return;
 
@@ -236,20 +335,21 @@ class _Step3PaymentState extends State<Step3Payment> {
 
       if (statusCode == 200 && body is Map && body['success'] == true) {
         final data = body['data'];
-        if (data != null && data['status'] != null) {
-          final nextStatus = data['status'];
+        if (data != null) {
+          final nextStatus = data['payment_status'] ?? data['status'];
 
-          if (_paymentStatus != nextStatus) {
+          if (nextStatus != null && _paymentStatus != nextStatus) {
             setState(() => _paymentStatus = nextStatus);
 
-            // แจ้งเตือนเมื่อชำระเงินสำเร็จแล้วเด้งออกอัตโนมัติ
             if (nextStatus == 'paid') {
               _statusTimer?.cancel();
               _countdownTimer?.cancel();
+              _onPaymentSuccessOrCancelled();
               _handlePaymentSuccessAndExit();
             } else if (nextStatus == 'expired') {
               _statusTimer?.cancel();
               _countdownTimer?.cancel();
+              _handleTimeout();
             }
           }
         }
@@ -280,7 +380,6 @@ class _Step3PaymentState extends State<Step3Payment> {
     );
   }
 
-  // Pop-up แจ้งเตือนเฉพาะเมื่อชำระเงินสำเร็จ
   void _handlePaymentSuccessAndExit() {
     if (!mounted) return;
     widget.onBookingStatusChanged?.call(true);
@@ -289,10 +388,10 @@ class _Step3PaymentState extends State<Step3Payment> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) {
-        Future.delayed(const Duration(seconds: 5), () {
+        Future.delayed(const Duration(seconds: 3), () {
           if (mounted && Navigator.of(dialogContext).canPop()) {
             Navigator.of(dialogContext).pop();
-            Get.to(Homepage());
+            Get.offAll(() => const Homepage());
           }
         });
 
@@ -335,13 +434,11 @@ class _Step3PaymentState extends State<Step3Payment> {
 
       final boundary =
           _qrkey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-
       if (boundary == null) {
         _showSnackBar('ไม่พบข้อมูล QR Code', Colors.red);
         return;
       }
 
-      // 3. แปลง Widget เป็นรูปภาพความละเอียดสูง (pixelRatio: 3.0)
       final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
       final ByteData? byteData = await image.toByteData(
         format: ui.ImageByteFormat.png,
@@ -349,13 +446,11 @@ class _Step3PaymentState extends State<Step3Payment> {
 
       if (byteData != null) {
         final Uint8List imageBytes = byteData.buffer.asUint8List();
-
         await Gal.putImageBytes(
           imageBytes,
           name:
               'QR_Booking_${_bookingId ?? DateTime.now().millisecondsSinceEpoch}',
         );
-
         _showSnackBar(
           'บันทึกรูป QR Code ลงในคลังภาพเรียบร้อยแล้ว',
           Colors.green,
@@ -366,10 +461,65 @@ class _Step3PaymentState extends State<Step3Payment> {
     }
   }
 
-  void _cancelPayment() {
-    _statusTimer?.cancel();
-    _countdownTimer?.cancel();
-    Get.to(Homepage());
+  Future<void> _cancelPayment() async {
+    if (_bookingId == null) {
+      _showSnackBar(
+        'ยังไม่มีรายการจอง หรือกำลังสร้างข้อมูลอยู่',
+        Colors.orange,
+      );
+      return;
+    }
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('ยืนยันการยกเลิก'),
+        content: const Text('คุณต้องการยกเลิกรายการจองนี้ใช่หรือไม่?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('ยกเลิก'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('ยืนยัน', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      _statusTimer?.cancel();
+      _countdownTimer?.cancel();
+
+      final res = await ServiceBookingApi.cancelBookingOrder(
+        bookingId: _bookingId!,
+        memberId: widget.memberId,
+      );
+
+      final statusCode = res['statusCode'] ?? 500;
+      final body = res['body'] ?? {};
+
+      if (statusCode == 200 && body['success'] == true) {
+        _showSnackBar('ยกเลิกรายการจองเรียบร้อยแล้ว', Colors.green);
+        _onPaymentSuccessOrCancelled();
+        Get.offAll(() => const Homepage());
+      } else {
+        final message = body['message'] ?? 'ยกเลิกรายการไม่สำเร็จ';
+        _showSnackBar(message, Colors.red);
+        _startPollingStatus();
+        _startCountdown();
+      }
+    } catch (e) {
+      _showSnackBar('เกิดข้อผิดพลาดในการยกเลิก: $e', Colors.red);
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -413,7 +563,7 @@ class _Step3PaymentState extends State<Step3Payment> {
             ],
           ),
           Text(
-            '฿${widget.totalPrice}',
+            '฿${_displayPrice ?? 0}',
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -472,11 +622,17 @@ class _Step3PaymentState extends State<Step3Payment> {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: Colors.grey.shade200),
               ),
-              child: QrImageView(
-                data: _qrPayload!,
-                size: 190,
-                backgroundColor: Colors.white,
-              ),
+              child: _qrPayload != null && _qrPayload!.isNotEmpty
+                  ? QrImageView(
+                      data: _qrPayload!,
+                      size: 190,
+                      backgroundColor: Colors.white,
+                    )
+                  : const SizedBox(
+                      height: 190,
+                      width: 190,
+                      child: Center(child: Text('ไม่พบข้อมูล QR Code')),
+                    ),
             ),
           ),
           const SizedBox(height: 12),
@@ -605,7 +761,6 @@ class _Step3PaymentState extends State<Step3Payment> {
     );
   }
 
-  // ส่วนแนบสลิป + ปุ่มปฏิบัติการ "ยกเลิก" และ "ตรวจสอบสลิป"
   Widget _buildSlipUploadSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -704,10 +859,8 @@ class _Step3PaymentState extends State<Step3Payment> {
 
         const SizedBox(height: 16),
 
-        // แถบปุ่มกด 2 ปุ่ม: "ยกเลิก" และ "ตรวจสอบสลิป"
         Row(
           children: [
-            // 1. ปุ่มยกเลิก
             Expanded(
               child: SizedBox(
                 height: 50,
@@ -729,7 +882,6 @@ class _Step3PaymentState extends State<Step3Payment> {
             ),
             const SizedBox(width: 12),
 
-            // 2. ปุ่มตรวจสอบสลิป / ส่งสลิป
             Expanded(
               flex: 2,
               child: SizedBox(
@@ -779,7 +931,7 @@ class _Step3PaymentState extends State<Step3Payment> {
                 child: CircularProgressIndicator(color: Color(0xFF5B4DFF)),
               ),
             )
-          else if (_qrPayload != null) ...[
+          else ...[
             _buildQrCard(),
             const SizedBox(height: 16),
 
@@ -788,11 +940,6 @@ class _Step3PaymentState extends State<Step3Payment> {
 
             if (_paymentStatus != 'paid' && _paymentStatus != 'expired')
               _buildSlipUploadSection(),
-          ] else ...[
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 40),
-              child: Center(child: Text('กำลังสร้าง QR Code...')),
-            ),
           ],
         ],
       ),
