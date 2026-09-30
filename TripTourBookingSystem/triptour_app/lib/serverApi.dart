@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
-
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class Serverapi {
-  static const String _baseUrl = 'http://172.20.10.7:4000';
+  static const String _baseUrl = 'http://192.168.1.126:4000';
 
   static Future<Map<String, dynamic>> checkuser(
     String google_id,
@@ -386,6 +386,121 @@ class Serverapi {
       return {
         "statusCode": 500,
         "body": {"success": false, "message": "Server error"},
+      };
+    }
+  }
+
+  // =====================================================
+  // REVIEW : ตรวจสอบสิทธิ์ในการรีวิว
+  // =====================================================
+
+  static Future<Map<String, dynamic>> checkReviewEligibility({
+    required String googleId,
+    required int tourId,
+  }) async {
+    try {
+      final res = await http.post(
+        Uri.parse("$_baseUrl/review/check"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"google_id": googleId, "tour_id": tourId}),
+      );
+
+      final data = jsonDecode(res.body);
+
+      return {"statusCode": res.statusCode, "body": data};
+    } catch (e) {
+      return {
+        "statusCode": 500,
+        "body": {
+          "success": false,
+          "canReview": false,
+          "message": "ไม่สามารถตรวจสอบสิทธิ์รีวิวได้",
+        },
+      };
+    }
+  }
+
+  // =====================================================
+  // REVIEW : ส่งคะแนนรีวิว
+  // =====================================================
+
+  static Future<Map<String, dynamic>> submitReview({
+    required String googleId,
+    required int tourId,
+    required int rating,
+  }) async {
+    try {
+      final res = await http.post(
+        Uri.parse("$_baseUrl/review"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "google_id": googleId,
+          "tour_id": tourId,
+          "rating": rating,
+        }),
+      );
+
+      final data = jsonDecode(res.body);
+
+      return {"statusCode": res.statusCode, "body": data};
+    } catch (e) {
+      return {
+        "statusCode": 500,
+        "body": {"success": false, "message": "ไม่สามารถส่งรีวิวได้"},
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> getGuideProfile({
+    required String googleId,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse("$_baseUrl/add-guide/profile/$googleId"),
+        headers: {"Content-Type": "application/json"},
+      );
+
+      final data = jsonDecode(response.body);
+
+      return {"statusCode": response.statusCode, "body": data};
+    } catch (e) {
+      return {
+        "statusCode": 500,
+        "body": {"success": false, "message": "ไม่สามารถโหลดข้อมูลไกด์ได้"},
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateGuideProfile({
+    required String googleId,
+    required String firstName,
+    required String lastName,
+    required String age,
+    required String birthday,
+    required String phone,
+    required String address,
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse("$_baseUrl/add-guide/profile/$googleId"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "first_name": firstName,
+          "last_name": lastName,
+          "age": age.isEmpty ? null : age,
+          "birthday": birthday.isEmpty ? null : birthday,
+          "phone": phone,
+          "address": address,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      return {"statusCode": response.statusCode, "body": data};
+    } catch (e) {
+      return {
+        "statusCode": 500,
+        "body": {"success": false, "message": "ไม่สามารถแก้ไขข้อมูลไกด์ได้"},
       };
     }
   }

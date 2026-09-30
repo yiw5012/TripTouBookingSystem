@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:triptour_app/serverApi.dart';
+import 'package:triptour_app/severGetApi.dart';
 
 import 'tour/tourHeader.dart';
 import 'tour/tourBookingSection.dart';
@@ -52,6 +53,17 @@ class _DetailTourState extends State<DetailTour>
   List<dynamic> rounds = [];
   List<dynamic> details = [];
 
+  // ==========================================================
+  // REVIEW DATA
+  // ==========================================================
+
+  double averageRating = 0;
+  int reviewCount = 0;
+
+  // ==========================================================
+  // STATE
+  // ==========================================================
+
   bool isLoading = true;
   String? errorMessage;
 
@@ -70,6 +82,7 @@ class _DetailTourState extends State<DetailTour>
     scrollController.addListener(handleScrollSpy);
 
     loadTourDetail();
+    loadTourReview();
   }
 
   // ==========================================================
@@ -147,6 +160,28 @@ class _DetailTourState extends State<DetailTour>
       setState(() {
         isLoading = false;
         errorMessage = 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
+      });
+    }
+  }
+
+  // ==========================================================
+  // LOAD TOUR REVIEW
+  // ==========================================================
+
+  Future<void> loadTourReview() async {
+    final result = await Severgetapi.getTourReview(widget.tourId);
+
+    if (!mounted) return;
+
+    if (result['statusCode'] == 200 &&
+        result['body'] != null &&
+        result['body']['success'] == true) {
+      final data = result['body']['data'];
+
+      setState(() {
+        averageRating = double.tryParse(data['average_rating'].toString()) ?? 0;
+
+        reviewCount = int.tryParse(data['review_count'].toString()) ?? 0;
       });
     }
   }
@@ -272,15 +307,12 @@ class _DetailTourState extends State<DetailTour>
     return Container(
       key: stickyTabKey,
       height: stickyTabHeight,
-
       decoration: BoxDecoration(
         color: Colors.white,
-
         border: Border(
           top: BorderSide(color: Colors.grey.shade200),
           bottom: BorderSide(color: Colors.grey.shade300),
         ),
-
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -289,26 +321,17 @@ class _DetailTourState extends State<DetailTour>
           ),
         ],
       ),
-
       child: TabBar(
         controller: tabController,
-
         onTap: (index) {
           scrollToSection(index);
         },
-
         labelColor: Colors.orange,
-
         unselectedLabelColor: Colors.grey.shade600,
-
         indicatorColor: Colors.orange,
-
         indicatorWeight: 3,
-
         labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-
         unselectedLabelStyle: const TextStyle(fontSize: 12),
-
         tabs: const [
           Tab(text: 'จอง'),
           Tab(text: 'รายละเอียด / มื้ออาหาร'),
@@ -327,6 +350,9 @@ class _DetailTourState extends State<DetailTour>
     return Scaffold(
       backgroundColor: Colors.white,
 
+      // ======================================================
+      // APP BAR
+      // ======================================================
       appBar: AppBar(
         title: const Text(
           'รายละเอียดทัวร์',
@@ -335,6 +361,9 @@ class _DetailTourState extends State<DetailTour>
         centerTitle: true,
       ),
 
+      // ======================================================
+      // BODY
+      // ======================================================
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : errorMessage != null
@@ -349,7 +378,22 @@ class _DetailTourState extends State<DetailTour>
                 // HEADER
                 // ==================================================
                 SliverToBoxAdapter(
-                  child: TourHeader(tour: tour!, images: images),
+                  child: TourHeader(
+                    tour: tour!,
+                    images: images,
+
+                    // ส่ง tourId ไปให้ TourHeader
+                    tourId: widget.tourId,
+
+                    // ส่งข้อมูลรีวิวไปแสดงผล
+                    averageRating: averageRating,
+
+                    reviewCount: reviewCount,
+
+                    // หลังส่งรีวิวสำเร็จ
+                    // ให้โหลดคะแนนใหม่
+                    onReviewSubmitted: loadTourReview,
+                  ),
                 ),
 
                 // ==================================================
@@ -357,7 +401,6 @@ class _DetailTourState extends State<DetailTour>
                 // ==================================================
                 SliverPersistentHeader(
                   pinned: true,
-
                   delegate: StickyTabDelegate(
                     height: stickyTabHeight,
                     child: buildStickyTabBar(),
@@ -382,11 +425,8 @@ class _DetailTourState extends State<DetailTour>
                 SliverToBoxAdapter(
                   child: TourDetailSection(
                     key: sectionKeys[1],
-
                     details: details,
-
                     selectedDay: selectedDay,
-
                     onDaySelected: (day) {
                       setState(() {
                         selectedDay = day;
@@ -401,6 +441,9 @@ class _DetailTourState extends State<DetailTour>
                 // ==================================================
                 SliverToBoxAdapter(child: TourNoteSection(key: sectionKeys[2])),
 
+                // ==================================================
+                // BOTTOM SPACE
+                // ==================================================
                 const SliverToBoxAdapter(child: SizedBox(height: 40)),
               ],
             ),
@@ -417,16 +460,30 @@ class _DetailTourState extends State<DetailTour>
         padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-
           children: [
+            // ==================================================
+            // ERROR ICON
+            // ==================================================
             const Icon(Icons.error_outline, size: 50, color: Colors.grey),
 
+            // ==================================================
+            // SPACE
+            // ==================================================
             const SizedBox(height: 12),
 
+            // ==================================================
+            // ERROR MESSAGE
+            // ==================================================
             Text(errorMessage ?? 'เกิดข้อผิดพลาด', textAlign: TextAlign.center),
 
+            // ==================================================
+            // SPACE
+            // ==================================================
             const SizedBox(height: 15),
 
+            // ==================================================
+            // RETRY BUTTON
+            // ==================================================
             ElevatedButton(
               onPressed: loadTourDetail,
               child: const Text('ลองใหม่'),
@@ -462,9 +519,7 @@ class StickyTabDelegate extends SliverPersistentHeaderDelegate {
   ) {
     return Material(
       color: Colors.white,
-
       elevation: overlapsContent ? 2 : 0,
-
       child: child,
     );
   }

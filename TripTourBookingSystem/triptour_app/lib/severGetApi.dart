@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:triptour_app/model/country.dart';
 
 class Severgetapi {
-  static const String _baseUrl = 'http://172.20.10.7:4000';
+  static const String _baseUrl = 'http://192.168.1.126:4000';
   List<Country> countries = [];
   bool isLoading = true;
 
@@ -30,6 +30,28 @@ class Severgetapi {
     } catch (error) {
       print('Error loading countries: $error');
       return [];
+    }
+  }
+
+  // =====================================================
+  // REVIEW : ดึงคะแนนและรีวิวของทัวร์
+  // =====================================================
+
+  static Future<Map<String, dynamic>> getTourReview(int tourId) async {
+    try {
+      final res = await http.get(
+        Uri.parse("$_baseUrl/review/tour/$tourId"),
+        headers: {"Content-Type": "application/json"},
+      );
+
+      final data = jsonDecode(res.body);
+
+      return {"statusCode": res.statusCode, "body": data};
+    } catch (e) {
+      return {
+        "statusCode": 500,
+        "body": {"success": false, "message": "ไม่สามารถโหลดข้อมูลรีวิวได้"},
+      };
     }
   }
 }

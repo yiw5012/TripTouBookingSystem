@@ -12,6 +12,7 @@ import {router as country} from "../controller/country/country.js"
 import {router as getUser} from "../controller/user/getUser.js";
 import {router as roundTour} from "../controller/tour/roundTour/roundTour.js"
 import {router as booking} from "../controller/booking/booking.js";
+import { router as reviewRouter } from "../controller/review/review.js";
 import dotenv from 'dotenv';
 import { Server } from 'socket.io';
 dotenv.config();
@@ -33,6 +34,7 @@ app.use("/uploads", upload); // Serve uploaded files from the 'uploads' director
 app.use("/member", getUser);
 app.use("/roundTour", roundTour);
 app.use("/api/booking", booking);
+app.use("/review", reviewRouter);
 
 app.use((req, res) => {
 

@@ -1,14 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:triptour_app/page/Tourdetail/reviewTour.dart';
 
 class TourHeader extends StatelessWidget {
   final Map<String, dynamic> tour;
   final List<dynamic> images;
 
-  const TourHeader({super.key, required this.tour, required this.images});
+  final int tourId;
+  final double averageRating;
+  final int reviewCount;
+
+  // ใช้เรียกกลับไปให้ detailTour.dart โหลดคะแนนใหม่
+  final Future<void> Function()? onReviewSubmitted;
+
+  const TourHeader({
+    super.key,
+    required this.tour,
+    required this.images,
+    required this.tourId,
+    required this.averageRating,
+    required this.reviewCount,
+    this.onReviewSubmitted,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Column(children: [buildTourImage(), buildTourSummary()]);
+    return Column(children: [buildTourImage(), buildTourSummary(context)]);
   }
 
   // ==========================================================
@@ -67,10 +83,10 @@ class TourHeader extends StatelessWidget {
   // SUMMARY
   // ==========================================================
 
-  Widget buildTourSummary() {
+  Widget buildTourSummary(BuildContext context) {
     final String tourName = tour['tour_name']?.toString() ?? 'ไม่มีชื่อทัวร์';
 
-    final String tourId = tour['tour_id']?.toString() ?? '-';
+    final String tourIdText = tour['tour_id']?.toString() ?? '-';
 
     final String country = tour['country_name_th']?.toString() ?? '-';
 
@@ -82,22 +98,18 @@ class TourHeader extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-
         children: [
           // ------------------------------------------------------
           // ชื่อ + รหัส
           // ------------------------------------------------------
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
-
             children: [
               Expanded(
                 child: Text(
                   tourName,
-
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -108,8 +120,7 @@ class TourHeader extends StatelessWidget {
               const SizedBox(width: 10),
 
               Text(
-                'รหัสทัวร์: $tourId',
-
+                'รหัสทัวร์: $tourIdText',
                 style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
               ),
             ],
@@ -129,7 +140,6 @@ class TourHeader extends StatelessWidget {
               Expanded(
                 child: Text(
                   '$country • $type',
-
                   style: const TextStyle(fontSize: 15),
                 ),
               ),
@@ -138,9 +148,9 @@ class TourHeader extends StatelessWidget {
 
           const SizedBox(height: 8),
 
-          // ------------------------------------------------------
-          // REVIEW
-          // ------------------------------------------------------
+          // =====================================================
+          // REVIEW SUMMARY
+          // =====================================================
           Row(
             children: [
               const Icon(Icons.star, size: 21, color: Colors.amber),
@@ -148,19 +158,53 @@ class TourHeader extends StatelessWidget {
               const SizedBox(width: 5),
 
               Text(
-                'ยังไม่มีข้อมูลคะแนน',
-
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                reviewCount == 0
+                    ? 'ยังไม่มีคะแนน'
+                    : averageRating.toStringAsFixed(2),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade700,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
 
               const SizedBox(width: 8),
 
               Text(
-                '(ยังไม่มีข้อมูลรีวิว)',
-
+                reviewCount == 0
+                    ? '(ยังไม่มีข้อมูลรีวิว)'
+                    : '($reviewCount รีวิว)',
                 style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
               ),
             ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // =====================================================
+          // REVIEW BUTTON
+          // =====================================================
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        ReviewTourPage(tourId: tourId, tourName: tourName),
+                  ),
+                );
+
+                // ถ้าส่งรีวิวสำเร็จ
+                // ให้ detailTour โหลดคะแนนใหม่
+                if (result == true) {
+                  await onReviewSubmitted?.call();
+                }
+              },
+              icon: const Icon(Icons.star_rate),
+              label: const Text('ให้คะแนนทัวร์'),
+            ),
           ),
 
           const SizedBox(height: 8),
@@ -176,7 +220,6 @@ class TourHeader extends StatelessWidget {
 
               Text(
                 'ระยะเวลา: $duration วัน',
-
                 style: const TextStyle(fontSize: 15),
               ),
             ],
@@ -189,11 +232,9 @@ class TourHeader extends StatelessWidget {
           // ------------------------------------------------------
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
-
             children: [
               const Text(
                 'ราคาเริ่มต้น',
-
                 style: TextStyle(fontSize: 14, color: Colors.grey),
               ),
 
@@ -201,7 +242,6 @@ class TourHeader extends StatelessWidget {
 
               Text(
                 '$price บาท',
-
                 style: const TextStyle(
                   fontSize: 23,
                   fontWeight: FontWeight.bold,
