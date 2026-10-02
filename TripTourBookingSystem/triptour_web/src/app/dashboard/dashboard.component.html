@@ -1,75 +1,174 @@
 
-
 <div class="dashboard-shell container-fluid">
-  
-  <!-- Header Section -->
   <header class="dashboard-header">
     <div>
       <p class="eyebrow">ภาพรวมระบบ</p>
       <h1>Dashboard</h1>
     </div>
-   
+    <button mat-flat-button color="primary" class="primary-button">Export Report</button>
   </header>
 
-  <section class="row g-3 mb-3">
-    
-    <article class="col-12 col-sm-6 col-xl-3">
-      <mat-card appearance="outlined" class="stat-card blue-card">
-        <mat-card-content>
-          <div class="card-icon"><mat-icon>explore</mat-icon></div>
-          <div class="card-label">ยอดทัวร์ทั้งหมด</div>
-          <div class="card-value">128</div>
-          <div class="card-trend up">▲ +12%</div>
-        </mat-card-content>
-      </mat-card>
-    </article>
-
-    <article class="col-12 col-sm-6 col-xl-3">
-      <mat-card appearance="outlined" class="stat-card green-card">
-        <mat-card-content>
-          <div class="card-icon"><mat-icon>groups</mat-icon></div>
-          <div class="card-label">ไกด์ที่ใช้งาน</div>
-          <div class="card-value">24</div>
-          <div class="card-trend up">▲ 4 คน</div>
-        </mat-card-content>
-      </mat-card>
-    </article>
-
-    <article class="col-12 col-sm-6 col-xl-3">
-      <mat-card appearance="outlined" class="stat-card amber-card">
-        <mat-card-content>
-          <div class="card-icon"><mat-icon>receipt_long</mat-icon></div>
-          <div class="card-label">คำสั่งจอง</div>
-          <div class="card-value">89</div>
-          <div class="card-trend down">▼ 32</div>
-        </mat-card-content>
-      </mat-card>
-    </article>
-
-    <article class="col-12 col-sm-6 col-xl-3">
-      <mat-card appearance="outlined" class="stat-card red-card">
-        <mat-card-content>
-          <div class="card-icon"><mat-icon>payments</mat-icon></div>
-          <div class="card-label">รายได้รวม</div>
-          <div class="card-value">฿482,500</div>
-          <div class="card-trend up">▲ เดือนนี้</div>
-        </mat-card-content>
-      </mat-card>
-    </article>
-
+  <section class="date-filter-panel">
+    <div class="filter-title">เลือกวันที่เพื่อดูรายงาน</div>
+    <div class="filter-row">
+      <label>
+        <span>จาก</span>
+        <input type="date" [(ngModel)]="startDate" />
+      </label>
+      <label>
+        <span>ถึง</span>
+        <input type="date" [(ngModel)]="endDate" />
+      </label>
+      <button mat-flat-button color="primary" type="button" (click)="applyDateFilter()">เรียกดู</button>
+      <button mat-stroked-button type="button" (click)="setThisMonth()">ทั้งหมด</button>
+    </div>
   </section>
 
-  <!-- Panels Section -->
+  <section class="row g-3 mb-3">
+    <article class="col-12">
+      <div class="section-title">สรุป</div>
+    </article>
+
+    <article class="col-12 col-sm-6 col-xl-4">
+      <mat-card appearance="outlined" class="stat-card purple-card">
+        <mat-card-content>
+          <div class="card-header">
+            <div class="card-icon"><mat-icon>people</mat-icon></div>
+            <span class="mini-tag">ทั้งหมด</span>
+          </div>
+          <div class="card-label">จำนวนทัวร์ทั้งหมด</div>
+          <div class="card-value">480</div>
+          <div class="card-trend up">▲ +6.2%</div>
+        </mat-card-content>
+      </mat-card>
+    </article>
+
+    <article class="col-12 col-sm-6 col-xl-4">
+      <mat-card appearance="outlined" class="stat-card blue-card">
+        <mat-card-content>
+          <div class="card-header">
+            <div class="card-icon"><mat-icon>today</mat-icon></div>
+            <span class="mini-tag">รายวัน</span>
+          </div>
+          <div class="card-label">รายรับ</div>
+          <div class="card-value">฿45,200</div>
+          <div class="card-trend up">▲ +8.4%</div>
+        </mat-card-content>
+      </mat-card>
+    </article>
+
+   
+
+    <article class="col-12 col-sm-6 col-xl-4">
+      <mat-card appearance="outlined" class="stat-card amber-card">
+        <mat-card-content>
+          <div class="card-header">
+            <div class="card-icon"><mat-icon>date_range</mat-icon></div>
+            <span class="mini-tag">รายปี</span>
+          </div>
+          <div class="card-label">รายรับปีนี้</div>
+          <div class="card-value">฿3,870,000</div>
+          <div class="card-trend up">▲ +18.9%</div>
+        </mat-card-content>
+      </mat-card>
+    </article>
+ 
+   
+  </section>
+
+  
+  <section class="row g-3 mb-3">
+    <article class="col-12">
+      <div class="section-title">รายงานผู้ใช้ระบบ</div>
+    </article>
+
+    <article class="col-12 col-sm-6 col-xl-3">
+      <mat-card appearance="outlined" class="stat-card purple-card">
+        <mat-card-content>
+          <div class="card-header">
+            <div class="card-icon"><mat-icon>people</mat-icon></div>
+            <span class="mini-tag">ทั้งหมด</span>
+          </div>
+          <div class="card-label">จำนวนผู้ใช้ระบบ</div>
+          <div class="card-value">12,480</div>
+          <div class="card-trend up">▲ +6.2%</div>
+        </mat-card-content>
+      </mat-card>
+    </article>
+
+    <article class="col-12 col-sm-6 col-xl-3">
+      <mat-card appearance="outlined" class="stat-card teal-card">
+        <mat-card-content>
+          <div class="card-header">
+            <div class="card-icon"><mat-icon>travel_explore</mat-icon></div>
+            <span class="mini-tag">เดินทาง</span>
+          </div>
+          <div class="card-label">จำนวนผู้ใช้เดินทาง</div>
+          <div class="card-value">8,360</div>
+          <div class="card-trend up">▲ +10.5%</div>
+        </mat-card-content>
+      </mat-card>
+    </article>
+
+    <article class="col-12 col-sm-6 col-xl-3">
+      <mat-card appearance="outlined" class="stat-card orange-card">
+        <mat-card-content>
+          <div class="card-header">
+            <div class="card-icon"><mat-icon>check_circle</mat-icon></div>
+            <span class="mini-tag">Confirm</span>
+          </div>
+          <div class="card-label">ยืนยันแล้ว</div>
+          <div class="card-value">5,420</div>
+          <div class="card-trend up">▲ +9.1%</div>
+        </mat-card-content>
+      </mat-card>
+    </article>
+
+    <article class="col-12 col-sm-6 col-xl-3">
+      <mat-card appearance="outlined" class="stat-card cyan-card">
+        <mat-card-content>
+          <div class="card-header">
+            <div class="card-icon"><mat-icon>paid</mat-icon></div>
+            <span class="mini-tag">ชำระเงิน</span>
+          </div>
+          <div class="card-label">จ่ายเงินแล้ว</div>
+          <div class="card-value">4,980</div>
+          <div class="card-trend up">▲ +7.7%</div>
+        </mat-card-content>
+      </mat-card>
+    </article>
+  </section>
+
   <section class="row g-3">
-    
     <article class="col-12 col-xl-8">
       <mat-card appearance="outlined" class="panel">
         <mat-card-content>
           <div class="panel-header">
-            <h2>ยอดขายรายเดือน</h2>
-            <span>สัปดาห์นี้</span>
+            <h2>รายได้ตามประเทศ</h2>
+            <span>แยกประเทศ</span>
           </div>
-          <div class="chart-box">[ Chart Component ]</div>
+          <div class="country-list">
+            <div class="country-row">
+              <span>ไทย</span>
+              <strong>฿1,260,000</strong>
+            </div>
+            <div class="country-row">
+              <span>ญี่ปุ่น</span>
+              <strong>฿980,000</strong>
+            </div>
+            <div class="country-row">
+              <span>เกาหลี</span>
+              <strong>฿720,000</strong>
+            </div>
+            <div class="country-row">
+              <span>สิงคโปร์</span>
+              <strong>฿660,000</strong>
+            </div>
+            <div class="country-row">
+              <span>ออสเตรเลีย</span>
+              <strong>฿540,000</strong>
+            </div>
+          </div>
         </mat-card-content>
       </mat-card>
     </article>
@@ -78,40 +177,49 @@
       <mat-card appearance="outlined" class="panel">
         <mat-card-content>
           <div class="panel-header">
-            <h2>top 5 ทัวร์ยอดนิยม</h2>
-            <span>ล่าสุด</span>
+            <h2>ผู้ใช้เดินทางในแต่ละประเทศ</h2>
+            <span>ประเทศ</span>
           </div>
           <ul class="activity-list">
-            <li>1. ทัวร์ทะเลน้ำใส</li>
-            <li>2. ทัวร์ภูเขา</li>
-            <li>3. ทัวร์เมืองเก่า</li>
-            <li>4. ทัวร์ธรรมชาติ</li>
-            <li>5. ทัวร์วัฒนธรรม</li>
+            <li>ไทย - 4,220 คน</li>
+            <li>ญี่ปุ่น - 2,980 คน</li>
+            <li>เกาหลี - 2,140 คน</li>
+            <li>สิงคโปร์ - 1,860 คน</li>
+            <li>ออสเตรเลีย - 1,420 คน</li>
           </ul>
         </mat-card-content>
       </mat-card>
     </article>
-
   </section>
 
-   <section class="col-12 ">
-    
-    <article class="col-12">
+  <section class="row g-3 mt-1">
+    <article class="col-12 col-xl-12">
       <mat-card appearance="outlined" class="panel">
         <mat-card-content>
           <div class="panel-header">
-            <h2>กิจกรรมล่าสุด</h2>
-            <span>ล่าสุด</span>
+            <h2>สรุปการยืนยันและการชำระเงิน</h2>
+            <span>live</span>
           </div>
-          <ul class="activity-list">
-            <li>เพิ่มทัวร์ใหม่ 3 รายการ</li>
-            <li>ไกด์ 2 คนกำลังทำงาน</li>
-            <li>มีจองรอชำระ 12 รายการ</li>
-          </ul>
+          <div class="summary-grid">
+            <div class="summary-item">
+              <span>จำนวนคนที่ confirm แล้ว</span>
+              <strong>5,420 คน</strong>
+            </div>
+            <div class="summary-item">
+              <span>จำนวนคนที่จ่ายเงินแล้ว</span>
+              <strong>4,980 คน</strong>
+            </div>
+            <div class="summary-item">
+              <span>รอการยืนยัน</span>
+              <strong>1,340 คน</strong>
+            </div>
+            <div class="summary-item">
+              <span>รอชำระเงิน</span>
+              <strong>440 คน</strong>
+            </div>
+          </div>
         </mat-card-content>
       </mat-card>
     </article>
-
   </section>
-
 </div>
