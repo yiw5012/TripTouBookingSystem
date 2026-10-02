@@ -406,12 +406,14 @@ router.get('/history/:memberId', async (req, res) => {
 
     const sql = `
       SELECT 
-        b.booking_id,
-        b.member_id,
-        b.total_price,
-        b.payment_status,
-        b.booking_date,
-        t.tour_name
+    b.booking_id,
+    b.status AS booking_status,  
+    b.payment_status,
+    b.total_price,
+    b.booking_date,
+    t.tour_id,
+    t.tour_name,
+    t.status AS tour_status     
       FROM booking b
       LEFT JOIN tour_round r ON b.round_id = r.round_id
       LEFT JOIN tour t ON r.tour_id = t.tour_id
@@ -420,7 +422,7 @@ router.get('/history/:memberId', async (req, res) => {
     `;
 
     const [rows] = await conn.execute(sql, [memberId]);
-
+    console.log('Booking history rows:', rows);
     // 🎯 3. ส่งข้อมูลกลับ
     return res.status(200).json({
       success: true,
