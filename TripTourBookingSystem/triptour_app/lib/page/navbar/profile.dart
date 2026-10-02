@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:triptour_app/serverApi.dart';
 import 'package:triptour_app/page/navbar/editprofile.dart';
 
@@ -12,6 +13,7 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   Map<String, dynamic>? memberData;
+  String _memberId = '';
 
   bool isLoading = true;
   String? errorMessage;
@@ -20,6 +22,23 @@ class _ProfilePageState extends State<ProfilePage> {
   void initState() {
     super.initState();
     loadProfile();
+  }
+
+  Future<void> sigout() async {
+    try {
+      await FirebaseAuth.instance.signOut();
+      await GoogleSignIn().signOut();
+      if (!mounted) return;
+      setState(() {
+        _memberId = '';
+      });
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('ออกจากระบบเรียบร้อย')));
+    } catch (e) {
+      print("Error signing out: $e");
+    }
   }
 
   // ==========================================================
@@ -56,6 +75,7 @@ class _ProfilePageState extends State<ProfilePage> {
       if (result != null) {
         setState(() {
           memberData = result;
+          _memberId = memberData?['member_id']?.toString() ?? '';
           isLoading = false;
         });
       } else {
@@ -448,6 +468,28 @@ class _ProfilePageState extends State<ProfilePage> {
                     buildHealthSection(),
 
                     buildDocumentSection(),
+
+                    const SizedBox(height: 10),
+                    Center(
+                      child: ElevatedButton.icon(
+                        onPressed: sigout,
+                        icon: const Icon(Icons.logout),
+                        label: const Text('ออกจากระบบ'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Center(
+                      child: TextButton(
+                        onPressed: sigout,
+                        child: const Text(
+                          'ลบบัญชีผู้ใช้',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),

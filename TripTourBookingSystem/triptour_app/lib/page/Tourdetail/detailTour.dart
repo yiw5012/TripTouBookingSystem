@@ -389,10 +389,6 @@ class _DetailTourState extends State<DetailTour>
                     averageRating: averageRating,
 
                     reviewCount: reviewCount,
-
-                    // หลังส่งรีวิวสำเร็จ
-                    // ให้โหลดคะแนนใหม่
-                    onReviewSubmitted: loadTourReview,
                   ),
                 ),
 

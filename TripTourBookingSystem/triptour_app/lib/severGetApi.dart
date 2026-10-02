@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:triptour_app/model/country.dart';
 
 class Severgetapi {
-  static const String _baseUrl = 'http://192.168.1.126:4000';
+  static const String _baseUrl = 'http://192.168.1.8:4000';
   List<Country> countries = [];
   bool isLoading = true;
 
@@ -51,6 +51,29 @@ class Severgetapi {
       return {
         "statusCode": 500,
         "body": {"success": false, "message": "ไม่สามารถโหลดข้อมูลรีวิวได้"},
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> getGuideTourRounds({
+    required int guideId,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse("$_baseUrl/roundTour/guide/$guideId"),
+        headers: {"Content-Type": "application/json"},
+      );
+
+      final data = jsonDecode(response.body);
+
+      return {"statusCode": response.statusCode, "body": data};
+    } catch (e) {
+      return {
+        "statusCode": 500,
+        "body": {
+          "success": false,
+          "message": "ไม่สามารถโหลดรอบทัวร์ที่ไกด์ดูแลได้",
+        },
       };
     }
   }

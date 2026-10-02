@@ -1,16 +1,30 @@
-<div style="background-color: #007bff; color: white; padding: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
-  <h1 style="margin: 0;">TripTour Admin Panel</h1>
-  
-  <div class="nav-buttons">
-    <button class="btn btn-outline-light me-2" routerLink="/add-tour" routerLinkActive="active-link">
-      +AddTour
-    </button>
-    <button class="btn btn-outline-light" routerLink="/add-guide" routerLinkActive="active-link">
-      +AddGuide
-    </button>
-  </div>
-</div>
+<mat-toolbar color="primary" class="top-navbar">
+  <span>TripTour Admin Panel</span>
+  <span class="spacer"></span>
+  <small>ผู้ดูแลระบบ</small>
+</mat-toolbar>
 
-<div class="container-fluid">
-  <router-outlet></router-outlet>
-</div>
+<mat-sidenav-container class="admin-container">
+  
+  <mat-sidenav mode="side" opened class="admin-sidebar">
+    <mat-nav-list>
+      <a mat-list-item routerLink="/" routerLinkActive="active-menu" [routerLinkActiveOptions]="{exact: true}">
+        <mat-icon >dashboard</mat-icon> หน้าภาพรวม (Dashboard)
+      </a>
+      <a mat-list-item routerLink="/add-tour" routerLinkActive="active-menu">
+        <mat-icon >add_location</mat-icon> เพิ่มทัวร์ใหม่
+      </a>
+      <a mat-list-item routerLink="/add-guide" routerLinkActive="active-menu">
+        <mat-icon >person_add</mat-icon> เพิ่มไกด์นำเที่ยว
+      </a>
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <mat-sidenav-content class="admin-content">
+    <div class="container-fluid py-4">
+      <router-outlet></router-outlet>
+      
+    </div>
+  </mat-sidenav-content>
+
+</mat-sidenav-container>

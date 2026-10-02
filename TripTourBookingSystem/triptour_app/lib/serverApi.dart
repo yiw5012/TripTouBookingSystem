@@ -3,8 +3,36 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+const String _defaultBaseUrl = 'http://192.168.1.8:4000';
+
+String normalizeBaseUrl(String? value) {
+  final raw = (value ?? '').trim();
+  if (raw.isEmpty) {
+    return _defaultBaseUrl;
+  }
+  return raw.endsWith('/') ? raw.substring(0, raw.length - 1) : raw;
+}
+
+int? parseTourId(Object? value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+
+  final text = value.toString().trim();
+  if (text.isEmpty) return null;
+  return int.tryParse(text);
+}
+
+bool isValidEmail(String? value) {
+  final email = value?.trim() ?? '';
+  if (email.isEmpty) return false;
+  return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
+}
+
 class Serverapi {
-  static const String _baseUrl = 'http://192.168.1.126:4000';
+  static final String _baseUrl = normalizeBaseUrl(
+    const String.fromEnvironment('APP_BASE_URL', defaultValue: _defaultBaseUrl),
+  );
 
   static Future<Map<String, dynamic>> checkuser(
     String google_id,
@@ -467,6 +495,28 @@ class Serverapi {
       return {
         "statusCode": 500,
         "body": {"success": false, "message": "ไม่สามารถโหลดข้อมูลไกด์ได้"},
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> closeGuideTourRound({
+    required int roundId,
+    required int guideId,
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse("$_baseUrl/roundTour/$roundId/finish"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"guide_id": guideId}),
+      );
+
+      final data = jsonDecode(response.body);
+
+      return {"statusCode": response.statusCode, "body": data};
+    } catch (e) {
+      return {
+        "statusCode": 500,
+        "body": {"success": false, "message": "ไม่สามารถปิดรอบทัวร์ได้"},
       };
     }
   }
