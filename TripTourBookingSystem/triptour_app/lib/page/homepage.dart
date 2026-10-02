@@ -2,7 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:triptour_app/page/auth/loginPage.dart';
-import 'package:triptour_app/page/booking/bookingPage.dart';
 import 'package:triptour_app/page/navbar/booking_history.dart';
 import 'package:triptour_app/page/navbar/chat.dart';
 import 'package:triptour_app/page/navbar/profile.dart';
@@ -151,7 +150,7 @@ class _HomepageState extends State<Homepage> {
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = FirebaseAuth.instance.currentUser;
+    // final currentUser = FirebaseAuth.instance.currentUser;
     // รวมรายการหน้าทั้งหมด โดยหน้า 0 คือเนื้อหา Home
     final List<Widget> pages = [
       _buildHomeContent(),
@@ -245,26 +244,26 @@ class _HomepageState extends State<Homepage> {
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
         ],
       ),
-      floatingActionButton: currentUser != null
-          ? FloatingActionButton(
-              onPressed: sigout,
-              backgroundColor: Colors.redAccent,
-              child: const Icon(Icons.logout, color: Colors.white),
-            )
-          : FloatingActionButton.extended(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                );
-              },
-              backgroundColor: Colors.green,
-              icon: const Icon(Icons.login, color: Colors.white),
-              label: const Text(
-                'เข้าสู่ระบบ',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
+      // floatingActionButton: currentUser != null
+      //     ? FloatingActionButton(
+      //         onPressed: sigout,
+      //         backgroundColor: Colors.redAccent,
+      //         child: const Icon(Icons.logout, color: Colors.white),
+      //       )
+      //     : FloatingActionButton.extended(
+      //         onPressed: () {
+      //           Navigator.push(
+      //             context,
+      //             MaterialPageRoute(builder: (context) => const LoginPage()),
+      //           );
+      //         },
+      //         backgroundColor: Colors.green,
+      //         icon: const Icon(Icons.login, color: Colors.white),
+      //         label: const Text(
+      //           'เข้าสู่ระบบ',
+      //           style: TextStyle(color: Colors.white),
+      //         ),
+      //       ),
     );
   }
 
@@ -411,7 +410,17 @@ class _HomepageState extends State<Homepage> {
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
               onTap: () {
-                final int tourId = int.parse(tour['tour_id'].toString());
+                final tourId = parseTourId(tour['tour_id']);
+                if (tourId == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'ข้อมูลทริปไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง',
+                      ),
+                    ),
+                  );
+                  return;
+                }
 
                 Navigator.push(
                   context,

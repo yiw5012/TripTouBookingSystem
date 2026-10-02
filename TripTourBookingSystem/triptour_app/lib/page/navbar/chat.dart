@@ -10,8 +10,15 @@ import 'package:triptour_app/serverApi.dart';
 // ==========================================
 class ChatPage extends StatefulWidget {
   final String userRole; // รับค่าบทบาทจากระบบล็อกอิน ('guide' หรือ 'user')
+  final String? selectedRoomId;
+  final String? selectedRoomName;
 
-  const ChatPage({super.key, required this.userRole});
+  const ChatPage({
+    super.key,
+    required this.userRole,
+    this.selectedRoomId,
+    this.selectedRoomName,
+  });
 
   @override
   State<ChatPage> createState() => _ChatPageState();
@@ -25,6 +32,17 @@ class _ChatPageState extends State<ChatPage> {
     if (myUid == null) {
       return const Scaffold(
         body: Center(child: Text("กรุณาเข้าสู่ระบบก่อนใช้งาน")),
+      );
+    }
+
+    final directRoomId = (widget.selectedRoomId ?? '').trim();
+    if (directRoomId.isNotEmpty) {
+      return ChatRoomPage(
+        roomId: directRoomId,
+        roomName: (widget.selectedRoomName ?? 'ห้องแชต').trim().isNotEmpty
+            ? widget.selectedRoomName ?? 'ห้องแชต'
+            : 'ห้องแชต',
+        myRole: widget.userRole,
       );
     }
 

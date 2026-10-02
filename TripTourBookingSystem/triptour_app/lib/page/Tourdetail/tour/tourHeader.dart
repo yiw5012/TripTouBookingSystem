@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:triptour_app/page/Tourdetail/reviewTour.dart';
 
 class TourHeader extends StatelessWidget {
   final Map<String, dynamic> tour;
@@ -9,9 +8,6 @@ class TourHeader extends StatelessWidget {
   final double averageRating;
   final int reviewCount;
 
-  // ใช้เรียกกลับไปให้ detailTour.dart โหลดคะแนนใหม่
-  final Future<void> Function()? onReviewSubmitted;
-
   const TourHeader({
     super.key,
     required this.tour,
@@ -19,7 +15,6 @@ class TourHeader extends StatelessWidget {
     required this.tourId,
     required this.averageRating,
     required this.reviewCount,
-    this.onReviewSubmitted,
   });
 
   @override
@@ -180,34 +175,6 @@ class TourHeader extends StatelessWidget {
           ),
 
           const SizedBox(height: 12),
-
-          // =====================================================
-          // REVIEW BUTTON
-          // =====================================================
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        ReviewTourPage(tourId: tourId, tourName: tourName),
-                  ),
-                );
-
-                // ถ้าส่งรีวิวสำเร็จ
-                // ให้ detailTour โหลดคะแนนใหม่
-                if (result == true) {
-                  await onReviewSubmitted?.call();
-                }
-              },
-              icon: const Icon(Icons.star_rate),
-              label: const Text('ให้คะแนนทัวร์'),
-            ),
-          ),
-
-          const SizedBox(height: 8),
 
           // ------------------------------------------------------
           // ระยะเวลา

@@ -6,7 +6,6 @@ import 'package:triptour_app/page/auth/forgetpassword.dart';
 import 'package:triptour_app/page/homepage.dart';
 import 'package:triptour_app/page/auth/registerPage.dart';
 import 'package:triptour_app/page/wrapper.dart';
-import 'package:triptour_app/page/wrapper.dart';
 import 'package:triptour_app/serverApi.dart';
 
 class LoginPage extends StatefulWidget {
@@ -115,22 +114,53 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> signInEmail() async {
+    final email = emailctl.text.trim();
+    final password = passwordctl.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('กรุณากรอกอีเมลและรหัสผ่านให้ครบ')),
+      );
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('รูปแบบอีเมลไม่ถูกต้อง')));
+      return;
+    }
+
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: emailctl.text.trim(),
-        password: passwordctl.text.trim(),
+        email: email,
+        password: password,
       );
-      // String uidlogin = userCredential.user!.uid;
-      // var res = await Serverapi.getRole(uidlogin);
+
+      if (!mounted) return;
 
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const Wrapper()),
       );
-    } catch (e) {
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+
+      final message = switch (e.code) {
+        'user-not-found' => 'ไม่พบผู้ใช้นี้ในระบบ',
+        'wrong-password' => 'รหัสผ่านไม่ถูกต้อง',
+        'invalid-email' => 'รูปแบบอีเมลไม่ถูกต้อง',
+        _ => e.message ?? 'เข้าสู่ระบบไม่สำเร็จ',
+      };
+
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text("Login Error: $e")));
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('เข้าสู่ระบบไม่สำเร็จ: $e')));
     }
   }
 
