@@ -1,0 +1,153 @@
+/* พื้นหลังของหน้า Dashboard */
+.dashboard-shell {
+  padding: 1.5rem;
+  background-color: #f8fafc;
+  min-height: 100vh;
+}
+
+/* Header */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.eyebrow {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin-bottom: 0.25rem;
+}
+
+.dashboard-header h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0;
+  color: #0f172a;
+}
+
+.primary-button {
+  border-radius: 50px !important;
+}
+
+/* Stat Cards */
+.stat-card {
+  height: 100%;
+  border-radius: 16px !important;
+  border: 1px solid #e2e8f0 !important;
+  background-color: #ffffff;
+}
+
+.stat-card mat-card-content {
+  padding: 1.25rem !important;
+  display: flex;
+  flex-direction: column;
+}
+
+/* กล่องไอคอนในการ์ด */
+.card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+}
+
+.blue-card .card-icon { background-color: #e0f2fe; color: #0284c7; }
+.green-card .card-icon { background-color: #dcfce7; color: #16a34a; }
+.amber-card .card-icon { background-color: #fef3c7; color: #d97706; }
+.red-card .card-icon { background-color: #fee2e2; color: #dc2626; }
+
+.card-label {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.card-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0.25rem 0;
+}
+
+.card-trend {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.card-trend.up { color: #16a34a; }
+.card-trend.down { color: #dc2626; }
+
+/* Panels (Chart & Activity) */
+.panel {
+  height: 100%;
+  border-radius: 16px !important;
+  border: 1px solid #e2e8f0 !important;
+  background-color: #ffffff;
+}
+
+.panel mat-card-content {
+  padding: 1.25rem !important;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.panel-header h2 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin: 0;
+  color: #0f172a;
+}
+
+.panel-header span {
+  font-size: 0.75rem;
+  color: #475569;
+  background-color: #f1f5f9;
+  padding: 0.25rem 0.625rem;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+}
+
+.chart-box {
+  height: 300px;
+  background-color: #f8fafc;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+}
+
+.activity-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.activity-list li {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.9375rem;
+  color: #334155;
+  display: flex;
+  align-items: center;
+}
+
+.activity-list li:last-child {
+  border-bottom: none;
+}
+
+.activity-list li::before {
+  content: "•";
+  color: #3b82f6;
+  font-size: 1.25rem;
+  margin-right: 0.5rem;
+}
