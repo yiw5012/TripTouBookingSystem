@@ -13,6 +13,8 @@ import {router as getUser} from "../controller/user/getUser.js";
 import {router as roundTour} from "../controller/tour/roundTour/roundTour.js"
 import {router as booking} from "../controller/booking/booking.js";
 import { router as reviewRouter } from "../controller/review/review.js";
+import { router as manageTour} from "../controller/tour/manageTour.js";
+import { router as manageRound } from "../controller/tour/manageRound.js";
 import dotenv from 'dotenv';
 import { Server } from 'socket.io';
 dotenv.config();
@@ -35,6 +37,8 @@ app.use("/member", getUser);
 app.use("/roundTour", roundTour);
 app.use("/api/booking", booking);
 app.use("/review", reviewRouter);
+app.use("/manage-tour", manageTour);
+app.use("/manage-round", manageRound);
 
 app.use((req, res) => {
 
