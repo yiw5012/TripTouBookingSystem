@@ -13,6 +13,7 @@ import {router as getUser} from "../controller/user/getUser.js";
 import {router as roundTour} from "../controller/tour/roundTour/roundTour.js"
 import {router as booking} from "../controller/booking/booking.js";
 import { router as reviewRouter } from "../controller/review/review.js";
+import {router as dashboardRouter} from "../controller/dashboard/dashboard-api.js"
 import dotenv from 'dotenv';
 import { Server } from 'socket.io';
 dotenv.config();
@@ -35,7 +36,7 @@ app.use("/member", getUser);
 app.use("/roundTour", roundTour);
 app.use("/api/booking", booking);
 app.use("/review", reviewRouter);
-
+app.use("/dashboard", dashboardRouter);
 app.use((req, res) => {
 
     res.status(404).json({ error: "Not found" });

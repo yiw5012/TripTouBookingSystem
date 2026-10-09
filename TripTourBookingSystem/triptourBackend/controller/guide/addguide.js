@@ -3,8 +3,9 @@ import { conn } from "../../config/db.js";
 import { readFileSync } from 'fs';
 import  admin  from "../../config/firebase.js"
 
-export const router = express.Router(); 
 
+const db = admin.firestore();
+export const router = express.Router(); 
 
 
 router.post("/", async (req, res) => {
@@ -19,7 +20,7 @@ router.post("/", async (req, res) => {
         birthday, 
         address 
     } = req.body;
-
+ let google_id = null;
     try {
         const userRecord = await admin.auth().createUser({
             email: email,
@@ -51,7 +52,17 @@ router.post("/", async (req, res) => {
 
     } catch (error) {
         console.error("Error creating guide:", error);
+//ถ้าสร้าง Firebase Auth ไปแล้ว แต่ยิง MySQL ไม่สำเร็จ ให้สั่ง Rollback ลบ Firebase Auth ทิ้งทันที
+        if (google_id) {
+            try {
+                await admin.auth().deleteUser(google_id);
+                console.log(`Rollback: Deleted orphaned Firebase user (${google_id})`);
+            } catch (rollbackError) {
+                console.error("Rollback failed:", rollbackError.message);
+            }
+        }
 
+        // จัดการกรณีอีเมลซ้ำใน Firebase
         if (error.code === 'auth/email-already-exists') {
             return res.status(400).json({
                 status: "error",
@@ -77,7 +88,6 @@ router.get(
             const {
                 googleId
             } = req.params;
-
             // ==================================================
             // CHECK GOOGLE ID
             // ==================================================
@@ -174,7 +184,8 @@ router.put(
                 age,
                 birthday,
                 phone,
-                address
+                address,
+                password
             } = req.body;
 
             // ==================================================
@@ -241,6 +252,29 @@ router.put(
                             "อายุไม่ถูกต้อง"
                     });
                 }
+            }
+
+            // ==================================================
+            // UPDATE FIREBASE PASSWORD IF PROVIDED
+            // ==================================================
+
+            if (
+                password !== null &&
+                password !== undefined &&
+                password.toString().trim() !== ""
+            ) {
+                const passwordText = password.toString();
+
+                if (passwordText.length < 6) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร"
+                    });
+                }
+
+                await admin.auth().updateUser(googleId, {
+                    password: passwordText
+                });
             }
 
             // ==================================================

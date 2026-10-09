@@ -54,11 +54,11 @@ class _RegisterPageState extends State<RegisterPage> {
   final medicinectl = TextEditingController(); // ยาที่ใช้ประจำ
   final allergic_listctl = TextEditingController(); // รายการแพ้ยา
   final otherctl = TextEditingController(); // อื่น ๆ
-  List<String> selectedGender = ['Male', 'Female', 'Other'];
+  List<String> selectedGender = ['Male', 'Female'];
 
   List<String> selectedCountries = [];
   List<int> selectedCountryIds = [];
-  String dropdownValue = 'Other';
+  String dropdownValue = 'Male';
 
   String _countryNameById(int countryId) {
     for (final country in countries) {

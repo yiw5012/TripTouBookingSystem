@@ -1,0 +1,255 @@
+@if (isLoading) {
+  <div class="loading-state text-center p-5">
+    <mat-spinner style="margin: 0 auto;"></mat-spinner>
+    <p class="mt-3">กำลังโหลดข้อมูล...</p>
+  </div>
+} @else {
+  <section class="member-page">
+    <div class="member-header">
+      <div>
+        <p class="eyebrow">จัดการระบบ</p>
+        <h1>สมาชิกทั้งหมด</h1>
+      </div>
+    </div>
+
+    @if (errorMessage) {
+      <div class="error-box">{{ errorMessage }}</div>
+    }
+
+    <!-- ================= 1. DETAIL VIEW (สไตล์ Card Dashboard) ================= -->
+    @if (selectedMember) {
+      <div class="detail-container">
+        <!-- ปุ่มย้อนกลับ -->
+        <div class="detail-topbar">
+          <button type="button" class="btn-back" (click)="closeHistoryView()">
+            ← กลับไปหน้ารายการ
+          </button>
+        </div>
+
+        <div class="ui-card">
+          <div class="profile-header">
+            <div class="avatar-box">
+              <div class="avatar-circle">
+                {{ selectedMember.displayName ? selectedMember.displayName.charAt(0).toUpperCase() : 'U' }}
+              </div>
+              <div class="profile-title">
+                <h2>{{ selectedMember.displayName }}</h2>
+                <div class="profile-sub">
+                  <span class="role-badge" [ngClass]="selectedMember.role === 'ไกด์' ? 'guide' : 'member'">
+                    {{ selectedMember.role }}
+                  </span>
+                  <span class="status-badge" [ngClass]="selectedMember.status === 'active' ? 'active' : 'inactive'">
+                    ● {{ selectedMember.status === 'active' ? 'ใช้งานปกติ' : 'ถูกระงับ/ปิดใช้งาน' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            @if (selectedMember.role === 'ไกด์') {
+              <button type="button" class="btn-outline" (click)="openEditGuide(selectedMember)">
+                 แก้ไขข้อมูลไกด์
+              </button>
+            }
+          </div>
+
+          <div class="card-divider"></div>
+
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">ชื่อ</span>
+              <span class="info-value">{{ selectedMember.first_name || '-' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">นามสกุล</span>
+              <span class="info-value">{{ selectedMember.last_name || '-' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">อีเมล</span>
+              <span class="info-value">{{ selectedMember.email }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">เบอร์โทรศัพท์</span>
+              <span class="info-value">{{ selectedMember.phone }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">รหัสอ้างอิง</span>
+              <span class="info-value">{{ selectedMember.code }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Google ID</span>
+              <span class="info-value text-muted">{{ selectedMember.googleId }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: ข้อมูลส่วนตัว / ที่อยู่ -->
+        <div class="ui-card">
+          <div class="card-title-bar">
+            <h3>ข้อมูลส่วนตัวเพิ่มเติม</h3>
+          </div>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">อายุ</span>
+              <span class="info-value">{{ selectedMember.age ? selectedMember.age + ' ปี' : '-' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">วันเกิด</span>
+              <span class="info-value">{{ selectedMember.birthday || '-' }}</span>
+            </div>
+            <div class="info-item full-width">
+              <span class="info-label">ที่อยู่</span>
+              <span class="info-value">{{ selectedMember.address || '-' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: Danger Zone / จัดการสิทธิ์ -->
+        <div class="ui-card danger-card">
+          <div class="card-title-bar">
+            <h3 class="text-danger">Danger Zone</h3>
+          </div>
+          <div class="danger-action-row">
+            <div>
+              <div class="action-title">
+                {{ isSuspended(selectedMember.status) ? 'เปิดใช้งานบัญชีผู้ใช้' : 'ระงับการใช้งานบัญชี' }}
+              </div>
+              <div class="action-desc">
+                {{ isSuspended(selectedMember.status) 
+                  ? 'คืนสิทธิ์ให้ผู้ใช้สามารถเข้าสู่ระบบและใช้งานได้ตามปกติ' 
+                  : 'ปิดกั้นการเข้าถึงระบบของผู้ใช้รายนี้ชั่วคราว' }}
+              </div>
+            </div>
+            <button 
+              type="button" 
+              [class]="isSuspended(selectedMember.status) ? 'btn-success' : 'btn-danger'"
+              (click)="toggleMemberStatus(selectedMember)">
+              {{ isSuspended(selectedMember.status) ? 'เปิดใช้งานบัญชี' : 'ระงับบัญชีนี้' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    } @else {
+      @if (!members.length) {
+        <div class="empty-box">ไม่มีข้อมูลสมาชิกหรือไกด์ในระบบ</div>
+      } @else {
+        <div class="member-tabs">
+          <button type="button" class="tab-btn" [class.active]="selectedTab === 'all'" (click)="selectedTab = 'all'">ทั้งหมด</button>
+          <button type="button" class="tab-btn" [class.active]="selectedTab === 'user'" (click)="selectedTab = 'user'">สมาชิก</button>
+          <button type="button" class="tab-btn" [class.active]="selectedTab === 'guide'" (click)="selectedTab = 'guide'">ไกด์</button>
+          <button type="button" class="tab-btn" [class.active]="selectedTab === 'history'" (click)="selectedTab = 'history'">ประวัติการระงับ</button>
+        </div>
+
+        @if (filteredMembers.length) {
+          <div class="table-wrap">
+            <table class="member-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>ชื่อ-นามสกุล</th>
+                  <th>บทบาท</th>
+                  <th>รหัส</th>
+                  <th>Email</th>
+                  <th>โทรศัพท์</th>
+                  <th>สถานะ</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (member of filteredMembers; track member.googleId; let i = $index) {
+                  <tr class="clickable-row" (click)="viewMemberDetail(member)">
+                    <td>{{ i + 1 }}</td>
+                    <td>{{ member.displayName }}</td>
+                    <td>
+                      <span class="role-badge" [ngClass]="member.role === 'ไกด์' ? 'guide' : 'member'">
+                        {{ member.role }}
+                      </span>
+                    </td>
+                    <td>{{ member.code }}</td>
+                    <td>{{ member.email }}</td>
+                    <td>{{ member.phone }}</td>
+                    <td>
+                      <span class="status-badge" [ngClass]="member.status === 'active' ? 'active' : 'inactive'">
+                        {{ member.status === 'active' ? 'ใช้งานปกติ' : 'ถูกระงับ/ปิดใช้งาน' }}
+                      </span>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="empty-box">ไม่มีข้อมูลในหมวดนี้</div>
+        }
+      }
+    }
+
+    <!-- Modal แก้ไขข้อมูลไกด์ -->
+@if (editingGuide) {
+  <div class="edit-modal-backdrop" (click)="editingGuide = null">
+    <!-- (click).stopPropagation() ป้องกันการกดในกล่องแล้ว Modal ปิด -->
+    <div class="edit-modal-card" (click)="$event.stopPropagation()">
+      
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <div>
+          <span class="modal-subtitle">แก้ไขข้อมูลสมาชิก</span>
+          <h3 class="modal-title">แก้ไขข้อมูลไกด์</h3>
+        </div>
+        <button type="button" class="btn-close" (click)="editingGuide = null" aria-label="Close">
+          ✕
+        </button>
+      </div>
+
+      <!-- Modal Body / Form Grid -->
+      <div class="modal-body">
+        <div class="form-grid">
+          
+          <div class="form-group">
+            <label class="form-label">ชื่อ <span class="required">*</span></label>
+            <input type="text" class="form-input" [(ngModel)]="guideForm.first_name" placeholder="ระบุชื่อจริง" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">นามสกุล <span class="required">*</span></label>
+            <input type="text" class="form-input" [(ngModel)]="guideForm.last_name" placeholder="ระบุนามสกุล" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">อายุ (ปี)</label>
+            <input type="number" class="form-input" [(ngModel)]="guideForm.age" placeholder="เช่น 28" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">วันเกิด</label>
+            <input type="date" class="form-input" [(ngModel)]="guideForm.birthday" />
+          </div>
+
+          <div class="form-group full-width">
+            <label class="form-label">เบอร์โทรศัพท์ <span class="required">*</span></label>
+            <input type="tel" class="form-input" [(ngModel)]="guideForm.phone" placeholder="08X-XXX-XXXX" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">รหัสผ่านใหม่</label>
+            <input type="password" class="form-input" [(ngModel)]="guideForm.password" placeholder="เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน" />
+          </div>
+          <div class="form-group full-width">
+            <label class="form-label">ที่อยู่ปัจจุบัน</label>
+            <textarea class="form-input form-textarea" rows="3" [(ngModel)]="guideForm.address" placeholder="ระบุบ้านเลขที่ ถนน แขวง/ตำบล เขต/อำเภอ จังหวัด..."></textarea>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Modal Footer / Actions -->
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" (click)="editingGuide = null">
+          ยกเลิก
+        </button>
+        <button type="button" class="btn-primary" (click)="saveGuideChanges()">
+          💾 บันทึกข้อมูล
+        </button>
+      </div>
+
+    </div>
+  </div>
+}
+  </section>
+}
