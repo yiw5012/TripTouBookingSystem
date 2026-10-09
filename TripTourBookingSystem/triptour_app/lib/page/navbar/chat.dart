@@ -195,6 +195,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
       '/messages/${widget.roomId}/${newMsgRef.key}': {
         'senderId': myUid,
         'senderEmail': FirebaseAuth.instance.currentUser?.email ?? 'User',
+        'senderType': 'user',
         'senderRole': widget.myRole,
         'text': text,
         'timestamp': ServerValue.timestamp,

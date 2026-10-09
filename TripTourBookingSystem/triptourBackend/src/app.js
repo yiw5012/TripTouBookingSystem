@@ -13,6 +13,7 @@ import {router as getUser} from "../controller/user/getUser.js";
 import {router as roundTour} from "../controller/tour/roundTour/roundTour.js"
 import {router as booking} from "../controller/booking/booking.js";
 import { router as reviewRouter } from "../controller/review/review.js";
+import {router as dashboardRouter} from "../controller/dashboard/dashboard-api.js"
 import { router as manageTour} from "../controller/tour/manageTour.js";
 import { router as manageRound } from "../controller/tour/manageRound.js";
 import dotenv from 'dotenv';
@@ -37,6 +38,7 @@ app.use("/member", getUser);
 app.use("/roundTour", roundTour);
 app.use("/api/booking", booking);
 app.use("/review", reviewRouter);
+app.use("/dashboard", dashboardRouter);
 app.use("/manage-tour", manageTour);
 app.use("/manage-round", manageRound);
 

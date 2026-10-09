@@ -1,9 +1,9 @@
 import { Routes } from '@angular/router';
-import { Addtour } from './addtour/addtour';
-import { AddGuide } from './addguide/addguide';
-import { DashboardComponent } from './dashboard/dashboard.component';
-import { MemberComponent } from './member-component/member-component';
-import { ChatComponent } from './chat-component/chat-component';
+import { Addtour } from './component/addtour/addtour';
+import { AddGuide } from './component/addguide/addguide';
+import { DashboardComponent } from './component/dashboard/dashboard.component';
+import { MemberComponent } from './component/member-component/member-component';
+import { ChatComponent } from './component/chat-component/chat-component';
 import { ManageTour } from './manage-tour/manage-tour';
 import { EditTour } from './edit-tour/edit-tour';
 import { ManageRound } from './manage-round/manage-round';
@@ -14,6 +14,7 @@ export const routes: Routes = [
   { path: 'add-tour', component: Addtour },
   { path: 'add-guide', component: AddGuide },
   { path: 'members', component: MemberComponent },
+  { path: 'members/:googleId', component: MemberComponent },
   { path: 'chat', component: ChatComponent },
   { path: 'manage-tour', component: ManageTour },
   { path: 'edit-tour/:tourId', component: EditTour },

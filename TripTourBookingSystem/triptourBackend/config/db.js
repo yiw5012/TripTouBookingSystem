@@ -15,6 +15,8 @@ export const conn = createPool({
     rejectUnauthorized: true
   },
   waitForConnections: true,
-  connectTimeout: 10000
+  connectTimeout: 10000,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 10000        // ยิง Signal เช็กทุก 10 วินาที
 });
 export default conn;
