@@ -1,5 +1,6 @@
 import express from "express";
 import { conn } from "../../config/db.js";
+import { tourUpload } from "../middleware/upload.js";
 export const router = express.Router();
 
 // GET : ดึงข้อมูล Tour มาแสดง
@@ -57,70 +58,482 @@ router.get("/", async (req, res) => {
     }
 });
 
-router.post("/", async (req, res) => {
-    const connection = await conn.getConnection();  
+// ==========================================================
+// POST : เพิ่มข้อมูลทัวร์
+// รองรับ
+// 1. ข้อมูลทัวร์
+// 2. รูปภาพหลายรูป
+// 3. วิดีโอ
+// 4. PDF
+// 5. รายละเอียดรายวัน
+// ==========================================================
+
+router.post(
+  "/",
+  tourUpload.fields([
+    {
+      name: "tour_images",
+      maxCount: 20
+    },
+    {
+      name: "video",
+      maxCount: 1
+    },
+    {
+      name: "pdf_file",
+      maxCount: 1
+    }
+  ]),
+  async (req, res) => {
+
+    let connection = null;
+
     try {
-        await connection.beginTransaction();
 
-        const {
-            tour_name, country_id, type, duration_day, price, video, 
-            promotion, condition_detail, include_flight, pdf_file, status,
-            tour_details
-        } = req.body;
+      // ======================================================
+      // รับไฟล์
+      // ======================================================
 
-        const insertTourQuery = `
-            INSERT INTO Tour (
-                tour_name, country_id, type, duration_day, price, video, 
-                promotion, condition_detail, include_flight, pdf_file, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `;
-        const tourValues = [
-            tour_name, country_id, type, duration_day, price, video, 
-            promotion, condition_detail, include_flight, pdf_file, status
-        ];
+      const imageFiles =
+        req.files?.tour_images ?? [];
 
-        const [tourResult] = await connection.query(insertTourQuery, tourValues);
-        const newTourId = tourResult.insertId; 
+      const videoFile =
+        req.files?.video?.[0] ?? null;
 
-        if (tour_details && tour_details.length > 0) {
-            const insertDetailQuery = `
-                INSERT INTO TourDetail (
-                    tour_id, day_number, day_detail, location, 
-                    travel, hotel, meal_detail, restaurant_detail
-                ) VALUES ?
-            `;
-            
-            const detailValues = tour_details.map(detail => [
-                newTourId, 
-                detail.day_number, 
-                detail.day_detail, 
-                detail.location, 
-                detail.travel, 
-                detail.hotel, 
-                detail.meal_detail, 
-                detail.restaurant_detail
-            ]);
+      const pdfFile =
+        req.files?.pdf_file?.[0] ?? null;
 
-            await connection.query(insertDetailQuery, [detailValues]);
+
+      // ======================================================
+      // รับข้อมูลจาก FormData
+      // ======================================================
+
+      let {
+        tour_name,
+        country_id,
+        type,
+        duration_day,
+        price,
+        promotion,
+        condition_detail,
+        include_flight,
+        status,
+        tour_details
+      } = req.body;
+
+
+      // ======================================================
+      // รองรับค่าจาก HTML เดิม
+      // ต่างประเทศ -> นอกประเทศ
+      // Active -> open
+      // ======================================================
+
+      if (type === "ต่างประเทศ") {
+        type = "นอกประเทศ";
+      }
+
+      if (status === "Active") {
+        status = "open";
+      }
+
+
+      // ======================================================
+      // ตรวจข้อมูลที่จำเป็น
+      // ======================================================
+
+      if (!tour_name || String(tour_name).trim() === "") {
+
+        return res.status(400).json({
+          success: false,
+          message: "กรุณากรอกชื่อทัวร์"
+        });
+
+      }
+
+
+      if (!country_id) {
+
+        return res.status(400).json({
+          success: false,
+          message: "กรุณาเลือกประเทศ"
+        });
+
+      }
+
+
+      if (!duration_day) {
+
+        return res.status(400).json({
+          success: false,
+          message: "กรุณาระบุจำนวนวัน"
+        });
+
+      }
+
+
+      if (
+        price === undefined ||
+        price === null ||
+        price === ""
+      ) {
+
+        return res.status(400).json({
+          success: false,
+          message: "กรุณาระบุราคา"
+        });
+
+      }
+
+
+      if (!include_flight) {
+
+        return res.status(400).json({
+          success: false,
+          message: "กรุณาเลือกว่ารวมตั๋วเครื่องบินหรือไม่"
+        });
+
+      }
+
+
+      if (!status) {
+
+        return res.status(400).json({
+          success: false,
+          message: "กรุณาเลือกสถานะทัวร์"
+        });
+
+      }
+
+
+      // ======================================================
+      // PDF จำเป็น
+      // เพราะ tour.pdf_file เป็น NOT NULL
+      // ======================================================
+
+      if (!pdfFile) {
+
+        return res.status(400).json({
+          success: false,
+          message: "กรุณาเลือกไฟล์ PDF ของโปรแกรมทัวร์"
+        });
+
+      }
+
+
+      // ======================================================
+      // แปลง tour_details
+      // เพราะ FormData จะส่งมาเป็น String
+      // ======================================================
+
+      let parsedTourDetails = [];
+
+      if (tour_details) {
+
+        try {
+
+          parsedTourDetails =
+            typeof tour_details === "string"
+              ? JSON.parse(tour_details)
+              : tour_details;
+
+        } catch (error) {
+
+          return res.status(400).json({
+            success: false,
+            message: "รูปแบบข้อมูลรายละเอียดรายวันไม่ถูกต้อง"
+          });
+
         }
 
-        await connection.commit();
-        res.status(201).json({ 
-            message: "เพิ่มข้อมูลทัวร์สำเร็จ", 
-            tour_id: newTourId 
+      }
+
+
+      if (!Array.isArray(parsedTourDetails)) {
+
+        return res.status(400).json({
+          success: false,
+          message: "ข้อมูลรายละเอียดรายวันต้องเป็น Array"
         });
 
+      }
+
+
+      // ======================================================
+      // URL จาก Cloudinary
+      // ======================================================
+
+      const videoUrl =
+        videoFile?.path ?? null;
+
+      const pdfUrl =
+        pdfFile?.path ?? null;
+
+
+      // ======================================================
+      // DEBUG
+      // ======================================================
+
+      console.log("==========================================");
+      console.log("ADD TOUR");
+      console.log("TOUR NAME =", tour_name);
+      console.log("COUNTRY ID =", country_id);
+      console.log("TYPE =", type);
+      console.log("DURATION =", duration_day);
+      console.log("PRICE =", price);
+      console.log("VIDEO URL =", videoUrl);
+      console.log("PDF URL =", pdfUrl);
+      console.log("IMAGE COUNT =", imageFiles.length);
+      console.log("TOUR DETAILS COUNT =", parsedTourDetails.length);
+      console.log("STATUS =", status);
+      console.log("==========================================");
+
+
+      // ======================================================
+      // เชื่อม Database
+      // ======================================================
+
+      connection =
+        await conn.getConnection();
+
+      await connection.beginTransaction();
+
+
+      // ======================================================
+      // 1. INSERT TOUR
+      // ======================================================
+
+      const insertTourQuery = `
+        INSERT INTO tour (
+          tour_name,
+          country_id,
+          type,
+          duration_day,
+          price,
+          video,
+          promotion,
+          condition_detail,
+          include_flight,
+          pdf_file,
+          status
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+
+
+      const tourValues = [
+
+        tour_name,
+        Number(country_id),
+        type || null,
+        Number(duration_day),
+        Number(price),
+        videoUrl,
+        promotion || null,
+        condition_detail || null,
+        include_flight,
+        pdfUrl,
+        status
+
+      ];
+
+
+      const [tourResult] =
+        await connection.query(
+          insertTourQuery,
+          tourValues
+        );
+
+
+      const newTourId =
+        tourResult.insertId;
+
+
+      // ======================================================
+      // 2. INSERT TOUR DETAIL
+      // ======================================================
+
+      if (parsedTourDetails.length > 0) {
+
+        const insertDetailQuery = `
+          INSERT INTO tour_detail (
+            tour_id,
+            day_number,
+            day_detail,
+            location,
+            travel,
+            hotel,
+            meal_detail,
+            restaurant_detail
+          )
+          VALUES ?
+        `;
+
+
+        const detailValues =
+          parsedTourDetails.map(
+            (detail, index) => [
+
+              newTourId,
+
+              detail.day_number ??
+                index + 1,
+
+              detail.day_detail ??
+                null,
+
+              detail.location ??
+                null,
+
+              detail.travel ??
+                null,
+
+              detail.hotel ??
+                null,
+
+              detail.meal_detail ??
+                null,
+
+              detail.restaurant_detail ??
+                null
+
+            ]
+          );
+
+
+        await connection.query(
+          insertDetailQuery,
+          [detailValues]
+        );
+
+      }
+
+
+      // ======================================================
+      // 3. INSERT TOUR IMAGE
+      // ======================================================
+
+      if (imageFiles.length > 0) {
+
+        const imageValues =
+          imageFiles.map(
+            (file) => [
+
+              newTourId,
+              file.path
+
+            ]
+          );
+
+
+        const insertImageQuery = `
+          INSERT INTO tour_image (
+            tour_id,
+            image
+          )
+          VALUES ?
+        `;
+
+
+        await connection.query(
+          insertImageQuery,
+          [imageValues]
+        );
+
+      }
+
+
+      // ======================================================
+      // 4. COMMIT
+      // ======================================================
+
+      await connection.commit();
+
+
+      // ======================================================
+      // RESPONSE
+      // ======================================================
+
+      return res.status(201).json({
+
+        success: true,
+
+        message:
+          "เพิ่มข้อมูลทัวร์สำเร็จ",
+
+        data: {
+
+          tour_id: newTourId,
+
+          video: videoUrl,
+
+          pdf_file: pdfUrl,
+
+          image_count:
+            imageFiles.length,
+
+          detail_count:
+            parsedTourDetails.length
+
+        }
+
+      });
+
+
     } catch (error) {
-        await connection.rollback();
-        console.error("Add Tour Transaction Error:", error);
-        res.status(500).json({ 
-            message: "เกิดข้อผิดพลาดในการบันทึกข้อมูลทัวร์", 
-            error: error.message 
-        });
+
+      // ======================================================
+      // ROLLBACK
+      // ======================================================
+
+      if (connection) {
+
+        try {
+
+          await connection.rollback();
+
+        } catch (rollbackError) {
+
+          console.error(
+            "Rollback error:",
+            rollbackError
+          );
+
+        }
+
+      }
+
+
+      console.error(
+        "Add Tour Transaction Error:",
+        error
+      );
+
+
+      return res.status(500).json({
+
+        success: false,
+
+        message:
+          "เกิดข้อผิดพลาดในการบันทึกข้อมูลทัวร์",
+
+        error:
+          error.message
+
+      });
+
+
     } finally {
+
+      if (connection) {
+
         connection.release();
+
+      }
+
     }
-});
+
+  }
+);
 
 router.get("/search-options/countries", async (req, res) => {
   try {
@@ -382,6 +795,8 @@ router.get("/detail/:tourId", async (req, res) => {
         t.type,
         t.duration_day,
         t.price,
+        t.video,
+        t.pdf_file,
         t.promotion,
         t.status
       FROM tour t
@@ -487,4 +902,7 @@ router.get("/detail/:tourId", async (req, res) => {
       message: "Internal server error",
     });
   }
+
+  
 });
+

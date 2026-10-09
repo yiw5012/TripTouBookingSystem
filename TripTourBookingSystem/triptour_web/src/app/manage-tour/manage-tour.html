@@ -1,0 +1,169 @@
+<div class="container mt-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+
+    <h2 class="mb-0">
+      จัดการโปรแกรมทัวร์
+    </h2>
+
+    <div>
+
+      <button
+        type="button"
+        class="btn btn-secondary me-2"
+        (click)="loadTours()"
+        [disabled]="loading"
+      >
+        {{ loading ? 'กำลังโหลด...' : 'รีเฟรชข้อมูล' }}
+      </button>
+
+      <button
+        type="button"
+        class="btn btn-success"
+        (click)="addTour()"
+      >
+        + เพิ่มทัวร์
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <div
+    *ngIf="loading"
+    class="alert alert-info"
+  >
+    กำลังโหลดข้อมูลทัวร์...
+  </div>
+
+
+  <div
+    *ngIf="!loading && errorMessage"
+    class="alert alert-danger"
+  >
+    {{ errorMessage }}
+  </div>
+
+
+  <div
+    *ngIf="!loading && !errorMessage && tours.length === 0"
+    class="alert alert-warning"
+  >
+    ยังไม่มีข้อมูลทัวร์
+  </div>
+
+
+  <div
+    *ngIf="!loading && tours.length > 0"
+    class="table-responsive"
+  >
+
+    <table class="table table-bordered table-hover align-middle">
+
+      <thead>
+
+        <tr>
+          <th>รหัส</th>
+          <th>รูป</th>
+          <th>ชื่อทัวร์</th>
+          <th>ประเทศ</th>
+          <th>ประเภท</th>
+          <th>วัน</th>
+          <th>ราคา</th>
+          <th>สถานะ</th>
+          <th style="width: 180px;">จัดการ</th>
+        </tr>
+
+      </thead>
+
+      <tbody>
+
+        <tr *ngFor="let tour of tours">
+
+          <td>
+            {{ tour.tour_id }}
+          </td>
+
+          <td>
+
+            <img
+              *ngIf="tour.image"
+              [src]="tour.image"
+              width="100"
+              height="70"
+              style="object-fit: cover;"
+            >
+
+            <span
+              *ngIf="!tour.image"
+              class="text-muted"
+            >
+              ไม่มีรูป
+            </span>
+
+          </td>
+
+          <td>
+            {{ tour.tour_name }}
+          </td>
+
+          <td>
+            {{ tour.country_name_th }}
+          </td>
+
+          <td>
+            {{ tour.type }}
+          </td>
+
+          <td>
+            {{ tour.duration_day }}
+          </td>
+
+          <td>
+            {{ tour.price | number:'1.0-2' }}
+          </td>
+
+          <td
+            [ngClass]="getStatusClass(tour.status)"
+          >
+            {{ getTourStatus(tour.status) }}
+          </td>
+
+          <td>
+
+            <button
+              type="button"
+              class="btn-round"
+              (click)="manageRounds(tour.tour_id)"
+            >
+              จัดการรอบ
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-warning btn-sm me-2"
+              (click)="editTour(tour.tour_id)"
+            >
+              แก้ไข
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-danger btn-sm"
+              (click)="deleteTour(tour.tour_id)"
+            >
+              ลบ
+            </button>
+
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</div>

@@ -1,130 +1,1084 @@
-<div style="max-width: 900px; margin: 20px auto; font-family: sans-serif; background-color: #fcfcfc; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-  <h2 style="color: #333; text-align: center;">เพิ่มข้อมูลทัวร์ใหม่</h2>
+<div
+  style="
+    max-width: 1000px;
+    margin: 20px auto;
+    font-family: sans-serif;
+    background-color: #fcfcfc;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  "
+>
 
-  <form [formGroup]="tourForm" (ngSubmit)="onSubmit()">
-    
-    <div style="background-color: white; border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-      <h3 style="margin-top: 0; color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 10px;">ข้อมูลทั่วไป</h3>
-      
+  <!-- ====================================================== -->
+  <!-- HEADER -->
+  <!-- ====================================================== -->
+
+  <div
+    style="
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+    "
+  >
+
+    <h2 style="color: #333; margin: 0;">
+      เพิ่มข้อมูลทัวร์ใหม่
+    </h2>
+
+    <span
+      *ngIf="isSubmitting"
+      style="
+        background: #fff3cd;
+        color: #856404;
+        padding: 8px 14px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: bold;
+      "
+    >
+      กำลังบันทึกข้อมูล...
+    </span>
+
+  </div>
+
+
+  <!-- ====================================================== -->
+  <!-- FORM -->
+  <!-- ====================================================== -->
+
+  <form
+    [formGroup]="tourForm"
+    (ngSubmit)="onSubmit()"
+  >
+
+
+    <!-- ==================================================== -->
+    <!-- ข้อมูลทั่วไป -->
+    <!-- ==================================================== -->
+
+    <div
+      style="
+        background-color: white;
+        border: 1px solid #ddd;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+      "
+    >
+
+      <h3
+        style="
+          margin-top: 0;
+          color: #007bff;
+          border-bottom: 2px solid #007bff;
+          padding-bottom: 10px;
+        "
+      >
+        ข้อมูลทั่วไป
+      </h3>
+
+
+      <!-- ชื่อทัวร์ -->
+
       <div style="margin-bottom: 15px;">
-        <label><b>ชื่อทัวร์: *</b></label><br>
-        <input type="text" formControlName="tour_name" placeholder="เช่น ทัวร์ญี่ปุ่น โตเกียว ฟูจิ 5 วัน 3 คืน" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+
+        <label>
+          <b>ชื่อทัวร์: *</b>
+        </label>
+
+        <br>
+
+        <input
+          type="text"
+          formControlName="tour_name"
+          placeholder="เช่น ทัวร์ญี่ปุ่น โตเกียว ฟูจิ 5 วัน 3 คืน"
+          style="
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+          "
+        >
+
+        <div
+          *ngIf="
+            tourForm.get('tour_name')?.touched &&
+            tourForm.get('tour_name')?.invalid
+          "
+          style="
+            color: #dc3545;
+            font-size: 13px;
+            margin-top: 5px;
+          "
+        >
+          กรุณากรอกชื่อทัวร์
+        </div>
+
       </div>
 
-      <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+
+      <!-- ประเทศ + ประเภท -->
+
+      <div
+        style="
+          display: flex;
+          gap: 15px;
+          margin-bottom: 15px;
+        "
+      >
+
         <div style="flex: 1;">
-          <label><b>ประเทศ (country_id): *</b></label><br>
-          <input type="number" formControlName="country_id" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+
+          <label>
+            <b>ประเทศ (country_id): *</b>
+          </label>
+
+          <br>
+
+          <input
+            type="number"
+            formControlName="country_id"
+            placeholder="เช่น 1"
+            min="1"
+            style="
+              width: 100%;
+              padding: 10px;
+              border: 1px solid #ccc;
+              border-radius: 5px;
+              box-sizing: border-box;
+            "
+          >
+
         </div>
-        
+
+
         <div style="flex: 1;">
-          <label><b>ประเภททัวร์:</b></label><br>
-          <select formControlName="type" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
-            <option value="">-- กรุณาเลือกประเภท --</option>
-            <option value="ในประเทศ">ในประเทศ</option>
-            <option value="ต่างประเทศ">ต่างประเทศ</option>
+
+          <label>
+            <b>ประเภททัวร์: *</b>
+          </label>
+
+          <br>
+
+          <select
+            formControlName="type"
+            style="
+              width: 100%;
+              padding: 10px;
+              border: 1px solid #ccc;
+              border-radius: 5px;
+              box-sizing: border-box;
+              background: white;
+            "
+          >
+
+            <option value="">
+              -- กรุณาเลือกประเภท --
+            </option>
+
+            <option value="ในประเทศ">
+              ในประเทศ
+            </option>
+
+            <option value="นอกประเทศ">
+              นอกประเทศ
+            </option>
+
           </select>
+
         </div>
+
       </div>
 
-      <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+
+      <!-- จำนวนวัน + ราคา -->
+
+      <div
+        style="
+          display: flex;
+          gap: 15px;
+          margin-bottom: 15px;
+        "
+      >
+
         <div style="flex: 1;">
-          <label><b>ระยะเวลา: *</b></label><br>
-          <input type="number" formControlName="duration_day" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+
+          <label>
+            <b>ระยะเวลา (วัน): *</b>
+          </label>
+
+          <br>
+
+          <input
+            type="number"
+            formControlName="duration_day"
+            min="1"
+            style="
+              width: 100%;
+              padding: 10px;
+              border: 1px solid #ccc;
+              border-radius: 5px;
+              box-sizing: border-box;
+            "
+          >
+
         </div>
+
+
         <div style="flex: 1;">
-          <label><b>ราคา (price): *</b></label><br>
-          <input type="number" formControlName="price" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+
+          <label>
+            <b>ราคาเริ่มต้น (บาท): *</b>
+          </label>
+
+          <br>
+
+          <input
+            type="number"
+            formControlName="price"
+            min="0"
+            step="0.01"
+            style="
+              width: 100%;
+              padding: 10px;
+              border: 1px solid #ccc;
+              border-radius: 5px;
+              box-sizing: border-box;
+            "
+          >
+
         </div>
+
       </div>
 
-      <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+
+      <!-- รวมตั๋ว + สถานะ -->
+
+      <div
+        style="
+          display: flex;
+          gap: 15px;
+          margin-bottom: 15px;
+        "
+      >
+
         <div style="flex: 1;">
-          <label><b>รวมตั๋วเครื่องบิน:</b></label><br>
-<select formControlName="include_flight" ...>
-  <option value="">-- กรุณาเลือก --</option>
-  <option value="รวม">รวมตั๋วเครื่องบิน</option> <option value="ไม่รวม">ไม่รวมตั๋วเครื่องบิน</option>
-</select>
+
+          <label>
+            <b>รวมตั๋วเครื่องบิน: *</b>
+          </label>
+
+          <br>
+
+          <select
+            formControlName="include_flight"
+            style="
+              width: 100%;
+              padding: 10px;
+              border: 1px solid #ccc;
+              border-radius: 5px;
+              box-sizing: border-box;
+              background: white;
+            "
+          >
+
+            <option value="">
+              -- กรุณาเลือก --
+            </option>
+
+            <option value="รวม">
+              รวมตั๋วเครื่องบิน
+            </option>
+
+            <option value="ไม่รวม">
+              ไม่รวมตั๋วเครื่องบิน
+            </option>
+
+          </select>
+
         </div>
+
+
         <div style="flex: 1;">
-  <label><b>สถานะทัวร์: *</b></label><br>
-  <select formControlName="status" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
-    <option value="open">เปิดให้บริการ (open)</option>
-    <option value="closed">ปิดชั่วคราว (closed)</option>
-  </select>
-</div>
+
+          <label>
+            <b>สถานะทัวร์: *</b>
+          </label>
+
+          <br>
+
+          <select
+            formControlName="status"
+            style="
+              width: 100%;
+              padding: 10px;
+              border: 1px solid #ccc;
+              border-radius: 5px;
+              box-sizing: border-box;
+              background: white;
+            "
+          >
+
+            <option value="open">
+              เปิดให้บริการ
+            </option>
+
+            <option value="closed">
+              ปิดชั่วคราว
+            </option>
+
+          </select>
+
+        </div>
+
       </div>
 
-      <div style="display: flex; gap: 15px; margin-bottom: 15px;">
-        <div style="flex: 1;">
-          <label>ลิงก์วีดีโอโปรโมท:</label><br>
-          <input type="text" formControlName="video" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
-        </div>
-        <div style="flex: 1;">
-          <label>โปรโมชั่น:</label><br>
-          <input type="text" formControlName="promotion" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
-        </div>
-      </div>
+
+      <!-- โปรโมชั่น -->
 
       <div style="margin-bottom: 15px;">
-        <label>เงื่อนไขเพิ่มเติม:</label><br>
-        <textarea formControlName="condition_detail" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;" rows="2"></textarea>
+
+        <label>
+          <b>โปรโมชั่น:</b>
+        </label>
+
+        <br>
+
+        <input
+          type="text"
+          formControlName="promotion"
+          placeholder="เช่น ลด 2,000 บาท"
+          style="
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+          "
+        >
+
+      </div>
+
+
+      <!-- เงื่อนไข -->
+
+      <div style="margin-bottom: 15px;">
+
+        <label>
+          <b>เงื่อนไขเพิ่มเติม:</b>
+        </label>
+
+        <br>
+
+        <textarea
+          formControlName="condition_detail"
+          rows="4"
+          placeholder="รายละเอียดเงื่อนไขการเดินทาง..."
+          style="
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            resize: vertical;
+          "
+        ></textarea>
+
       </div>
 
     </div>
 
-    <div formArrayName="tour_details">
-      <h3 style="color: #17a2b8; border-bottom: 2px solid #17a2b8; padding-bottom: 10px;">รายละเอียดการเดินทาง</h3>
-      
-      <div *ngFor="let detail of tourDetails.controls; let i = index" [formGroupName]="i" 
-           style="background-color: white; border: 1px solid #17a2b8; padding: 20px; border-radius: 8px; margin-bottom: 20px; position: relative;">
-        
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-          <h4 style="margin: 0; color: #17a2b8; background: #e0f7fa; padding: 5px 15px; border-radius: 20px;">วันที่ {{ i + 1 }}</h4>
-          
-          <button type="button" (click)="removeDay(i)" *ngIf="tourDetails.length > 1" style="background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold;">
+
+    <!-- ==================================================== -->
+    <!-- รูปภาพ -->
+    <!-- ==================================================== -->
+
+    <div
+      style="
+        background-color: white;
+        border: 1px solid #28a745;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+      "
+    >
+
+      <h3
+        style="
+          margin-top: 0;
+          color: #28a745;
+          border-bottom: 2px solid #28a745;
+          padding-bottom: 10px;
+        "
+      >
+        รูปภาพทัวร์
+      </h3>
+
+
+      <p
+        style="
+          color: #666;
+          margin-top: 0;
+        "
+      >
+        เลือกได้สูงสุด 20 รูป
+        รองรับ JPG, JPEG, PNG และ WEBP
+      </p>
+
+
+      <!-- File Input -->
+
+      <input
+        #imageInput
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        multiple
+        (change)="onImagesSelected($event)"
+        style="
+          display: block;
+          width: 100%;
+          padding: 12px;
+          border: 1px dashed #28a745;
+          border-radius: 6px;
+          background: #f8fff9;
+          box-sizing: border-box;
+        "
+      >
+
+
+      <!-- จำนวนรูป -->
+
+      <div
+        *ngIf="selectedImages.length > 0"
+        style="
+          margin-top: 15px;
+          margin-bottom: 10px;
+          font-weight: bold;
+          color: #28a745;
+        "
+      >
+        เลือกรูปแล้ว
+        {{ selectedImages.length }}
+        / 20 รูป
+      </div>
+
+
+      <!-- รายการรูป -->
+
+      <div
+        *ngIf="selectedImages.length > 0"
+        style="
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+          gap: 10px;
+          margin-top: 10px;
+        "
+      >
+
+        <div
+          *ngFor="
+            let image of selectedImages;
+            let i = index
+          "
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: #fafafa;
+          "
+        >
+
+          <div
+            style="
+              overflow: hidden;
+              flex: 1;
+            "
+          >
+
+            <div
+              style="
+                font-weight: bold;
+                color: #333;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              "
+              [title]="image.name"
+            >
+              {{ i + 1 }}. {{ image.name }}
+            </div>
+
+          </div>
+
+
+          <button
+            type="button"
+            (click)="removeSelectedImage(i)"
+            style="
+              background: #dc3545;
+              color: white;
+              border: none;
+              padding: 5px 10px;
+              border-radius: 4px;
+              cursor: pointer;
+              flex-shrink: 0;
+            "
+          >
+            ลบ
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- ==================================================== -->
+    <!-- VIDEO -->
+    <!-- ==================================================== -->
+
+    <div
+      style="
+        background-color: white;
+        border: 1px solid #6f42c1;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+      "
+    >
+
+      <h3
+        style="
+          margin-top: 0;
+          color: #6f42c1;
+          border-bottom: 2px solid #6f42c1;
+          padding-bottom: 10px;
+        "
+      >
+        วิดีโอโปรโมท
+      </h3>
+
+
+      <p
+        style="
+          color: #666;
+          margin-top: 0;
+        "
+      >
+        เลือกวิดีโอโปรโมท 1 ไฟล์
+        รองรับ MP4, MOV, AVI, MKV และ WEBM
+      </p>
+
+
+      <input
+        type="file"
+        accept="video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,video/webm"
+        (change)="onVideoSelected($event)"
+        style="
+          display: block;
+          width: 100%;
+          padding: 12px;
+          border: 1px dashed #6f42c1;
+          border-radius: 6px;
+          background: #fbf9ff;
+          box-sizing: border-box;
+        "
+      >
+
+
+      <!-- Selected Video -->
+
+      <div
+        *ngIf="selectedVideo"
+        style="
+          margin-top: 15px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 15px;
+          padding: 12px;
+          border: 1px solid #ddd;
+          border-radius: 6px;
+          background: #fafafa;
+        "
+      >
+
+        <div style="flex: 1;">
+
+          <b>
+            วิดีโอที่เลือก:
+          </b>
+
+          <div
+            style="
+              color: #555;
+              margin-top: 5px;
+              word-break: break-all;
+            "
+          >
+            {{ selectedVideo.name }}
+          </div>
+
+        </div>
+
+
+        <button
+          type="button"
+          (click)="removeSelectedVideo()"
+          style="
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+          "
+        >
+          ลบวิดีโอ
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <!-- ==================================================== -->
+    <!-- PDF -->
+    <!-- ==================================================== -->
+
+    <div
+      style="
+        background-color: white;
+        border: 1px solid #dc3545;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+      "
+    >
+
+      <h3
+        style="
+          margin-top: 0;
+          color: #dc3545;
+          border-bottom: 2px solid #dc3545;
+          padding-bottom: 10px;
+        "
+      >
+        ไฟล์ PDF โปรแกรมทัวร์ *
+      </h3>
+
+
+      <p
+        style="
+          color: #666;
+          margin-top: 0;
+        "
+      >
+        กรุณาเลือกไฟล์ PDF ของโปรแกรมทัวร์
+      </p>
+
+
+      <input
+        type="file"
+        accept=".pdf,application/pdf"
+        (change)="onPdfSelected($event)"
+        style="
+          display: block;
+          width: 100%;
+          padding: 12px;
+          border: 1px dashed #dc3545;
+          border-radius: 6px;
+          background: #fff8f8;
+          box-sizing: border-box;
+        "
+      >
+
+
+      <!-- Selected PDF -->
+
+      <div
+        *ngIf="selectedPdf"
+        style="
+          margin-top: 15px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 15px;
+          padding: 12px;
+          border: 1px solid #ddd;
+          border-radius: 6px;
+          background: #fafafa;
+        "
+      >
+
+        <div style="flex: 1;">
+
+          <b>
+            PDF ที่เลือก:
+          </b>
+
+          <div
+            style="
+              color: #555;
+              margin-top: 5px;
+              word-break: break-all;
+            "
+          >
+            {{ selectedPdf.name }}
+          </div>
+
+        </div>
+
+
+        <button
+          type="button"
+          (click)="removeSelectedPdf()"
+          style="
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+          "
+        >
+          ลบ PDF
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <!-- ==================================================== -->
+    <!-- รายละเอียดการเดินทาง -->
+    <!-- ==================================================== -->
+
+    <div
+      formArrayName="tour_details"
+      style="margin-bottom: 20px;"
+    >
+
+      <h3
+        style="
+          color: #17a2b8;
+          border-bottom: 2px solid #17a2b8;
+          padding-bottom: 10px;
+        "
+      >
+        รายละเอียดการเดินทาง
+      </h3>
+
+
+      <div
+        *ngFor="
+          let detail of tourDetails.controls;
+          let i = index
+        "
+        [formGroupName]="i"
+        style="
+          background-color: white;
+          border: 1px solid #17a2b8;
+          padding: 20px;
+          border-radius: 8px;
+          margin-bottom: 20px;
+          position: relative;
+        "
+      >
+
+        <!-- วันที่ -->
+
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+          "
+        >
+
+          <h4
+            style="
+              margin: 0;
+              color: #17a2b8;
+              background: #e0f7fa;
+              padding: 5px 15px;
+              border-radius: 20px;
+            "
+          >
+            วันที่ {{ i + 1 }}
+          </h4>
+
+
+          <button
+            type="button"
+            (click)="removeDay(i)"
+            *ngIf="tourDetails.length > 1"
+            style="
+              background: #dc3545;
+              color: white;
+              border: none;
+              padding: 6px 12px;
+              border-radius: 4px;
+              cursor: pointer;
+              font-weight: bold;
+            "
+          >
             ลบวันที่ {{ i + 1 }}
           </button>
+
         </div>
 
-        <div style="display: flex; gap: 15px; margin-bottom: 10px;">
+
+        <!-- สถานที่ + การเดินทาง -->
+
+        <div
+          style="
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+          "
+        >
+
           <div style="flex: 1;">
-            <label>สถานที่:</label><br>
-            <input type="text" formControlName="location" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+
+            <label>
+              <b>สถานที่:</b>
+            </label>
+
+            <br>
+
+            <input
+              type="text"
+              formControlName="location"
+              placeholder="เช่น วัดอาซากุสะ"
+              style="
+                width: 100%;
+                padding: 10px;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                box-sizing: border-box;
+              "
+            >
+
           </div>
+
+
           <div style="flex: 1;">
-            <label>การเดินทาง (travel):</label><br>
-            <input type="text" formControlName="travel" placeholder="เช่น รถบัส, เครื่องบิน" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+
+            <label>
+              <b>การเดินทาง:</b>
+            </label>
+
+            <br>
+
+            <input
+              type="text"
+              formControlName="travel"
+              placeholder="เช่น รถบัส, เครื่องบิน"
+              style="
+                width: 100%;
+                padding: 10px;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                box-sizing: border-box;
+              "
+            >
+
           </div>
+
         </div>
+
+
+        <!-- รายละเอียดกิจกรรม -->
 
         <div style="margin-bottom: 10px;">
-          <label>รายละเอียดกิจกรรม (day_detail):</label><br>
-          <textarea formControlName="day_detail" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;" rows="2"></textarea>
+
+          <label>
+            <b>รายละเอียดกิจกรรม:</b>
+          </label>
+
+          <br>
+
+          <textarea
+            formControlName="day_detail"
+            rows="4"
+            placeholder="รายละเอียดกิจกรรมของวันที่นี้..."
+            style="
+              width: 100%;
+              padding: 10px;
+              border: 1px solid #ccc;
+              border-radius: 5px;
+              box-sizing: border-box;
+              resize: vertical;
+            "
+          ></textarea>
+
         </div>
 
-        <div style="display: flex; gap: 15px; margin-bottom: 10px;">
+
+        <!-- โรงแรม + อาหาร -->
+
+        <div
+          style="
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+          "
+        >
+
           <div style="flex: 1;">
-            <label>โรงแรม (hotel):</label><br>
-            <input type="text" formControlName="hotel" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+
+            <label>
+              <b>โรงแรม:</b>
+            </label>
+
+            <br>
+
+            <input
+              type="text"
+              formControlName="hotel"
+              placeholder="เช่น Tokyo Hotel"
+              style="
+                width: 100%;
+                padding: 10px;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                box-sizing: border-box;
+              "
+            >
+
           </div>
+
+
           <div style="flex: 1;">
-            <label>อาหาร (meal_detail):</label><br>
-            <input type="text" formControlName="meal_detail" placeholder="เช่น เช้า, กลางวัน, เย็น" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;">
+
+            <label>
+              <b>มื้ออาหาร:</b>
+            </label>
+
+            <br>
+
+            <input
+              type="text"
+              formControlName="meal_detail"
+              placeholder="เช่น เช้า, กลางวัน, เย็น"
+              style="
+                width: 100%;
+                padding: 10px;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                box-sizing: border-box;
+              "
+            >
+
           </div>
+
         </div>
+
+
+        <!-- ร้านอาหาร -->
+
+        <div style="margin-bottom: 5px;">
+
+          <label>
+            <b>ร้านอาหาร:</b>
+          </label>
+
+          <br>
+
+          <input
+            type="text"
+            formControlName="restaurant_detail"
+            placeholder="ชื่อร้านอาหาร หรือรายละเอียดร้านอาหาร"
+            style="
+              width: 100%;
+              padding: 10px;
+              border: 1px solid #ccc;
+              border-radius: 5px;
+              box-sizing: border-box;
+            "
+          >
+
+        </div>
+
       </div>
+
     </div>
 
-    <div style="display: flex; gap: 15px; margin-top: 30px;">
-      <button type="button" (click)='addDay()' style="background-color: #17a2b8; color: white; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold;">
+
+    <!-- ==================================================== -->
+    <!-- BUTTONS -->
+    <!-- ==================================================== -->
+
+    <div
+      style="
+        display: flex;
+        gap: 15px;
+        margin-top: 30px;
+      "
+    >
+
+      <!-- เพิ่มวัน -->
+
+      <button
+        type="button"
+        (click)="addDay()"
+        [disabled]="isSubmitting"
+        style="
+          background-color: #17a2b8;
+          color: white;
+          padding: 12px 20px;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+          font-size: 16px;
+          font-weight: bold;
+        "
+      >
         + เพิ่มรายละเอียดวันถัดไป
       </button>
-      
-      <button type="submit" [disabled]="tourForm.invalid" style="background-color: #28a745; color: white; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; flex-grow: 1; font-size: 16px; font-weight: bold;">
-        บันทึกข้อมูลทัวร์
+
+
+      <!-- Submit -->
+
+      <button
+        type="submit"
+        [disabled]="isSubmitting || tourForm.invalid || !selectedPdf"
+        style="
+          background-color: #28a745;
+          color: white;
+          padding: 12px 20px;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+          flex-grow: 1;
+          font-size: 16px;
+          font-weight: bold;
+        "
+      >
+
+        <span *ngIf="!isSubmitting">
+          บันทึกข้อมูลทัวร์
+        </span>
+
+        <span *ngIf="isSubmitting">
+          กำลังบันทึก...
+        </span>
+
       </button>
+
     </div>
 
+
   </form>
+
 </div>
