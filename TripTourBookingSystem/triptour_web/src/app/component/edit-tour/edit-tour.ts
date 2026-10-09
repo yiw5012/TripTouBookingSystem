@@ -20,7 +20,7 @@ import {
   Router,
 } from '@angular/router';
 
-import { ServerApi } from '../server/server';
+import { ServerApi } from '../../server/server';
 
 @Component({
   selector: 'app-edit-tour',

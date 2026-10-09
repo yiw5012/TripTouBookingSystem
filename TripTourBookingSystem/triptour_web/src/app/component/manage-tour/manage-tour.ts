@@ -1,7 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { ServerApi } from '../server/server';
+import { ServerApi } from '../../server/server';
 
 @Component({
   selector: 'app-manage-tour',

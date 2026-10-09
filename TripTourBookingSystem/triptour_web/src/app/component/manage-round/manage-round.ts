@@ -19,7 +19,7 @@ import {
 
 import { CommonModule } from '@angular/common';
 
-import { ServerApi } from '../server/server';
+import { ServerApi } from '../../server/server';
 
 @Component({
   selector: 'app-manage-round',
