@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
-const String _defaultBaseUrl = 'http://192.168.1.8:4000';
+const String _defaultBaseUrl = 'http://192.168.1.146:4000';
 
 String normalizeBaseUrl(String? value) {
   final raw = (value ?? '').trim();

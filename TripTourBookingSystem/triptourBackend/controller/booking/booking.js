@@ -2,6 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import generatePayload from 'promptpay-qr';
 import { conn } from '../../config/db.js';
+import admin from "../../config/firebase.js";
 import { upload as cloudUpload } from '../middleware/upload.js';
 import { checkAndUpdateRoundStatus } from '../../controller/booking/checkround_status.js';
 
@@ -9,6 +10,53 @@ import { checkAndUpdateRoundStatus } from '../../controller/booking/checkround_s
 export const router = express.Router();
 const PROMPTPAY_ID = process.env.PROMPTPAY_ID;
 const upload = cloudUpload;
+
+// ==========================================================
+// เพิ่มสมาชิกที่ชำระเงินแล้วเข้า Group Chat ของรอบทัวร์
+// ==========================================================
+async function addMemberToRoundChat(memberUid, roundId) {
+  if (!memberUid) {
+    throw new Error("ไม่พบ Firebase UID ของสมาชิก");
+  }
+
+  if (!roundId) {
+    throw new Error("ไม่พบ round_id");
+  }
+
+  const roomId = `round_${roundId}`;
+
+  const db = admin.database();
+
+  // ตรวจว่าห้องของรอบนี้มีอยู่จริง
+  const roomSnapshot = await db
+    .ref(`rooms/${roomId}`)
+    .once("value");
+
+  if (!roomSnapshot.exists()) {
+    throw new Error(
+      `ไม่พบห้อง Chat ของรอบ ${roundId} (${roomId})`
+    );
+  }
+
+  // เพิ่มสมาชิกเข้า room
+  // และเพิ่ม room เข้า user_rooms
+  const updates = {
+    [`rooms/${roomId}/members/${memberUid}`]: "user",
+    [`user_rooms/${memberUid}/${roomId}`]: true,
+  };
+
+  await db.ref().update(updates);
+
+  console.log("====================================");
+  console.log("ADD MEMBER TO ROUND CHAT SUCCESS");
+  console.log("memberUid =", memberUid);
+  console.log("roundId =", roundId);
+  console.log("roomId =", roomId);
+  console.log("====================================");
+
+  return roomId;
+}
+
 // 1. สร้างรายการจองใหม่ (บันทึกลงตาราง booking)
 router.post('/create-order', async (req, res) => {
   try {
@@ -170,7 +218,7 @@ router.post('/confirm-payment', upload.single('slip_image'), async (req, res) =>
 
     await connection.query(
       `UPDATE booking 
-       SET slip_image = ?, payment_status = 'paid', payment_date = NOW() 
+       SET slip_image = ?, payment_status = 'processing', payment_date = NULL 
        WHERE booking_id = ?`,
       [slip_image, booking_id],
     );
@@ -184,7 +232,7 @@ router.post('/confirm-payment', upload.single('slip_image'), async (req, res) =>
       data: {
         booking_id,
         slip_image,
-        payment_status: 'paid',
+        payment_status: 'processing',
         passenger_count: Number(booking.passenger_count),
         round_info: roundSummary, // ส่งสถานะรอบล่าสุดกลับไปด้วย
       },
@@ -195,42 +243,305 @@ router.post('/confirm-payment', upload.single('slip_image'), async (req, res) =>
   }
 });
 
-// 4. แอดมิน ตรวจสอบสลิปและกดอนุมัติ/ปฏิเสธ
-router.post('/admin/verify-slip', async (req, res) => {
+// ==========================================================
+// 4.0 Admin - ดึงรายการจองทั้งหมด
+// ใช้สำหรับหน้า "จัดการการจอง"
+// ==========================================================
+
+router.get('/admin/all-bookings', async (req, res) => {
   try {
-    const { booking_id, action } = req.body || {}; // action: 'approve' หรือ 'reject'
 
-    if (!booking_id || !action) {
-      return res.status(400).json({ success: false, message: 'booking_id and action are required' });
-    }
+    const [rows] = await conn.query(`
+      SELECT
+        b.booking_id,
+        b.member_id,
+        b.round_id,
+        b.booking_date,
+        b.total_price,
+        b.status,
+        b.payment_status,
+        b.payment_date,
+        b.slip_image,
 
-    const nextPaymentStatus = action === 'approve' ? 'paid' : 'rejected';
-    const nextBookingStatus = action === 'approve' ? 'confirmed' : 'cancelled';
+        t.tour_id,
+        t.tour_name,
 
-    await conn.query(
-      `UPDATE booking 
-       SET payment_status = ?, status = ? 
-       WHERE booking_id = ?`,
-      [nextPaymentStatus, nextBookingStatus, booking_id]
+        r.start_date,
+        r.end_date,
+        r.departure,
+        r.destination,
+        r.airline,
+        r.flight
+
+      FROM booking b
+
+      LEFT JOIN tour_round r
+        ON b.round_id = r.round_id
+
+      LEFT JOIN tour t
+        ON r.tour_id = t.tour_id
+
+      ORDER BY b.booking_date DESC
+    `);
+
+    return res.status(200).json({
+      success: true,
+      data: rows,
+    });
+
+  } catch (error) {
+
+    console.error(
+      '❌ Admin all bookings error:',
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: 'ไม่สามารถดึงรายการจองทั้งหมดได้',
+      error: error.message,
+    });
+  }
+});
+
+// ==========================================================
+// 4.1 Admin - ดึงรายการจองที่รอตรวจสอบการชำระเงิน
+// ==========================================================
+router.get('/admin/pending-payments', async (req, res) => {
+  try {
+    const [rows] = await conn.query(
+      `
+      SELECT
+        b.booking_id,
+        b.member_id,
+        b.round_id,
+        b.booking_date,
+        b.total_price,
+        b.status,
+        b.payment_status,
+        b.payment_date,
+        b.slip_image,
+
+        t.tour_id,
+        t.tour_name,
+
+        r.start_date,
+        r.end_date,
+        r.departure,
+        r.destination,
+        r.airline,
+        r.flight
+
+      FROM booking b
+
+      LEFT JOIN tour_round r
+        ON b.round_id = r.round_id
+
+      LEFT JOIN tour t
+        ON r.tour_id = t.tour_id
+
+      WHERE b.payment_status = 'processing'
+        AND b.slip_image IS NOT NULL
+        AND TRIM(b.slip_image) <> ''
+
+      ORDER BY b.booking_date DESC
+      `
     );
 
     return res.status(200).json({
       success: true,
-      message: `Booking status updated to ${nextPaymentStatus}`,
+      data: rows,
+    });
+
+  } catch (error) {
+    console.error(
+      '❌ Admin pending payments error:',
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: 'ไม่สามารถดึงรายการรอตรวจสอบได้',
+      error: error.message,
+    });
+  }
+});
+// 4. แอดมินตรวจสอบสลิปและกดอนุมัติ/ปฏิเสธ
+// ==========================================================
+router.post('/admin/verify-slip', async (req, res) => {
+  try {
+    const { booking_id, action } = req.body || {};
+
+    // ================================================
+    // 1. ตรวจข้อมูลที่ส่งเข้ามา
+    // ================================================
+    if (!booking_id || !action) {
+      return res.status(400).json({
+        success: false,
+        message: 'booking_id and action are required',
+      });
+    }
+
+    if (action !== 'approve' && action !== 'reject') {
+      return res.status(400).json({
+        success: false,
+        message: "action ต้องเป็น 'approve' หรือ 'reject'",
+      });
+    }
+
+    // ================================================
+    // 2. ดึงข้อมูล Booking + Member Firebase UID
+    // ================================================
+    const [bookingRows] = await conn.query(
+      `
+      SELECT
+        b.booking_id,
+        b.member_id,
+        b.round_id,
+        b.status,
+        b.payment_status,
+        b.slip_image,
+        m.google_id
+      FROM booking b
+      INNER JOIN member m
+        ON m.member_id = b.member_id
+      WHERE b.booking_id = ?
+      LIMIT 1
+      `,
+      [booking_id]
+    );
+
+    if (bookingRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'ไม่พบรายการจอง',
+      });
+    }
+
+    const booking = bookingRows[0];
+
+    // ================================================
+    // 3. ต้องมีสลิปก่อนจึงตรวจสอบได้
+    // ================================================
+    if (!booking.slip_image) {
+      return res.status(400).json({
+        success: false,
+        message: 'รายการจองนี้ยังไม่มีสลิปสำหรับตรวจสอบ',
+      });
+    }
+
+    // ================================================
+    // 4. APPROVE
+    // ================================================
+    if (action === 'approve') {
+
+      // ต้องมี Firebase UID
+      if (!booking.google_id) {
+        return res.status(400).json({
+          success: false,
+          message:
+            'ไม่พบ Firebase UID ของสมาชิก (member.google_id)',
+        });
+      }
+
+      // ----------------------------------------------
+      // 4.1 อัปเดตสถานะ MySQL
+      // ----------------------------------------------
+      await conn.query(
+        `
+        UPDATE booking
+        SET
+          payment_status = 'paid',
+          status = 'confirmed',
+          payment_date = NOW()
+        WHERE booking_id = ?
+        `,
+        [booking_id]
+      );
+
+      // ----------------------------------------------
+      // 4.2 เพิ่มสมาชิกเข้า Firebase Group Chat
+      // ----------------------------------------------
+      let chatRoomId;
+
+      try {
+        chatRoomId = await addMemberToRoundChat(
+          booking.google_id,
+          booking.round_id
+        );
+      } catch (firebaseError) {
+
+        console.error(
+          '❌ Firebase add member error:',
+          firebaseError
+        );
+
+        return res.status(500).json({
+          success: false,
+          message:
+            'อนุมัติการชำระเงินแล้ว แต่ไม่สามารถเพิ่มสมาชิกเข้า Group Chat ได้',
+          error: firebaseError.message,
+        });
+      }
+
+      // ----------------------------------------------
+      // 4.3 สำเร็จ
+      // ----------------------------------------------
+      return res.status(200).json({
+        success: true,
+        message:
+          'อนุมัติการชำระเงินและเพิ่มสมาชิกเข้า Group Chat สำเร็จ',
+        data: {
+          booking_id: booking.booking_id,
+          member_id: booking.member_id,
+          round_id: booking.round_id,
+          firebase_uid: booking.google_id,
+          chat_room_id: chatRoomId,
+          status: 'confirmed',
+          payment_status: 'paid',
+        },
+      });
+    }
+
+    // ================================================
+    // 5. REJECT
+    // ================================================
+    await conn.query(
+      `
+      UPDATE booking
+      SET
+        payment_status = 'cancelled',
+        status = 'cancelled'
+      WHERE booking_id = ?
+      `,
+      [booking_id]
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'ปฏิเสธการชำระเงินเรียบร้อยแล้ว',
       data: {
-        booking_id,
-        payment_status: nextPaymentStatus,
-        status: nextBookingStatus,
+        booking_id: booking.booking_id,
+        status: 'cancelled',
+        payment_status: 'cancelled',
       },
     });
+
   } catch (error) {
-    console.error('Admin verify slip error:', error);
-    return res.status(500).json({ success: false, message: 'Internal server error' });
+
+    console.error(
+      'Admin verify slip error:',
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการตรวจสอบการชำระเงิน',
+      error: error.message,
+    });
   }
-
-
-
 });
+
 // POST /api/booking/add-passengers
 router.post('/add-passengers', upload.single('passpot_passenger'), async (req, res) => {
   try {

@@ -5,6 +5,7 @@ import 'package:triptour_app/page/guideTripSchedule.dart';
 import 'package:triptour_app/page/navbar/chat.dart';
 import 'package:triptour_app/serverApi.dart';
 import 'package:triptour_app/severGetApi.dart';
+import 'package:triptour_app/page/Tourdetail/detailTour.dart';
 
 class Guidehome extends StatefulWidget {
   const Guidehome({super.key});
@@ -348,6 +349,37 @@ class _GuidehomeState extends State<Guidehome> {
                               '$startDate - $endDate\nสถานะ: ${_statusLabel(status)}',
                             ),
                             isThreeLine: true,
+
+                            // เพิ่มไอคอนให้ทราบว่ากดเข้าไปได้
+                            trailing: const Icon(Icons.chevron_right),
+
+                            // กดรายการทริปเพื่อดูรายละเอียดโปรแกรม
+                            onTap: () {
+                              final int? tourId = int.tryParse(
+                                round['tour_id']?.toString() ?? '',
+                              );
+
+                              if (tourId == null) {
+                                debugPrint('Guide round data: $round');
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'ไม่พบรหัสทัวร์ กรุณาตรวจสอบข้อมูลรอบทัวร์',
+                                    ),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      DetailTour(tourId: tourId, isGuide: true),
+                                ),
+                              );
+                            },
                           ),
                         );
                       }).toList(),

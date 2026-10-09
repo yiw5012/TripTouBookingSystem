@@ -10,8 +10,9 @@ import 'tour/tourNoteSection.dart';
 
 class DetailTour extends StatefulWidget {
   final int tourId;
+  final bool isGuide;
 
-  const DetailTour({super.key, required this.tourId});
+  const DetailTour({super.key, required this.tourId, this.isGuide = false});
 
   @override
   State<DetailTour> createState() => _DetailTourState();
@@ -38,6 +39,8 @@ class _DetailTourState extends State<DetailTour>
     GlobalKey(), // 1 = รายละเอียด / มื้ออาหาร
     GlobalKey(), // 2 = หมายเหตุ
   ];
+
+  List<int> get visibleSectionIndexes => widget.isGuide ? [1, 2] : [0, 1, 2];
 
   static const double stickyTabHeight = 52;
 
@@ -77,7 +80,7 @@ class _DetailTourState extends State<DetailTour>
   void initState() {
     super.initState();
 
-    tabController = TabController(length: 3, vsync: this);
+    tabController = TabController(length: widget.isGuide ? 2 : 3, vsync: this);
 
     scrollController.addListener(handleScrollSpy);
 
@@ -215,8 +218,9 @@ class _DetailTourState extends State<DetailTour>
 
     int newActiveTab = 0;
 
-    for (int i = 0; i < sectionKeys.length; i++) {
-      final context = sectionKeys[i].currentContext;
+    for (int i = 0; i < visibleSectionIndexes.length; i++) {
+      final int sectionIndex = visibleSectionIndexes[i];
+      final context = sectionKeys[sectionIndex].currentContext;
 
       if (context == null) {
         continue;
@@ -256,7 +260,11 @@ class _DetailTourState extends State<DetailTour>
   // ==========================================================
 
   Future<void> scrollToSection(int index) async {
-    final context = sectionKeys[index].currentContext;
+    if (index < 0 || index >= visibleSectionIndexes.length) {
+      return;
+    }
+    final int sectionIndex = visibleSectionIndexes[index];
+    final context = sectionKeys[sectionIndex].currentContext;
 
     if (context == null) {
       return;
@@ -332,11 +340,13 @@ class _DetailTourState extends State<DetailTour>
         indicatorWeight: 3,
         labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
         unselectedLabelStyle: const TextStyle(fontSize: 12),
-        tabs: const [
-          Tab(text: 'จอง'),
-          Tab(text: 'รายละเอียด / มื้ออาหาร'),
-          Tab(text: 'หมายเหตุ'),
-        ],
+        tabs: widget.isGuide
+            ? const [Tab(text: 'รายละเอียด / มื้ออาหาร'), Tab(text: 'หมายเหตุ')]
+            : const [
+                Tab(text: 'จอง'),
+                Tab(text: 'รายละเอียด / มื้ออาหาร'),
+                Tab(text: 'หมายเหตุ'),
+              ],
       ),
     );
   }
@@ -381,6 +391,8 @@ class _DetailTourState extends State<DetailTour>
                   child: TourHeader(
                     tour: tour!,
                     images: images,
+                    videoUrl: tour!['video']?.toString() ?? '',
+                    pdfUrl: tour!['pdf_file']?.toString() ?? '',
 
                     // ส่ง tourId ไปให้ TourHeader
                     tourId: widget.tourId,
@@ -407,12 +419,13 @@ class _DetailTourState extends State<DetailTour>
                 // SECTION 1
                 // จอง
                 // ==================================================
-                SliverToBoxAdapter(
-                  child: TourBookingSection(
-                    key: sectionKeys[0],
-                    rounds: rounds,
+                if (!widget.isGuide)
+                  SliverToBoxAdapter(
+                    child: TourBookingSection(
+                      key: sectionKeys[0],
+                      rounds: rounds,
+                    ),
                   ),
-                ),
 
                 // ==================================================
                 // SECTION 2
