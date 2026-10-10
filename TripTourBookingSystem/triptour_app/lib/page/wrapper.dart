@@ -6,7 +6,7 @@ import 'package:triptour_app/page/auth/loginPage.dart';
 import 'package:triptour_app/page/auth/registerPage.dart';
 import 'package:triptour_app/page/guideHome.dart';
 import 'package:triptour_app/page/homepage.dart';
-import 'package:triptour_app/serverApi.dart';
+import 'package:triptour_app/services/serverApi.dart';
 
 class Wrapper extends StatefulWidget {
   const Wrapper({super.key});

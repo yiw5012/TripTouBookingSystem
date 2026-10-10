@@ -272,27 +272,7 @@ async putData(endpoint: string, data: any): Promise<any> {
       };
     }
   }
-  // async putData(endpoint: string, bodyData: any): Promise<any> {
-  //   const cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
-  //   const url = `${this.baseUrl}/${cleanEndpoint}`;
-
-  //   try {
-  //     const response = await firstValueFrom(
-  //       this.http.put<any>(url, bodyData, { observe: 'response' })
-  //     );
-
-  //     return {
-  //       statusCode: response.status,
-  //       body: response.body
-  //     };
-  //   } catch (error: any) {
-  //     console.error('API Error:', error);
-  //     return {
-  //       statusCode: error.status || 500,
-  //       body: error.error || { message: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้' }
-  //     };
-  //   }
-  // }
+  
 
 async getDashboardData(endpoint: string, params?: Record<string, string>, bodyData?: any): Promise<any> {
   

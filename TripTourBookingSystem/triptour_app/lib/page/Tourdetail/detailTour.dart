@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:triptour_app/serverApi.dart';
-import 'package:triptour_app/severGetApi.dart';
+import 'package:triptour_app/services/serverApi.dart';
+import 'package:triptour_app/services/severGetApi.dart';
 
 import 'tour/tourHeader.dart';
 import 'tour/tourBookingSection.dart';

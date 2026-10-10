@@ -7,7 +7,7 @@ import 'package:triptour_app/page/navbar/chat.dart';
 import 'package:triptour_app/page/navbar/profile.dart';
 import 'package:triptour_app/page/SearchPage/searchPage.dart';
 import 'package:triptour_app/page/Tourdetail/detailTour.dart';
-import 'package:triptour_app/serverApi.dart';
+import 'package:triptour_app/services/serverApi.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:triptour_app/serverApi.dart';
+import 'package:triptour_app/services/serverApi.dart';
 
 import 'search/searchFilterSection.dart';
 import 'search/searchOptionSheets.dart';

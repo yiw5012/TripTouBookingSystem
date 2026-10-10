@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:triptour_app/page/Tourdetail/reviewTour.dart';
 import 'package:triptour_app/page/booking/bookingdetail.dart';
 import 'package:triptour_app/page/booking/widgets/step3_payment.dart';
-import 'package:triptour_app/serviceBookingApi.dart';
+import 'package:triptour_app/services/serviceBookingApi.dart';
 
 class BookingHistoryPage extends StatefulWidget {
   final String memberId;
@@ -262,18 +263,20 @@ Widget _buildBookingListWidget(
   Future<void> Function() onRefresh,
   String memberId,
 ) {
-  // กำหนดสี: แสดงเฉพาะสีเขียว (ผ่าน/สำเร็จ) และสีแดง (อื่นๆ ทั้งหมด)
   Color getStatusColor(String status, String pStatus) {
     if (status == 'confirmed' || pStatus == 'paid') {
-      return Colors.green;
+      return const Color(0xFF1FAE74);
     }
-    return Colors.red;
+    if (status == 'finish') {
+      return const Color(0xFF2E7D32);
+    }
+    return const Color(0xFFDC5A5A);
   }
 
   String getStatusText(String bStatus, String pStatus) {
     if (bStatus == 'finish') return 'การจองเสร็จสมบูรณ์';
     if (bStatus == 'confirmed') return 'ยืนยันการจองแล้ว';
-    if (pStatus == 'paid') return 'ชำระเงินสำเร็จ (รอการยืนยัน)';
+    if (pStatus == 'paid') return 'ชำระเงินสำเร็จ';
     if (pStatus == 'pending') return 'รอชำระเงิน';
     if (pStatus == 'expired') return 'หมดอายุ';
     if (bStatus == 'cancelled') return 'ยกเลิกแล้ว';
@@ -286,13 +289,59 @@ Widget _buildBookingListWidget(
       onRefresh: onRefresh,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        children: const [
-          SizedBox(height: 150),
-          Center(child: Text('ไม่พบประวัติการจองในหมวดนี้')),
+        padding: const EdgeInsets.all(24),
+        children: [
+          const SizedBox(height: 60),
+          Center(
+            child: SizedBox(
+              width: 280,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // ไอคอนกลมกลืน ไร้ขอบ ไร้เงา
+                  Container(
+                    width: 76,
+                    height: 76,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100, // โทนซอฟต์กลมกลืนกับพื้นหลัง
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.travel_explore_rounded,
+                      size: 38,
+                      color: Colors.grey.shade400,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'ยังไม่มีประวัติการจอง',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'เริ่มต้นค้นหาและจองทัวร์ที่ใช่สำหรับคุณได้เลย',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey.shade500,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
+
+  final currencyFormat = NumberFormat('#,###');
 
   return RefreshIndicator(
     onRefresh: onRefresh,
@@ -308,91 +357,166 @@ Widget _buildBookingListWidget(
         final num totalPrice =
             num.tryParse(item['total_price']?.toString() ?? '0') ?? 0;
         final tourName = item['tour_name'] ?? 'แพ็กเกจทัวร์';
+        final statusColor = getStatusColor(status, pStatus);
 
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(
+        return Container(
+          margin: const EdgeInsets.only(bottom: 14),
+          decoration: BoxDecoration(
+            color: Colors.white,
             borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade100), // เส้นขอบบางมาก
           ),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: () {
-              Get.to(
-                () => BookingDetailPage(bookingData: item),
-              )?.then((_) => onRefresh());
-            },
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Booking #$bookingId',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () {
+                Get.to(
+                  () => BookingDetailPage(bookingData: item),
+                )?.then((_) => onRefresh());
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Booking #$bookingId',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              color: Color(0xFF1F2937),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                      Text(
-                        getStatusText(status, pStatus),
-                        style: TextStyle(
-                          color: getStatusColor(status, pStatus),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: statusColor.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            getStatusText(status, pStatus),
+                            style: TextStyle(
+                              color: statusColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const Divider(height: 20),
-                  Text(tourName, style: const TextStyle(fontSize: 14)),
-                  const SizedBox(height: 8),
-                  Text(
-                    'ยอดรวม: ฿$totalPrice',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF5B4DFF),
+                      ],
                     ),
-                  ),
-                  if (pStatus == 'pending') ...[
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.travel_explore_rounded,
+                          size: 16,
+                          color: Colors.grey.shade500,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            tourName,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF374151),
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 12),
-                    SizedBox(
+
+                    Container(
                       width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Get.to(
-                            () => Scaffold(
-                              appBar: AppBar(
-                                title: Text('ชำระเงินต่อ #$bookingId'),
-                              ),
-                              body: Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Step3Payment.fromHistory(
-                                  bookingId: bookingId,
-                                  memberId: memberId,
-                                  totalPrice: totalPrice,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50, // สีเทาอ่อนเรียบเนียน
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.payments_outlined,
+                            size: 16,
+                            color: Colors.grey.shade600,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'ยอดรวม',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            '฿${currencyFormat.format(totalPrice)}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF5B4DFF),
+                              fontSize: 15,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (pStatus == 'pending') ...[
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Get.to(
+                              () => Scaffold(
+                                appBar: AppBar(
+                                  title: Text('ชำระเงินต่อ #$bookingId'),
+                                ),
+                                body: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Step3Payment.fromHistory(
+                                    bookingId: bookingId,
+                                    memberId: memberId,
+                                    totalPrice: totalPrice,
+                                  ),
                                 ),
                               ),
+                            )?.then((_) => onRefresh());
+                          },
+                          icon: const Icon(Icons.payment, size: 16),
+                          label: const Text('ชำระเงินต่อ'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF5B4DFF),
+                            foregroundColor: Colors.white,
+                            elevation: 0, // ปรับให้แบนเรียบ
+                            minimumSize: const Size.fromHeight(44),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                          )?.then((_) => onRefresh());
-                        },
-                        icon: const Icon(Icons.payment, size: 18),
-                        label: const Text('ชำระเงินต่อ'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF5B4DFF),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
                           ),
                         ),
                       ),
-                    ),
+                    ],
+                    buildReviewButton(context, item),
                   ],
-
-                  buildReviewButton(context, item),
-                ],
+                ),
               ),
             ),
           ),

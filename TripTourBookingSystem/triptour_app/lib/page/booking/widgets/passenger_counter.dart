@@ -5,7 +5,7 @@ class PassengerCounterRow extends StatelessWidget {
   final String title;
   final int count;
   final int price;
-  final VoidCallback onIncrement;
+  final VoidCallback? onIncrement; // ปรับเป็น nullable เมื่อเป็น null จะปิดปุ่ม
   final VoidCallback onDecrement;
 
   const PassengerCounterRow({
@@ -13,7 +13,7 @@ class PassengerCounterRow extends StatelessWidget {
     required this.title,
     required this.count,
     required this.price,
-    required this.onIncrement,
+    this.onIncrement,
     required this.onDecrement,
   });
 
@@ -50,7 +50,8 @@ class PassengerCounterRow extends StatelessWidget {
                 icon: Icons.add,
                 bgColor: Colors.green[300]!,
                 iconColor: Colors.white,
-                onPressed: onIncrement,
+                onPressed:
+                    onIncrement, // ถ้าเป็น null ปุ่มจะถูก Disable อัตโนมัติ
               ),
             ],
           ),
@@ -61,11 +62,11 @@ class PassengerCounterRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                formatCurrency(price),
+                price > 0 ? formatCurrency(price) : 'ฟรี',
                 style: const TextStyle(fontSize: 11, color: Colors.black54),
               ),
               Text(
-                formatCurrency(count * price),
+                price > 0 ? formatCurrency(count * price) : '฿0',
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -84,23 +85,21 @@ class PassengerCounterRow extends StatelessWidget {
     required Color iconColor,
     VoidCallback? onPressed,
   }) {
-    return Expanded(
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(4),
-        child: Container(
-          width: 28,
-          height: 28,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: onPressed == null ? Colors.grey[200] : bgColor,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Icon(
-            icon,
-            size: 18,
-            color: onPressed == null ? Colors.grey[400] : iconColor,
-          ),
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(4),
+      child: Container(
+        width: 28,
+        height: 28,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: onPressed == null ? Colors.grey[200] : bgColor,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Icon(
+          icon,
+          size: 18,
+          color: onPressed == null ? Colors.grey[400] : iconColor,
         ),
       ),
     );

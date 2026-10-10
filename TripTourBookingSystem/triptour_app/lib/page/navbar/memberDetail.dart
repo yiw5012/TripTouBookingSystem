@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:triptour_app/page/navbar/pdfService.dart';
-import 'package:triptour_app/serverApi.dart';
+import 'package:triptour_app/services/serverApi.dart';
 
 class MemberDetailPage extends StatelessWidget {
   final String targetUid;

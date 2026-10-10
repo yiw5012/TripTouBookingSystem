@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:triptour_app/serverApi.dart';
+import 'package:triptour_app/services/serverApi.dart';
 
 class ReviewTourPage extends StatefulWidget {
   final int tourId;

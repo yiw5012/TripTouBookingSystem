@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:triptour_app/page/guideProfile.dart';
 import 'package:triptour_app/page/guideTripSchedule.dart';
 import 'package:triptour_app/page/navbar/chat.dart';
-import 'package:triptour_app/serverApi.dart';
-import 'package:triptour_app/severGetApi.dart';
+import 'package:triptour_app/services/serverApi.dart';
+import 'package:triptour_app/services/severGetApi.dart';
 import 'package:triptour_app/page/Tourdetail/detailTour.dart';
 
 class Guidehome extends StatefulWidget {

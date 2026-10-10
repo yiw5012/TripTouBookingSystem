@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:triptour_app/page/guideHome.dart';
 import 'package:triptour_app/page/navbar/chat.dart';
-import 'package:triptour_app/serverApi.dart';
-import 'package:triptour_app/severGetApi.dart';
+import 'package:triptour_app/services/serverApi.dart';
+import 'package:triptour_app/services/severGetApi.dart';
 
 class GuideTripSchedulePage extends StatefulWidget {
   final int guideId;

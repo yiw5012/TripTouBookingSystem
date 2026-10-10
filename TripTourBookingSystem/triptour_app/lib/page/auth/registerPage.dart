@@ -2,15 +2,17 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:triptour_app/model/country.dart';
 import 'package:triptour_app/page/auth/loginPage.dart';
 import 'package:triptour_app/page/wrapper.dart';
-import 'package:triptour_app/serverApi.dart';
+import 'package:triptour_app/services/noti_service.dart';
+import 'package:triptour_app/services/serverApi.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:triptour_app/severGetApi.dart';
+import 'package:triptour_app/services/severGetApi.dart';
 
 String formatRegistrationError(Object error) {
   if (error is FirebaseAuthException) {
@@ -570,6 +572,7 @@ class _RegisterPageState extends State<RegisterPage> {
       );
       if (result != null && result['status'] == 'success') {
         print("process 4 - ไปหน้า Wrapper เพื่อเช็คข้อมูลผู้ใช้และเข้าสู่ระบบ");
+        await NotiService.subscribeToPreferredCountries(selectedCountries);
         Get.offAll(() => const Wrapper());
       } else {
         print(result);
