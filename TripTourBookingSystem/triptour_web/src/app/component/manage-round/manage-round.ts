@@ -364,10 +364,10 @@ export class ManageRound implements OnInit {
           ? Number(round.guide_id)
           : null,
 
-      status:
-        round.status === 'closed'
-          ? 'closed'
-          : 'open',
+status:
+  ['open', 'closed', 'success'].includes(round.status)
+    ? round.status
+    : 'open',
 
     });
 

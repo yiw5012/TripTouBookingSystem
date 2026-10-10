@@ -113,9 +113,62 @@ export class ServerApi {
   // PUT
   // ==========================================================
 
-  async putData(endpoint: string, data: any): Promise<any> {
+//   async putData(endpoint: string, data: any): Promise<any> {
 
-  const url = `${this.baseUrl}/${endpoint}`;
+//   const url = `${this.baseUrl}/${endpoint}`;
+
+//   console.log('====================================');
+//   console.log('PUT REQUEST');
+//   console.log('URL =', url);
+//   console.log('DATA =', data);
+//   console.log('====================================');
+
+//   try {
+
+//     const response = await firstValueFrom(
+//       this.http.put<any>(
+//         url,
+//         data,
+//         {
+//           observe: 'response',
+//         }
+//       )
+//     );
+
+//     console.log('====================================');
+//     console.log('PUT RESPONSE');
+//     console.log('STATUS =', response.status);
+//     console.log('BODY =', response.body);
+//     console.log('====================================');
+
+//     return {
+//       statusCode: response.status,
+//       body: response.body,
+//     };
+
+//   } catch (error: any) {
+
+//     console.error('====================================');
+//     console.error('PUT ERROR');
+//     console.error('STATUS =', error?.status);
+//     console.error('STATUS TEXT =', error?.statusText);
+//     console.error('ERROR BODY =', error?.error);
+//     console.error('MESSAGE =', error?.message);
+//     console.error('FULL ERROR =', error);
+//     console.error('====================================');
+
+//     return {
+//       statusCode: error?.status ?? 0,
+//       body: error?.error ?? null,
+//       error,
+//     };
+//   }
+// }
+
+async putData(endpoint: string, data: any): Promise<any> {
+  const cleanEndpoint = endpoint.replace(/^\/+/, '');
+  const cleanBaseUrl = this.baseUrl.replace(/\/+$/, '');
+  const url = `${cleanBaseUrl}/${cleanEndpoint}`;
 
   console.log('====================================');
   console.log('PUT REQUEST');
@@ -124,7 +177,6 @@ export class ServerApi {
   console.log('====================================');
 
   try {
-
     const response = await firstValueFrom(
       this.http.put<any>(
         url,
@@ -145,21 +197,20 @@ export class ServerApi {
       statusCode: response.status,
       body: response.body,
     };
-
   } catch (error: any) {
-
     console.error('====================================');
     console.error('PUT ERROR');
     console.error('STATUS =', error?.status);
     console.error('STATUS TEXT =', error?.statusText);
     console.error('ERROR BODY =', error?.error);
     console.error('MESSAGE =', error?.message);
-    console.error('FULL ERROR =', error);
     console.error('====================================');
 
     return {
       statusCode: error?.status ?? 0,
-      body: error?.error ?? null,
+      body: error?.error ?? {
+        message: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้',
+      },
       error,
     };
   }
@@ -221,27 +272,27 @@ export class ServerApi {
       };
     }
   }
-  async putData(endpoint: string, bodyData: any): Promise<any> {
-    const cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
-    const url = `${this.baseUrl}/${cleanEndpoint}`;
+  // async putData(endpoint: string, bodyData: any): Promise<any> {
+  //   const cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
+  //   const url = `${this.baseUrl}/${cleanEndpoint}`;
 
-    try {
-      const response = await firstValueFrom(
-        this.http.put<any>(url, bodyData, { observe: 'response' })
-      );
+  //   try {
+  //     const response = await firstValueFrom(
+  //       this.http.put<any>(url, bodyData, { observe: 'response' })
+  //     );
 
-      return {
-        statusCode: response.status,
-        body: response.body
-      };
-    } catch (error: any) {
-      console.error('API Error:', error);
-      return {
-        statusCode: error.status || 500,
-        body: error.error || { message: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้' }
-      };
-    }
-  }
+  //     return {
+  //       statusCode: response.status,
+  //       body: response.body
+  //     };
+  //   } catch (error: any) {
+  //     console.error('API Error:', error);
+  //     return {
+  //       statusCode: error.status || 500,
+  //       body: error.error || { message: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้' }
+  //     };
+  //   }
+  // }
 
 async getDashboardData(endpoint: string, params?: Record<string, string>, bodyData?: any): Promise<any> {
   
