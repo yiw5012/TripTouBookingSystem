@@ -528,3 +528,22 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* เพิ่มใน member-component.css */
+.tab-btn.tab-btn-add {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+  font-weight: 600;
+  margin-left: auto; /* ดันปุ่มเพิ่มไกด์ไปชิดขวาสุด */
+}
+
+.tab-btn.tab-btn-add:hover {
+  background: #dcfce7;
+}
+
+.tab-btn.tab-btn-add.active {
+  background: #16a34a;
+  color: #ffffff;
+  border-color: #16a34a;
+}

@@ -4,11 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ServerApi } from '../../server/server';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-
+import { AddGuide } from '../addguide/addguide';
 @Component({
   selector: 'app-member-component',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatProgressSpinnerModule],
+  imports: [AddGuide, CommonModule, FormsModule, MatProgressSpinnerModule],
   templateUrl: './member-component.html',
   styleUrl: './member-component.css',
 })
@@ -19,7 +19,7 @@ export class MemberComponent implements OnInit {
   private router = inject(Router);
 
   members: any[] = [];
-  selectedTab: 'all' | 'user' | 'guide' | 'history' = 'all';
+  selectedTab: 'all' | 'user' | 'guide' | 'history' | 'add-guide' | undefined   ;
   isLoading = false;
   errorMessage = '';
   selectedMember: any = null;
