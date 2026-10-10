@@ -2,13 +2,12 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:triptour_app/page/booking/pending_booking.dart';
 import 'package:triptour_app/page/booking/widgets/passengerform.dart';
 import 'package:triptour_app/page/booking/widgets/step1_tour_details.dart';
 import 'package:triptour_app/page/booking/widgets/step2_passenger.dart';
 import 'package:triptour_app/page/booking/widgets/step3_payment.dart';
-import 'package:triptour_app/serverApi.dart';
-import 'package:triptour_app/serviceBookingApi.dart';
+import 'package:triptour_app/services/serverApi.dart';
+import 'package:triptour_app/services/serviceBookingApi.dart';
 
 String formatCurrency(dynamic value) {
   if (value == null) return '-';
@@ -43,31 +42,27 @@ class _BookingTourPageState extends State<BookingTourPage> {
   int _currentStep = 1;
   List<PassengerFormControllers> passengerForms = [];
   Map<String, dynamic> member = {};
-  // Controllers สำหรับข้อมูลผู้ติดต่อ
+
   final contactNameCtl = TextEditingController();
   final contactPhoneCtl = TextEditingController();
   final contactEmailCtl = TextEditingController();
 
-  final List<int> passengerMultipliers = [2, 3, 1, 1];
   final List<String> selectedGender = ['Male', 'Female', 'Other'];
 
-  List<int> passengerCounts = [0, 0, 0, 0];
+  // ตัวนับจำนวนแยกเป็น 6 ประเภทห้อง/ผู้เดินทาง
+  List<int> passengerCounts = [0, 0, 0, 0, 0, 0];
+
   final List<String> passengerTypes = [
-    'ผู้ใหญ่ 2 พัก 1 ห้อง',
-    'ผู้ใหญ่ 3 พัก 1 ห้อง',
-    'ผู้ใหญ่ 1 พัก 1 ห้อง',
-    'เด็กต่ำกว่า 11 ปี 0 ห้อง',
+    'ผู้ใหญ่ 2 พัก 1 ห้อง (เหมาห้อง 2 คน)',
+    'ผู้ใหญ่ 3 พัก 1 ห้อง (เหมาห้อง 3 คน)',
+    'ผู้ใหญ่ 1 พักเดี่ยว (ห้องส่วนตัว)',
+    'ผู้ใหญ่ 1 แชร์ห้อง 2 คน (ไกด์จัดคู่ให้)',
+    'ผู้ใหญ่ 1 แชร์ห้อง 3 คน (ไกด์จัด 3 คนให้)',
+    'เด็กต่ำกว่า 11 ปี (ไม่เสริมเตียง/ฟรี)',
   ];
 
   Map<String, dynamic> get selectedRound =>
       rounds.isNotEmpty ? Map<String, dynamic>.from(rounds.first) : {};
-
-  List<int> get prices => [
-    _parsePrice(selectedRound['price_double']),
-    _parsePrice(selectedRound['price_triple']),
-    _parsePrice(selectedRound['price_single']),
-    _parsePrice(selectedRound['price_child'] ?? 1),
-  ];
 
   int _parsePrice(dynamic value) {
     final rawValue = value ?? selectedRound['price'] ?? tourData['price'];
@@ -75,12 +70,136 @@ class _BookingTourPageState extends State<BookingTourPage> {
     return parsed?.toInt() ?? 0;
   }
 
-  int get totalPrice {
-    var total = 0;
-    for (var i = 0; i < passengerCounts.length; i++) {
-      total += passengerCounts[i] * prices[i];
+  // คำนวณราคาต่อรายการ/คน
+  List<int> get prices => [
+    _parsePrice(selectedRound['price_double']), // Index 0: เหมาห้อง 2 คน
+    _parsePrice(selectedRound['price_triple']), // Index 1: เหมาห้อง 3 คน
+    _parsePrice(selectedRound['price_single']), // Index 2: พักเดี่ยว
+    (_parsePrice(selectedRound['price_double']) / 2)
+        .round(), // Index 3: แชร์ 2 คน (หาร 2)
+    (_parsePrice(selectedRound['price_triple']) / 3)
+        .round(), // Index 4: แชร์ 3 คน (หาร 3)
+    0, // Index 5: เด็ก ฟรี
+  ];
+
+  // จำนวนผู้เดินทางจริงทั้งหมด
+  int get actualTravelerCount {
+    return (passengerCounts[0] * 2) +
+        (passengerCounts[1] * 3) +
+        (passengerCounts[2] * 1) +
+        (passengerCounts[3] * 1) +
+        (passengerCounts[4] * 1) +
+        (passengerCounts[5] * 1);
+  }
+
+  List<Map<String, dynamic>> get roomSelections {
+    final rooms = <Map<String, dynamic>>[];
+    if (passengerCounts[0] > 0) {
+      rooms.add({'room_type': 'double', 'quantity': passengerCounts[0]});
     }
-    return total;
+    if (passengerCounts[1] > 0) {
+      rooms.add({'room_type': 'triple', 'quantity': passengerCounts[1]});
+    }
+    if (passengerCounts[2] > 0) {
+      rooms.add({'room_type': 'single', 'quantity': passengerCounts[2]});
+    }
+    if (passengerCounts[3] > 0) {
+      rooms.add({'room_type': 'shared_double', 'quantity': passengerCounts[3]});
+    }
+    if (passengerCounts[4] > 0) {
+      rooms.add({'room_type': 'shared_triple', 'quantity': passengerCounts[4]});
+    }
+    return rooms;
+  }
+
+  List<Map<String, dynamic>> get roomBreakdown {
+    final breakdown = <Map<String, dynamic>>[];
+
+    // 1. ผู้ใหญ่ 2 พัก 1 ห้อง
+    if (passengerCounts[0] > 0) {
+      final unitPrice = prices[0];
+      breakdown.add({
+        'room_type': 'double',
+        'quantity': passengerCounts[0],
+        'unit_price': unitPrice,
+        'line_total': passengerCounts[0] * unitPrice,
+      });
+    }
+
+    // 2. ผู้ใหญ่ 3 พัก 1 ห้อง
+    if (passengerCounts[1] > 0) {
+      final unitPrice = prices[1];
+      breakdown.add({
+        'room_type': 'triple',
+        'quantity': passengerCounts[1],
+        'unit_price': unitPrice,
+        'line_total': passengerCounts[1] * unitPrice,
+      });
+    }
+
+    // 3. ผู้ใหญ่ 1 พักเดี่ยว
+    if (passengerCounts[2] > 0) {
+      final unitPrice = prices[2];
+      breakdown.add({
+        'room_type': 'single',
+        'quantity': passengerCounts[2],
+        'unit_price': unitPrice,
+        'line_total': passengerCounts[2] * unitPrice,
+      });
+    }
+
+    // 4. ผู้ใหญ่ 1 แชร์ห้อง 2 คน
+    if (passengerCounts[3] > 0) {
+      final unitPrice = prices[3];
+      breakdown.add({
+        'room_type': 'shared_double',
+        'quantity': passengerCounts[3],
+        'unit_price': unitPrice,
+        'line_total': passengerCounts[3] * unitPrice,
+      });
+    }
+
+    // 5. ผู้ใหญ่ 1 แชร์ห้อง 3 คน
+    if (passengerCounts[4] > 0) {
+      final unitPrice = prices[4];
+      breakdown.add({
+        'room_type': 'shared_triple',
+        'quantity': passengerCounts[4],
+        'unit_price': unitPrice,
+        'line_total': passengerCounts[4] * unitPrice,
+      });
+    }
+
+    // 6. เด็ก (ฟรี)
+    if (passengerCounts[5] > 0) {
+      breakdown.add({
+        'room_type': 'child',
+        'quantity': passengerCounts[5],
+        'unit_price': 0,
+        'line_total': 0,
+      });
+    }
+
+    return breakdown;
+  }
+
+  int get totalPrice {
+    return roomBreakdown.fold<int>(0, (sum, room) {
+      return sum + ((room['line_total'] as int?) ?? 0);
+    });
+  }
+
+  // ยอดเงินที่ประหยัดได้เมื่อเลือกแชร์ห้องเทียบกับการพักเดี่ยว
+  int get estimatedSavings {
+    final singlePrice = prices[2];
+    int savings = 0;
+    if (passengerCounts[3] > 0) {
+      savings += (singlePrice - prices[3]) * passengerCounts[3];
+    }
+    if (passengerCounts[4] > 0) {
+      savings += (singlePrice - prices[4]) * passengerCounts[4];
+    }
+    return savings > 0 ? savings : 0;
   }
 
   @override
@@ -98,7 +217,6 @@ class _BookingTourPageState extends State<BookingTourPage> {
       final detail = await Serverapi.getMemberDetail(currentUserId);
       if (detail != null) {
         member = detail;
-
         contactNameCtl.text =
             "${detail['first_name'] ?? ''} ${detail['last_name'] ?? ''}".trim();
         contactPhoneCtl.text = (detail['phone'] ?? '').toString();
@@ -147,25 +265,25 @@ class _BookingTourPageState extends State<BookingTourPage> {
   }
 
   Map<String, dynamic> get bookingPayload {
+    // ส่งเฉพาะรายการผู้ร่วมเดินทางจริง (ถ้าเดินทาง 1 คน ค่าจะเป็น [] ซึ่งถูกต้องแล้ว)
     final passengers = passengerForms.map((form) => form.toJson()).toList();
+
     final route =
         '${selectedRound['departure'] ?? 'Unknown'} → ${selectedRound['destination'] ?? 'Unknown'}';
     final tripDates =
         '${selectedRound['start_date'] ?? 'N/A'} ถึง ${selectedRound['end_date'] ?? 'N/A'}';
-    final travelerCount = List<int>.generate(
-      passengerCounts.length,
-      (i) => passengerCounts[i] * passengerMultipliers[i],
-    ).fold<int>(0, (sum, value) => sum + value);
+    final travelerCount = actualTravelerCount;
 
     final roomSummary = passengerCounts
         .asMap()
         .entries
         .where((entry) => entry.value > 0)
-        .map((entry) => '${passengerTypes[entry.key]}: ${entry.value} ห้อง')
+        .map((entry) => '${passengerTypes[entry.key]}: ${entry.value} รายการ')
         .join(', ');
 
     return {
       'passengers': passengers,
+      'rooms': roomSelections,
       'booking': {
         'tour_id': widget.tourId,
         'round_id': widget.roundId,
@@ -195,25 +313,17 @@ class _BookingTourPageState extends State<BookingTourPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
-
       body: Padding(
         padding: const EdgeInsets.all(10),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. Step Progress Bar ด้านบน
               const SizedBox(height: 30),
-
               _buildStepIndicator(),
               const SizedBox(height: 20),
-
-              // 2. เนื้อหาตามขั้นตอนที่เลือก
               _buildStepContent(),
-
               const SizedBox(height: 20),
-
-              // 3. ปุ่มควบคุมล่างสุด (แสดงเฉพาะ Step 1 และ Step 2)
               if (_currentStep < 3) _buildNavigationButtons(),
             ],
           ),
@@ -222,7 +332,6 @@ class _BookingTourPageState extends State<BookingTourPage> {
     );
   }
 
-  // แถบแสดงสถานะขั้นตอน (Step Indicator)
   Widget _buildStepIndicator() {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -231,7 +340,7 @@ class _BookingTourPageState extends State<BookingTourPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             offset: const Offset(0, 1),
           ),
         ],
@@ -248,7 +357,6 @@ class _BookingTourPageState extends State<BookingTourPage> {
     );
   }
 
-  // แสดงเนื้อหาของแต่ละ Step
   Widget _buildStepContent() {
     switch (_currentStep) {
       case 1:
@@ -258,14 +366,10 @@ class _BookingTourPageState extends State<BookingTourPage> {
           passengerTypes: passengerTypes,
           passengerCounts: passengerCounts,
           prices: prices,
+          roomBreakdown: roomBreakdown,
           totalPrice: totalPrice,
+          estimatedSavings: estimatedSavings,
           onCountChanged: (index, delta) {
-            //     setState(() {
-            //       final newCount = passengerCounts[index] + delta;
-            //       if (newCount >= 0) passengerCounts[index] = newCount;
-            //     });
-            //   },
-            // );
             final int capacity =
                 int.tryParse(selectedRound['count']?.toString() ?? '0') ?? 0;
             final int totalPaid =
@@ -273,25 +377,26 @@ class _BookingTourPageState extends State<BookingTourPage> {
                 0;
             final int availableSeats = capacity - totalPaid;
 
-            // คำนวณจำนวนคนจริงตาม Multiplier
-            final int currentPersons = List.generate(
-              passengerCounts.length,
-              (i) => passengerCounts[i] * passengerMultipliers[i],
-            ).fold(0, (sum, count) => sum + count);
+            final nextCounts = List<int>.from(passengerCounts);
+            final nextValue = nextCounts[index] + delta;
+            if (delta > 0 && nextValue >= 0) {
+              nextCounts[index] = nextValue;
 
-            final int addPersons =
-                passengerMultipliers[index]; // จำนวนที่จะบวกเพิ่มในรอบนี้
+              final nextTravelerCount =
+                  (nextCounts[0] * 2) +
+                  (nextCounts[1] * 3) +
+                  (nextCounts[2] * 1) +
+                  (nextCounts[3] * 1) +
+                  (nextCounts[4] * 1) +
+                  (nextCounts[5] * 1);
 
-            if (delta > 0 && (currentPersons + addPersons > availableSeats)) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'ที่นั่งคงเหลือไม่พอ (เหลืออีกเพียง $availableSeats ที่)',
-                  ),
-                  backgroundColor: Colors.orange,
-                ),
-              );
-              return;
+              if (nextTravelerCount > availableSeats) {
+                _showSnackBar(
+                  'ที่นั่งคงเหลือไม่พอ (เหลืออีกเพียง $availableSeats ที่)',
+                  Colors.orange,
+                );
+                return;
+              }
             }
 
             setState(() {
@@ -303,26 +408,19 @@ class _BookingTourPageState extends State<BookingTourPage> {
           },
         );
       case 2:
-        final expectedCount = List<int>.generate(
-          passengerCounts.length,
-          (i) => passengerCounts[i] * passengerMultipliers[i],
-        ).fold<int>(0, (s, v) => s + v);
-
+        final expectedCount = actualTravelerCount;
         final roomSummary = passengerCounts
             .asMap()
             .entries
             .where((entry) => entry.value > 0)
-            .map((entry) => '${passengerTypes[entry.key]}: ${entry.value} ห้อง')
+            .map(
+              (entry) => '${passengerTypes[entry.key]}: ${entry.value} รายการ',
+            )
             .join(', ');
 
-        final travelerSummary = List<int>.generate(
-          passengerCounts.length,
-          (i) => passengerCounts[i] * passengerMultipliers[i],
-        ).fold<int>(0, (sum, v) => sum + v).toString();
-
         return Step2PassengerForm(
-          imageUrl: tourData['image_url'], // รูปภาพทัวร์
-          tourTitle: tourData['tour_name'], // ชื่อทัวร์
+          imageUrl: tourData['image_url'],
+          tourTitle: tourData['tour_name'],
           passengerForms: passengerForms,
           genderOptions: selectedGender,
           onSelectDate: _selectDateForPassenger,
@@ -333,7 +431,7 @@ class _BookingTourPageState extends State<BookingTourPage> {
               '${selectedRound['start_date'] ?? 'N/A'} ถึง ${selectedRound['end_date'] ?? 'N/A'}',
           airline: selectedRound['airline'] ?? 'N/A',
           roomSummary: roomSummary.isNotEmpty ? roomSummary : 'ยังไม่ได้เลือก',
-          travelerSummary: '$travelerSummary คน',
+          travelerSummary: '$expectedCount คน',
           contactNameCtl: contactNameCtl,
           contactPhoneCtl: contactPhoneCtl,
           contactEmailCtl: contactEmailCtl,
@@ -357,16 +455,13 @@ class _BookingTourPageState extends State<BookingTourPage> {
           bookingPayload: bookingPayload,
           memberId: currentMemberId,
           roundId: widget.roundId,
-          onBookingStatusChanged: (status) {
-            // Callback เมื่อสถานะการชำระเงินอัปเดต
-          },
+          onBookingStatusChanged: (status) {},
         );
       default:
         return const SizedBox.shrink();
     }
   }
 
-  // ปุ่มกดถัดไป / ย้อนกลับ สำหรับ Step 1 และ Step 2
   Widget _buildNavigationButtons() {
     return Row(
       children: [
@@ -407,26 +502,16 @@ class _BookingTourPageState extends State<BookingTourPage> {
 
   void _handleNextStep() {
     if (_currentStep == 1) {
-      final totalSelected = List<int>.generate(
-        passengerCounts.length,
-        (i) => passengerCounts[i] * passengerMultipliers[i],
-      ).fold<int>(0, (sum, v) => sum + v);
-
-      if (totalSelected == 0) {
+      if (actualTravelerCount == 0) {
         _showSnackBar(
           'กรุณาเลือกจำนวนผู้เดินทางอย่างน้อย 1 รายการ',
           Colors.red,
         );
         return;
       }
-
       setState(() => _currentStep++);
     } else if (_currentStep == 2) {
-      final expectedCount = List<int>.generate(
-        passengerCounts.length,
-        (i) => passengerCounts[i] * passengerMultipliers[i],
-      ).fold<int>(0, (sum, v) => sum + v);
-
+      final expectedCount = actualTravelerCount;
       final requiredPassengers = expectedCount > 1 ? expectedCount - 1 : 0;
 
       if (passengerForms.length != requiredPassengers) {
@@ -444,7 +529,6 @@ class _BookingTourPageState extends State<BookingTourPage> {
         return;
       }
 
-      // ผ่านเงื่อนไข ไป Step 3
       setState(() => _currentStep++);
     }
   }

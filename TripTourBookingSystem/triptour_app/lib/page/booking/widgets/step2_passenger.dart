@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:triptour_app/page/booking/widgets/addpassenger.dart';
 import 'package:triptour_app/page/booking/widgets/passengerform.dart';
@@ -17,8 +16,8 @@ class Step2PassengerForm extends StatefulWidget {
   final TextEditingController contactNameCtl;
   final TextEditingController contactPhoneCtl;
   final TextEditingController contactEmailCtl;
-  final String? imageUrl; // เพิ่มรองรับรูปภาพทัวร์
-  final String? tourTitle; // เพิ่มรองรับชื่อทัวร์
+  final String? imageUrl;
+  final String? tourTitle;
 
   const Step2PassengerForm({
     super.key,
@@ -43,7 +42,6 @@ class Step2PassengerForm extends StatefulWidget {
 }
 
 class _Step2PassengerFormState extends State<Step2PassengerForm> {
-  // คำนวณจำนวน Passenger ที่ต้องกรอกเพิ่ม (คนทั้งหมด - 1 ผู้จอง)
   int get requiredPassengerCount =>
       widget.expectedCount > 1 ? widget.expectedCount - 1 : 0;
 
@@ -56,7 +54,6 @@ class _Step2PassengerFormState extends State<Step2PassengerForm> {
   @override
   void didUpdateWidget(covariant Step2PassengerForm oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // ถ้ามีการเปลี่ยนจำนวนผู้เดินทางจาก Step 1
     if (oldWidget.expectedCount != widget.expectedCount) {
       _adjustPassengerForms();
     }
@@ -68,10 +65,16 @@ class _Step2PassengerFormState extends State<Step2PassengerForm> {
 
   void _adjustPassengerForms() {
     final requiredCount = requiredPassengerCount;
-    // ถ้าเดินทาง 1 คน หรือมีฟอร์มเกินจำนวนที่ต้องกรอก ให้เคลียร์/ตัดส่วนเกินออก
     if (requiredCount == 0) {
+      for (var form in widget.passengerForms) {
+        form.dispose();
+      }
       widget.passengerForms.clear();
     } else if (widget.passengerForms.length > requiredCount) {
+      final removedForms = widget.passengerForms.sublist(requiredCount);
+      for (var form in removedForms) {
+        form.dispose();
+      }
       widget.passengerForms.removeRange(
         requiredCount,
         widget.passengerForms.length,
@@ -89,7 +92,6 @@ class _Step2PassengerFormState extends State<Step2PassengerForm> {
       return;
     }
 
-    // ใช้ customIndex ถ้ามี หรือใช้ลำดับตามรายการถัดไป
     final idx =
         customIndex ??
         (existing?.passengerIndex ?? widget.passengerForms.length + 1);
@@ -138,9 +140,8 @@ class _Step2PassengerFormState extends State<Step2PassengerForm> {
 
     return Column(
       children: [
-        // [1] รายละเอียดการจอง
         TourBookingCardWidget(
-          imageUrl: widget.imageUrl, // ส่ง URL รูปภาพ
+          imageUrl: widget.imageUrl,
           tourTitle: widget.tourTitle.toString(),
           route: widget.route,
           tripDates: widget.tripDates,
@@ -150,14 +151,12 @@ class _Step2PassengerFormState extends State<Step2PassengerForm> {
         ),
         const SizedBox(height: 16),
 
-        // [2] ส่วนผู้เดินทาง
         Card(
           child: Padding(
             padding: const EdgeInsets.all(12.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // เดินทาง 1 คน: ผู้เดินทางคือผู้จองคนเดียว ไม่ต้องกรอก Passenger
                 if (widget.expectedCount == 1) ...[
                   const Text(
                     '[2] ข้อมูลผู้เดินทาง',
@@ -177,7 +176,7 @@ class _Step2PassengerFormState extends State<Step2PassengerForm> {
                         SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'เดินทาง 1 คน: ระบบใช้ข้อมูลจากบัญชีผู้จองโดยตรง ไม่ต้องกรอกข้อมูลผู้ร่วมเดินทางเพิ่มเติม',
+                            'เดินทาง 1 คน: ระบบจะใช้ข้อมูลจากผู้ติดต่อ/ผู้จองโดยอัตโนมัติ ไม่ต้องกรอกข้อมูลผู้ร่วมเดินทางเพิ่มเติม',
                             style: TextStyle(fontSize: 13, color: Colors.blue),
                           ),
                         ),
@@ -279,7 +278,6 @@ class _Step2PassengerFormState extends State<Step2PassengerForm> {
                                     ),
                                   ),
                                 ),
-
                                 TextButton.icon(
                                   onPressed: () =>
                                       _openAddPassenger(existing: form),
@@ -306,7 +304,6 @@ class _Step2PassengerFormState extends State<Step2PassengerForm> {
         ),
         const SizedBox(height: 12),
 
-        // [3] ข้อมูลผู้ติดต่อ
         Card(
           child: Padding(
             padding: const EdgeInsets.all(12.0),
@@ -351,25 +348,6 @@ class _Step2PassengerFormState extends State<Step2PassengerForm> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _infoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 90,
-            child: Text(
-              '$label:',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-          Expanded(child: Text(value)),
-        ],
-      ),
     );
   }
 }

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get_navigation/get_navigation.dart';
 import 'package:get/state_manager.dart';
 import 'package:triptour_app/page/wrapper.dart';
-import 'package:triptour_app/serverApi.dart';
+import 'package:triptour_app/services/serverApi.dart';
 
 class Forgetpassword extends StatefulWidget {
   const Forgetpassword({super.key});
@@ -101,11 +101,15 @@ class _ForgetpasswordState extends State<Forgetpassword> {
                                 return;
                               }
                               //เรียก api ส่ง otp ไป email
-                              final otpSent = await Serverapi.sendOtp(emailCtl.text);
+                              final otpSent = await Serverapi.sendOtp(
+                                emailCtl.text,
+                              );
                               if (!otpSent) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text("ไม่สามารถส่ง OTP ได้ กรุณาลองอีกครั้ง"),
+                                    content: Text(
+                                      "ไม่สามารถส่ง OTP ได้ กรุณาลองอีกครั้ง",
+                                    ),
                                   ),
                                 );
                                 return;

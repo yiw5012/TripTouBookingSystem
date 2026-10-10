@@ -6,7 +6,7 @@ import 'package:triptour_app/page/auth/forgetpassword.dart';
 import 'package:triptour_app/page/homepage.dart';
 import 'package:triptour_app/page/auth/registerPage.dart';
 import 'package:triptour_app/page/wrapper.dart';
-import 'package:triptour_app/serverApi.dart';
+import 'package:triptour_app/services/serverApi.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});

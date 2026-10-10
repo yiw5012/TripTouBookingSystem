@@ -447,12 +447,48 @@ router.post(
       // ======================================================
 
       await connection.commit();
+      
 
+      // SEND FCM NOTIFICATION TO FAVORED USERS
+      try {
+        // ดึงข้อมูลประเทศเพื่อเอาชื่อ EN มาทำ Topic 
+        const [countryRows] = await conn.query(
+          "SELECT country_name_th, country_name_en FROM country WHERE country_id = ? LIMIT 1",
+          [Number(country_id)]
+        );
 
-      // ======================================================
-      // RESPONSE
-      // ======================================================
+        if (countryRows.length > 0) {
+          const { country_name_th, country_name_en } = countryRows[0];
 
+          // แปลง
+          // (เช่น "South Korea" -> "country_south_korea")
+          const cleanName = country_name_en
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-zA-Z0-9]/g, "_");
+
+          const targetTopic = `country_${cleanName}`;
+          const formattedPrice = Number(price).toLocaleString();
+
+          const notificationMessage = {
+            notification: {
+              title: `แพ็กเกจทัวร์${country_name_th || ""}มาใหม่! ✈️`,
+              body: `${tour_name} ราคาเริ่มต้นเพียง ฿${formattedPrice}`,
+            },
+            data: {
+              tour_id: String(newTourId),
+              type: "new_tour",
+              click_action: "FLUTTER_NOTIFICATION_CLICK",
+            },
+            topic: targetTopic,
+          };
+
+          await admin.messaging().send(notificationMessage);
+          console.log(`✅ FCM Notification sent successfully to topic: ${targetTopic}`);
+        }
+      } catch (notiError) {
+        console.error("⚠️ Send Notification Error:", notiError.message);
+      }
       return res.status(201).json({
 
         success: true,

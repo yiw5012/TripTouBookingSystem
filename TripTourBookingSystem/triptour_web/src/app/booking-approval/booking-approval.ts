@@ -397,6 +397,7 @@ export class BookingApproval {
     ).length;
 
   }
+  
 
 
   get paidCount(): number {

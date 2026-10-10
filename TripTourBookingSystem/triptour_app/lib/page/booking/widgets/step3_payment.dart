@@ -11,7 +11,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:triptour_app/page/booking/pending_booking.dart';
 import 'package:triptour_app/page/homepage.dart';
-import 'package:triptour_app/serviceBookingApi.dart';
+import 'package:triptour_app/services/serviceBookingApi.dart';
 
 String _statusText(String paymentStatus) {
   switch (paymentStatus) {
@@ -162,10 +162,13 @@ class _Step3PaymentState extends State<Step3Payment> {
     setState(() => _isLoading = true);
 
     try {
+      final rooms = (widget.bookingPayload?['rooms'] as List?) ?? const [];
+
       final response = await ServiceBookingApi.createBookingOrder({
         'member_id': widget.memberId,
         'round_id': widget.roundId,
         'total_price': widget.totalPrice,
+        'rooms': rooms,
       });
 
       final statusCode = response['statusCode'] ?? 500;

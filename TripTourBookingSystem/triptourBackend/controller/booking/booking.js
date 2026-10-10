@@ -57,10 +57,62 @@ async function addMemberToRoundChat(memberUid, roundId) {
   return roomId;
 }
 
+const ROOM_TYPE_VALUES = ['single', 'double', 'triple', 'shared_double', 'shared_triple', 'child'];
+
+function normalizeRoomSelections(rawRooms = []) {
+  if (!Array.isArray(rawRooms)) return [];
+
+  return rawRooms
+    .map((room) => {
+      const rawRoomType = String(room?.room_type ?? room?.roomType ?? room?.type ?? '').trim().toLowerCase();
+      const quantity = Number(room?.quantity ?? 0);
+
+      if (!ROOM_TYPE_VALUES.includes(rawRoomType) || !Number.isInteger(quantity) || quantity <= 0) {
+        return null;
+      }
+
+      return [rawRoomType, quantity];
+    })
+    .filter(Boolean);
+}
+
+async function saveBookingRooms(connection, bookingId, rawRooms = []) {
+  if (!bookingId) {
+    return [];
+  }
+
+  const normalizedRooms = normalizeRoomSelections(rawRooms);
+
+  await connection.query('DELETE FROM room WHERE booking_id = ?', [bookingId]);
+
+  if (normalizedRooms.length === 0) {
+    return [];
+  }
+
+  const values = normalizedRooms.map(([roomType, quantity]) => [bookingId, roomType, quantity]);
+   console.log("Saving rooms for bookingId:", bookingId, "Rooms:", values);
+  await connection.query(
+    'INSERT INTO room (booking_id, room_type, quantity) VALUES ?',
+    [values]
+  );
+
+  return values;
+}
+
 // 1. สร้างรายการจองใหม่ (บันทึกลงตาราง booking)
 router.post('/create-order', async (req, res) => {
   try {
-    const { member_id, round_id, total_price } = req.body || {};
+    const requestBody = req.body || {};
+    const member_id = requestBody.member_id ?? requestBody.booking?.member_id;
+    const round_id = requestBody.round_id ?? requestBody.booking?.round_id;
+    const total_price = requestBody.total_price ?? requestBody.booking?.total_price;
+    const rooms = Array.isArray(requestBody.rooms)
+      ? requestBody.rooms
+      : Array.isArray(requestBody.booking?.rooms)
+        ? requestBody.booking.rooms
+        : [];
+
+    console.log("Received create-order request:", { member_id, round_id, total_price, rooms });
 
     if (!member_id || !round_id || !total_price) {
       return res.status(400).json({
@@ -80,6 +132,10 @@ router.post('/create-order', async (req, res) => {
     );
 
     const bookingId = result.insertId;
+
+    if (Array.isArray(rooms) && rooms.length > 0) {
+      await saveBookingRooms(conn, bookingId, rooms);
+    }
 
     // สร้าง PromptPay QR Code
     const qrPayload = generatePayload(PROMPTPAY_ID, { amount: Number(total_price) || 0 });
@@ -218,7 +274,7 @@ router.post('/confirm-payment', upload.single('slip_image'), async (req, res) =>
 
     await connection.query(
       `UPDATE booking 
-       SET slip_image = ?, payment_status = 'processing', payment_date = NULL 
+       SET slip_image = ?, payment_status = 'paid', payment_date = NOW() 
        WHERE booking_id = ?`,
       [slip_image, booking_id],
     );
@@ -232,7 +288,7 @@ router.post('/confirm-payment', upload.single('slip_image'), async (req, res) =>
       data: {
         booking_id,
         slip_image,
-        payment_status: 'processing',
+        payment_status: 'paid',
         passenger_count: Number(booking.passenger_count),
         round_info: roundSummary, // ส่งสถานะรอบล่าสุดกลับไปด้วย
       },
@@ -544,6 +600,8 @@ router.post('/admin/verify-slip', async (req, res) => {
 
 // POST /api/booking/add-passengers
 router.post('/add-passengers', upload.single('passpot_passenger'), async (req, res) => {
+  let connection;
+
   try {
     let payload = {};
 
@@ -564,6 +622,7 @@ router.post('/add-passengers', upload.single('passpot_passenger'), async (req, r
 
     const bookingId = payload.booking_id;
     const passengers = payload.passengers || [];
+    const roomSelections = payload.rooms || payload.booking?.rooms || [];
 
     // 2. ตรวจสอบไฟล์รูปภาพอย่างปลอดภัย 
     const passportFile = req.file;
@@ -576,6 +635,9 @@ router.post('/add-passengers', upload.single('passpot_passenger'), async (req, r
         message: 'booking_id and at least one passenger are required',
       });
     }
+
+    connection = await conn.getConnection();
+    await connection.beginTransaction();
 
     // 4. เตรียม Data สำหรับ Bulk Insert
     const values = passengers.map((p) => [
@@ -598,7 +660,9 @@ router.post('/add-passengers', upload.single('passpot_passenger'), async (req, r
       VALUES ?
     `;
 
-    const [result] = await conn.query(sql, [values]);
+    const [result] = await connection.query(sql, [values]);
+    await saveBookingRooms(connection, bookingId, roomSelections);
+    await connection.commit();
 
     return res.status(200).json({
       success: true,
@@ -609,12 +673,15 @@ router.post('/add-passengers', upload.single('passpot_passenger'), async (req, r
       },
     });
   } catch (error) {
+    if (connection) await connection.rollback();
     console.error('Add passengers error:', error);
     return res.status(500).json({ 
       success: false, 
       message: 'Internal server error',
       error: error.message 
     });
+  } finally {
+    if (connection) connection.release();
   }
 });
 // POST /api/booking/cancel
@@ -670,13 +737,13 @@ router.post('/cancel', async (req, res) => {
     }
     
     await connection.query('DELETE FROM passenger WHERE booking_id = ?', [booking_id]);
+    await connection.query('DELETE FROM room WHERE booking_id = ?', [booking_id]);
     await connection.query(
       `UPDATE booking 
        SET status = 'reject', payment_status = 'cancelled' 
        WHERE booking_id = ?`,
       [booking_id]
     );
-
 
     await connection.commit();
 
@@ -722,9 +789,15 @@ router.get('/history/:memberId', async (req, res) => {
     b.payment_status,
     b.total_price,
     b.booking_date,
+    b.slip_image,
+    b.round_id,
     t.tour_id,
     t.tour_name,
-    t.status AS tour_status     
+    t.video,
+    t.include_flight,
+    t.pdf_file,
+    t.status AS tour_status  
+    
       FROM booking b
       LEFT JOIN tour_round r ON b.round_id = r.round_id
       LEFT JOIN tour t ON r.tour_id = t.tour_id
