@@ -431,6 +431,10 @@
               ปิดจอง
             </option>
 
+            <option value="success">
+              จบรอบทัวร์
+            </option>
+
           </select>
 
         </div>
@@ -742,22 +746,21 @@
             <td>
 
               <span
-                class="status"
-                [class.open]="
-                  round.status === 'open'
-                "
-                [class.closed]="
-                  round.status === 'closed'
-                "
-              >
-
-                {{
-                  round.status === 'open'
-                    ? 'เปิดจอง'
-                    : 'ปิดจอง'
-                }}
-
-              </span>
+  class="status"
+  [class.open]="round.status === 'open'"
+  [class.closed]="round.status === 'closed'"
+  [class.success]="round.status === 'success'"
+>
+  {{
+    round.status === 'open'
+      ? 'เปิดจอง'
+      : round.status === 'closed'
+        ? 'ปิดจอง'
+        : round.status === 'success'
+          ? 'จบทัวร์'
+          : 'ไม่ทราบสถานะ'
+  }}
+</span>
 
             </td>
 

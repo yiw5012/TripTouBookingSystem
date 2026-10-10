@@ -601,8 +601,10 @@ router.post("/", async (req, res) => {
       });
     }
 
-    const normalizedStatus =
-      status === "closed" ? "closed" : "open";
+const normalizedStatus =
+  ["open", "closed", "success"].includes(status)
+    ? status
+    : "open";
 
     const normalizedGuideId =
       guide_id === "" ||
@@ -877,8 +879,10 @@ router.put("/:roundId", async (req, res) => {
         ? null
         : Number(guide_id);
 
-    const normalizedStatus =
-      status === "closed" ? "closed" : "open";
+const normalizedStatus =
+  ["open", "closed", "success"].includes(status)
+    ? status
+    : "open";
 
     connection = await conn.getConnection();
 
@@ -1114,7 +1118,8 @@ router.delete("/:roundId", async (req, res) => {
       `
       SELECT
         round_id,
-        tour_id
+        tour_id,
+        status
       FROM tour_round
 
       WHERE round_id = ?
@@ -1133,33 +1138,35 @@ router.delete("/:roundId", async (req, res) => {
       });
     }
 
-    // ======================================================
-    // ตรวจ Booking
-    // ======================================================
+// ======================================================
+// ตรวจ Booking
+// ห้ามลบถ้ามี booking.status เป็น pending หรือ confirmed
+// และ booking.payment_status เป็น paid
+// ======================================================
 
-    const [bookingRows] = await connection.query(
-      `
-      SELECT COUNT(*) AS total
-      FROM booking
-      WHERE round_id = ?
-      `,
-      [roundId]
-    );
+const [bookingRows] = await connection.query(
+  `
+    SELECT COUNT(*) AS total
+    FROM booking
+    WHERE round_id = ?
+      AND status IN ('pending', 'confirmed')
+      AND payment_status = 'paid'
+  `,
+  [roundId]
+);
 
-    const bookingCount =
-      Number(bookingRows[0]?.total || 0);
+const bookingCount = Number(bookingRows[0]?.total || 0);
 
-    if (bookingCount > 0) {
-      await connection.rollback();
+if (bookingCount > 0) {
+  await connection.rollback();
 
-      return res.status(409).json({
-        success: false,
-        message:
-          "ไม่สามารถลบรอบทัวร์นี้ได้ เพราะมีรายการจองแล้ว กรุณาเปลี่ยนสถานะเป็น closed แทน",
-
-        booking_count: bookingCount,
-      });
-    }
+  return res.status(409).json({
+    success: false,
+    message:
+      "ไม่สามารถลบรอบทัวร์ได้ เนื่องจากมีรายการจองสถานะ pending หรือ confirmed ที่ชำระเงินแล้ว",
+    booking_count: bookingCount,
+  });
+}
 
     // ======================================================
     // ลบ Firebase ก่อน

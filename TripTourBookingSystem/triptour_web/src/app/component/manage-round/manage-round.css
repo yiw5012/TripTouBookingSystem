@@ -315,3 +315,8 @@ td {
     padding: 15px;
   }
 }
+
+.status.success {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}

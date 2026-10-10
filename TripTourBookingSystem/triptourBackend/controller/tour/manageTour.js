@@ -344,17 +344,18 @@ router.put(
       // ==========================================================
 
       const [existingTourRows] = await connection.query(
-        `
-        SELECT
-          tour_id,
-          video,
-          pdf_file
-        FROM tour
-        WHERE tour_id = ?
-        LIMIT 1
-        `,
-        [tourIdNumber]
-      );
+  `
+  SELECT
+    tour_id,
+    status,
+    video,
+    pdf_file
+  FROM tour
+  WHERE tour_id = ?
+  LIMIT 1
+  `,
+  [tourIdNumber]
+);
 
       if (existingTourRows.length === 0) {
         return res.status(404).json({
@@ -398,6 +399,48 @@ router.put(
       // ==========================================================
 
       await connection.beginTransaction();
+
+      // ==========================================================
+// ตรวจสอบเงื่อนไขก่อนปิดโปรแกรมทัวร์
+// ==========================================================
+
+if (
+  normalizedStatus === "closed" &&
+  existingTour.status !== "closed"
+) {
+  const [blockedRounds] = await connection.query(
+    `
+    SELECT
+      tr.round_id,
+      tr.status,
+      COUNT(b.booking_id) AS booking_count
+    FROM tour_round tr
+    LEFT JOIN booking b
+      ON b.round_id = tr.round_id
+    WHERE tr.tour_id = ?
+    GROUP BY tr.round_id, tr.status
+    HAVING NOT (
+      tr.status = 'success'
+      OR (
+        tr.status = 'open'
+        AND COUNT(b.booking_id) = 0
+      )
+    )
+    `,
+    [tourIdNumber]
+  );
+
+  if (blockedRounds.length > 0) {
+    await connection.rollback();
+
+    return res.status(409).json({
+      success: false,
+      message:
+        "ไม่สามารถปิดโปรแกรมทัวร์ได้ เนื่องจากมีรอบทัวร์ที่ไม่ผ่านเงื่อนไข กรุณาตรวจสอบสถานะรอบทัวร์และรายการจอง",
+      data: blockedRounds,
+    });
+  }
+}
 
       // ==========================================================
       // 9. Update ตาราง tour
