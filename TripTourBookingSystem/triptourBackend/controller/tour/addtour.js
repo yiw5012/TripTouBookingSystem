@@ -1,6 +1,8 @@
 import express from "express";
 import { conn } from "../../config/db.js";
 import { tourUpload } from "../middleware/upload.js";
+import admin from "../../config/firebase.js";
+
 export const router = express.Router();
 
 // GET : ดึงข้อมูล Tour มาแสดง
@@ -484,13 +486,13 @@ router.post(
           };
 
           await admin.messaging().send(notificationMessage);
-          console.log(`✅ FCM Notification sent successfully to topic: ${targetTopic}`);
+          console.log(`✅ FCM Notification sent successfully to topic: ${targetTopic} noti : ${notificationMessage}` );
         }
       } catch (notiError) {
         console.error("⚠️ Send Notification Error:", notiError.message);
       }
       return res.status(201).json({
-
+ 
         success: true,
 
         message:
