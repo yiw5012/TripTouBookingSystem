@@ -17,11 +17,13 @@ export class AddGuide implements OnInit {
   guideForm!: FormGroup;
   isSubmitting = false;
   private cdr = inject(ChangeDetectorRef);
+  previewUrl: string | null = null;
+selectedImage: File | null = null; // ตัวแปรเก็บรูปโปรไa]N
 
   constructor(
     private fb: FormBuilder,
-    private serverApi: ServerApi 
-  ) {}
+    private serverApi: ServerApi
+  ) { }
 
   ngOnInit(): void {
     this.guideForm = this.fb.group({
@@ -47,26 +49,37 @@ export class AddGuide implements OnInit {
 
     this.isSubmitting = true;
     this.cdr.detectChanges();
+    const formData = new FormData();
 
-    // เตรียม Payload และแปลงค่าอายุเป็นตัวเลข
-    const payload = {
-      ...this.guideForm.value,
-      age: Number(this.guideForm.value.age)
-    };
+    // เพิ่มค่าจาก Form Control ลงใน FormData
+    Object.keys(this.guideForm.value).forEach(key => {
+      const value = this.guideForm.value[key];
+      if (value !== null && value !== undefined) {
+        if (key === 'age') {
+          formData.append(key, String(Number(value)));
+        } else {
+          formData.append(key, value);
+        }
+      }
+    });
+
+    if (this.selectedImage) {
+      formData.append('guideimage_profile', this.selectedImage);
+    }
 
     try {
-      const res = await this.serverApi.postData('add-guide', payload);
+      const res = await this.serverApi.postData('add-guide', formData);
 
       this.isSubmitting = false;
 
       // ✅ เช็กทั้ง statusCode และ status === 'success' ตามที่ Express ส่งมา
       if (
-        res.statusCode === 200 || 
-        res.statusCode === 201 || 
+        res.statusCode === 200 ||
+        res.statusCode === 201 ||
         res.body?.status === 'success' ||
         res.body?.success
       ) {
-        alert('✅ เพิ่มข้อมูลไกด์สำเร็จ!');
+        alert('✅ เพิ่มข้อมูลไกด์และอัปโหลดรูปภาพสำเร็จ!');
         this.resetGuideForm();
       } else {
         alert('❌ เกิดข้อผิดพลาด: ' + (res.body?.message || res.message || 'ไม่สามารถสร้างบัญชีไกด์ได้'));
@@ -77,16 +90,35 @@ export class AddGuide implements OnInit {
       console.error('Error submitting form:', err);
       alert('❌ เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
     } finally {
-      // ✅ บังคับอัปเดต UI เสมอ ไม่ว่าสำเร็จหรือล้มเหลว
       this.cdr.detectChanges();
     }
+  }
+
+  onImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.selectedImage = input.files[0];
+      // แสดงตัวอย่างรูปภาพ
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        this.previewUrl = e.target.result;
+      };
+      reader.readAsDataURL(this.selectedImage);
+    }
+  }
+
+  // ฟังก์ชันลบรูปโปรไฟล์
+  removeSelectedImage(): void {
+    this.guideForm.reset();
+    this.selectedImage = null;
+    this.previewUrl = null;
   }
 
   // ฟังก์ชันล้างฟอร์มและรีเซ็ต Validation State ทั้งหมด
   resetGuideForm(): void {
     this.guideForm.reset();
-    
-    // เคลียร์สถานะ touched และ errors ออก เพื่อไม่ให้ขึ้นกรอบสีแดง
+    this.selectedImage = null;
+    this.previewUrl = null; 
     Object.keys(this.guideForm.controls).forEach(key => {
       const control = this.guideForm.get(key);
       control?.setErrors(null);

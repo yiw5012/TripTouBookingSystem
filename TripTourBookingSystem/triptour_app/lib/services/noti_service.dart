@@ -17,6 +17,7 @@ class NotiService {
     List<String> countries,
   ) async {
     for (String country in countries) {
+      print(country);
       if (country.trim().isNotEmpty) {
         String topic = formatCountryTopic(country);
         await _messaging.subscribeToTopic(topic);

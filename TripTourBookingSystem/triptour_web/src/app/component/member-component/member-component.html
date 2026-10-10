@@ -137,8 +137,13 @@
           <button type="button" class="tab-btn" [class.active]="selectedTab === 'user'" (click)="selectedTab = 'user'">สมาชิก</button>
           <button type="button" class="tab-btn" [class.active]="selectedTab === 'guide'" (click)="selectedTab = 'guide'">ไกด์</button>
           <button type="button" class="tab-btn" [class.active]="selectedTab === 'history'" (click)="selectedTab = 'history'">ประวัติการระงับ</button>
+          <button type="button" class="tab-btn tab-btn-add" [class.active]="selectedTab === 'add-guide'" (click)="selectedTab = 'add-guide'">
+           เพิ่มไกด์
+        </button>
         </div>
-
+        @if (selectedTab === 'add-guide') {
+        <app-add-guide></app-add-guide>
+        }
         @if (filteredMembers.length) {
           <div class="table-wrap">
             <table class="member-table">

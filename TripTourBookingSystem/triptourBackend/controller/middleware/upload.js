@@ -20,11 +20,9 @@ cloudinary.config({
 // ==========================================================
 
 const storage = new CloudinaryStorage({
-
   cloudinary: cloudinary,
-
   params: {
-    folder: 'triptour_uploads',
+    folder: 'triptour_uploads/userAndslip',
 
     allowed_formats: [
       'jpg',
@@ -33,13 +31,26 @@ const storage = new CloudinaryStorage({
       'webp'
     ]
   }
+});
 
+export const upload = multer({
+  storage
+});
+
+
+// Storage สำหรับรูปภาพทั่วไป / รูปโปรไฟล์ Guide
+const storageGuide = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'triptour_uploads/guides', 
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp']
+  }
 });
 
 
 // ใช้ของเดิมต่อไป
-export const upload = multer({
-  storage
+export const upload_guide = multer({
+   storage: storageGuide
 });
 
 

@@ -86,7 +86,7 @@ class _RegisterPageState extends State<RegisterPage> {
   String _countryLabel(Country country) {
     final nameTh = country.countryNameTH.trim();
     final nameEn = country.countryNameEn.trim();
-    return nameTh.isNotEmpty ? nameTh : nameEn;
+    return nameEn.isNotEmpty ? nameEn : nameTh;
   }
 
   @override
@@ -572,8 +572,9 @@ class _RegisterPageState extends State<RegisterPage> {
       );
       if (result != null && result['status'] == 'success') {
         print("process 4 - ไปหน้า Wrapper เพื่อเช็คข้อมูลผู้ใช้และเข้าสู่ระบบ");
+        print(selectedCountries.toString());
         await NotiService.subscribeToPreferredCountries(selectedCountries);
-        Get.offAll(() => const Wrapper());
+        Get.off(() => const Wrapper());
       } else {
         print(result);
         ScaffoldMessenger.of(

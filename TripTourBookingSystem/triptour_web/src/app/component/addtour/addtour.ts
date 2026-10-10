@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
-import { ServerApi } from '../../server/server'; 
+import { ServerApi } from '../../server/server';
 
 @Component({
   selector: 'app-addtour',
@@ -46,7 +46,7 @@ export class Addtour implements OnInit {
   constructor(
     private fb: FormBuilder,
     private api: ServerApi
-  ) {}
+  ) { }
 
 
   // ==========================================================
@@ -442,12 +442,12 @@ export class Addtour implements OnInit {
       file;
 
     this.tourForm
-  .get('pdf_file')
-  ?.setValue(file.name);
+      .get('pdf_file')
+      ?.setValue(file.name);
 
-this.tourForm
-  .get('pdf_file')
-  ?.updateValueAndValidity();
+    this.tourForm
+      .get('pdf_file')
+      ?.updateValueAndValidity();
 
 
     console.log(
@@ -464,18 +464,18 @@ this.tourForm
   // REMOVE PDF
   // ==========================================================
 
- removeSelectedPdf(): void {
+  removeSelectedPdf(): void {
 
-  this.selectedPdf = null;
+    this.selectedPdf = null;
 
-  this.tourForm
-    .get('pdf_file')
-    ?.setValue('');
+    this.tourForm
+      .get('pdf_file')
+      ?.setValue('');
 
-  this.tourForm
-    .get('pdf_file')
-    ?.updateValueAndValidity();
-}
+    this.tourForm
+      .get('pdf_file')
+      ?.updateValueAndValidity();
+  }
 
 
   // ==========================================================
@@ -779,10 +779,9 @@ this.tourForm
 
 
         alert(
-          `เพิ่มข้อมูลทัวร์สำเร็จ${
-            newTourId
-              ? `\nรหัสทัวร์: ${newTourId}`
-              : ''
+          `เพิ่มข้อมูลทัวร์สำเร็จ${newTourId
+            ? `\nรหัสทัวร์: ${newTourId}`
+            : ''
           }`
         );
 

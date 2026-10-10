@@ -2,13 +2,14 @@ import express from "express";
 import { conn } from "../../config/db.js"; 
 import { readFileSync } from 'fs';
 import  admin  from "../../config/firebase.js"
+import { upload_guide } from "../middleware/upload.js";
 
 
 const db = admin.firestore();
 export const router = express.Router(); 
 
 
-router.post("/", async (req, res) => {
+router.post("/", upload_guide.single('guideimage_profile'), async (req, res) => {
     const { 
         email, 
         password, 
@@ -20,6 +21,8 @@ router.post("/", async (req, res) => {
         birthday, 
         address 
     } = req.body;
+    const guideImage =  req.file?.path ?? null;
+
  let google_id = null;
     try {
         const userRecord = await admin.auth().createUser({
@@ -32,13 +35,13 @@ router.post("/", async (req, res) => {
         const google_id = userRecord.uid;
         const sql = `
             INSERT INTO guide (
-                google_id, guide_code, first_name, last_name, email,
+                google_id, guide_code, image_profile, first_name, last_name, email,
                 age, birthday, phone, address, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,?, 'active')
         `;
 
         const values = [
-            google_id, guide_code, first_name, last_name, email,
+            google_id, guide_code, guideImage ,first_name, last_name, email,
             age, birthday, phone, address
         ];
 

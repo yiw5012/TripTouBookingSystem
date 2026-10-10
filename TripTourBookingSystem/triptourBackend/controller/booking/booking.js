@@ -219,7 +219,6 @@ router.get('/status/:bookingId', async (req, res) => {
   }
 });
 
-// 3. แนบสลิปชำระเงิน (อัปเดต slip_image, payment_date และเปลี่ยน payment_status เป็น processing)
 router.post('/confirm-payment', upload.single('slip_image'), async (req, res) => {
   let connection;
   try {
