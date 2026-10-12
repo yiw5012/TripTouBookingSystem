@@ -7,6 +7,7 @@ import {
   push, 
   set, 
   update, 
+  get,
   query, 
   orderByChild 
 } from 'firebase/database';
@@ -39,16 +40,41 @@ export class AdminChatService {
   private app = initializeApp(environment.firebaseConfig);
   private db = getDatabase(this.app);
 
-  /**
-   * ใช้ room id 
-   * - ปัจจุบัน: rooms/{userId} และ messages/{userId}
-   * - Legacy: roomPrivate_{userId}
-   *
-   * จึงต้อง fallback เพื่อให้ chat แสดงได้ทั้งกรณีเก่าและใหม่
-   */
-  private getRoomPathId(id: string): string {
-    if (!id) return '';
-    return id;
+  private getRoomCandidates(id: string): string[] {
+    if (!id) return [];
+
+    const normalized = String(id).trim();
+    if (!normalized) return [];
+
+    const candidates = [normalized];
+
+    if (normalized.startsWith('roomPrivate_')) {
+      candidates.push(normalized.replace(/^roomPrivate_/, ''));
+    } else {
+      candidates.push(`roomPrivate_${normalized}`);
+    }
+
+    return [...new Set(candidates.filter(Boolean))];
+  }
+
+  private isRoundRoom(roomId: string, roomValue: any): boolean {
+    if (!roomId) return true;
+    if (roomId.startsWith('round_')) return true;
+    if (typeof roomValue?.roundId !== 'undefined' && roomValue?.members) return true;
+    return false;
+  }
+
+  private async resolveWritableRoomId(roomIdOrUserId: string): Promise<string> {
+    const candidates = this.getRoomCandidates(roomIdOrUserId);
+
+    for (const candidate of candidates) {
+      const snap = await get(ref(this.db, `rooms/${candidate}`));
+      if (snap.exists()) {
+        return candidate;
+      }
+    }
+
+    return candidates[0] || roomIdOrUserId;
   }
 
   // ดึงรายการห้องแชททั้งหมด (เรียงตามเวลาล่าสุด)
@@ -61,6 +87,10 @@ export class AdminChatService {
         snapshot.forEach((childSnapshot) => {
           const val = childSnapshot.val();
           const key = childSnapshot.key as string;
+
+          if (this.isRoundRoom(key, val)) {
+            return;
+          }
 
           rooms.push({
             roomId: val.roomId || key,
@@ -81,36 +111,58 @@ export class AdminChatService {
   // ดึงข้อความสนทนาภายในห้อง
   getMessages(roomIdOrUserId: string): Observable<ChatMessage[]> {
     return new Observable((observer) => {
-      const targetRoomIds = [this.getRoomPathId(roomIdOrUserId)];
-      const legacyRoomId = roomIdOrUserId.startsWith('roomPrivate_') ? roomIdOrUserId : `roomPrivate_${roomIdOrUserId}`;
-      if (legacyRoomId !== targetRoomIds[0]) {
-        targetRoomIds.push(legacyRoomId);
-      }
+      const targetRoomIds = this.getRoomCandidates(roomIdOrUserId);
+      const snapshots = new Map<string, ChatMessage[]>();
+      const unsubscribers: Array<() => void> = [];
 
-      const finalRef = ref(this.db, `messages/${targetRoomIds[0]}`);
-      const unsubscribe = onValue(finalRef, (snapshot) => {
-        const messages: ChatMessage[] = [];
-        snapshot.forEach((childSnapshot) => {
-          const value = childSnapshot.val() as Partial<ChatMessage>;
-          messages.push({
-            id: childSnapshot.key as string,
-            ...value,
-            senderType: value.senderType ?? value.senderRole ?? 'user',
+      const emitMessages = () => {
+        for (const roomId of targetRoomIds) {
+          const candidate = snapshots.get(roomId) || [];
+          if (candidate.length > 0) {
+            observer.next(candidate);
+            return;
+          }
+        }
+
+        observer.next([]);
+      };
+
+      targetRoomIds.forEach((roomId) => {
+        const roomMessagesRef = ref(this.db, `messages/${roomId}`);
+        const unsubscribe = onValue(roomMessagesRef, (snapshot) => {
+          const messages: ChatMessage[] = [];
+          snapshot.forEach((childSnapshot) => {
+            const value = childSnapshot.val() as Partial<ChatMessage>;
+            messages.push({
+              id: childSnapshot.key as string,
+              ...value,
+              senderType: value.senderType ?? value.senderRole ?? 'user',
+            });
           });
+          snapshots.set(roomId, messages);
+          emitMessages();
+        }, (error) => {
+          observer.error(error);
         });
-        observer.next(messages);
-      }, (error) => {
-        observer.error(error);
+
+        unsubscribers.push(unsubscribe);
       });
 
-      return () => unsubscribe();
+      return () => {
+        unsubscribers.forEach((unsubscribe) => unsubscribe());
+      };
     });
   }
 
   // ส่งข้อความในนาม Admin
   async sendMessage(roomIdOrUserId: string, text: string, adminId: string = 'admin_01'): Promise<void> {
-    const targetRoomId = this.getRoomPathId(roomIdOrUserId);
+    const targetRoomId = await this.resolveWritableRoomId(roomIdOrUserId);
     const timestamp = Date.now();
+    const roomSnapshot = await get(ref(this.db, `rooms/${targetRoomId}`));
+    const roomData = roomSnapshot.exists() ? roomSnapshot.val() : {};
+    const defaultUserId = targetRoomId.startsWith('roomPrivate_')
+      ? targetRoomId.replace(/^roomPrivate_/, '')
+      : targetRoomId;
 
     const messageData: ChatMessage = {
       senderType: 'admin',
@@ -125,6 +177,10 @@ export class AdminChatService {
 
     const roomRef = ref(this.db, `rooms/${targetRoomId}`);
     await update(roomRef, {
+      roomId: roomData?.roomId || targetRoomId,
+      userId: roomData?.userId || defaultUserId,
+      type: roomData?.type || 'admin_support',
+      createdAt: roomData?.createdAt || timestamp,
       lastMessage: text,
       lastUpdated: timestamp,
       unreadByAdmin: 0
@@ -133,7 +189,7 @@ export class AdminChatService {
 
   // เคลียร์จำนวนข้อความยังไม่อ่าน
   async markAsRead(roomIdOrUserId: string): Promise<void> {
-    const targetRoomId = this.getRoomPathId(roomIdOrUserId);
+    const targetRoomId = await this.resolveWritableRoomId(roomIdOrUserId);
     const roomRef = ref(this.db, `rooms/${targetRoomId}`);
     await update(roomRef, { unreadByAdmin: 0 });
   }
