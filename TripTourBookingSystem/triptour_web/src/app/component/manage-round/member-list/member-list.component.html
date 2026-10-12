@@ -1,0 +1,210 @@
+@if (isLoading) {
+  <div class="loading-state text-center p-5">
+    <mat-spinner style="margin: 0 auto;"></mat-spinner>
+    <p class="mt-3">กำลังโหลดข้อมูลรอบทัวร์...</p>
+  </div>
+} @else {
+  <section class="member-page">
+    <div class="member-header">
+      <div>
+        <p class="eyebrow">จัดการระบบทัวร์</p>
+        <h1>รอบการเดินทาง (Tour Rounds)</h1>
+      </div>
+    </div>
+
+    @if (errorMessage) {
+      <div class="error-box">{{ errorMessage }}</div>
+    }
+
+    <!-- ================= 1. DETAIL VIEW (แสดงรายละเอียดรอบทัวร์เมื่อคลิกเลือก) ================= -->
+    @if (selectedRound) {
+      <div class="detail-container">
+        <!-- ปุ่มย้อนกลับ -->
+        <div class="detail-topbar">
+          <button type="button" class="btn-back" (click)="closeDetailView()">
+            ← กลับไปหน้ารายการรอบทัวร์
+          </button>
+        </div>
+
+        <!-- Card 1: ข้อมูลหลักรอบทัวร์ -->
+        <div class="ui-card">
+          <div class="profile-header">
+            <div class="avatar-box">
+              <div class="avatar-circle round-badge-icon">
+                #{{ selectedRound.round_id }}
+              </div>
+              <div class="profile-title">
+                <h2>{{ selectedRound.tour_name || 'รอบทัวร์' }}</h2>
+                <div class="profile-sub">
+                  <span class="role-badge guide">
+                    {{ selectedRound.departure || '-' }} → {{ selectedRound.destination || '-' }}
+                  </span>
+                  <span class="status-badge" [ngClass]="selectedRound.status === 'open' ? 'active' : 'inactive'">
+                    ● {{ selectedRound.status === 'open' ? 'เปิดรับจอง' : 'ปิดรับ/เต็มแล้ว' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="action-group">
+              <button type="button" class="btn-outline-primary" (click)="downloadTourPdf(selectedRound)" [disabled]="isDownloadingTourPdf">
+                {{ isDownloadingTourPdf ? 'กำลังดาวน์โหลด...' : 'ดาวน์โหลด PDF โปรแกรมทัวร์' }}
+              </button>
+              <button type="button" class="btn-success" (click)="exportRoundToPdf(selectedRound)">
+                📄 Export PDF รายชื่อผู้เดินทาง
+              </button>
+            </div>
+          </div>
+
+          <div class="card-divider"></div>
+
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">รหัสรอบทัวร์ (Round ID)</span>
+              <span class="info-value">#{{ selectedRound.round_id }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">รหัสทัวร์ (Tour ID)</span>
+              <span class="info-value">#{{ selectedRound.tour_id || '-' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">ช่วงวันเดินทาง</span>
+              <span class="info-value">{{ formatDate(selectedRound.start_date) }} ถึง {{ formatDate(selectedRound.end_date) }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">ราคาต่อท่าน</span>
+              <span class="info-value text-primary">{{ getPrice(selectedRound.price) }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">สายการบิน / เที่ยวบิน</span>
+              <span class="info-value">{{ selectedRound.airline || '-' }} ({{ selectedRound.flight || '-' }})</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">จำนวนผู้เดินทาง (คอนเฟิร์มแล้ว / ที่นั่งทั้งหมด)</span>
+              <span class="info-value">{{ selectedRoundPassengers.length }} / {{ selectedRound.max_seats || '-' }} คน</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: รายชื่อผู้เดินทางที่คอนเฟิร์มแล้ว (ชำระเงินแล้ว) -->
+        <div class="ui-card">
+          <div class="card-title-bar">
+            <h3>👥 รายชื่อผู้เดินทางที่คอนเฟิร์มแล้วในรอบนี้</h3>
+          </div>
+
+          @if (selectedRoundPassengers.length) {
+            <div class="table-wrap">
+              <table class="member-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Booking ID</th>
+                    <th>ข้อมูลสมาชิก</th>
+                    <th>ช่องทางติดต่อ</th>
+                    <th>ข้อมูลส่วนตัว</th>
+                    <th>ข้อมูลสุขภาพ</th>
+                    <th>ยอดชำระ</th>
+                    <th>วันที่จอง</th>
+                    <th>สถานะ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (p of selectedRoundPassengers; track p.booking_id; let i = $index) {
+                    <tr>
+                      <td>{{ i + 1 }}</td>
+                      <td><strong>#{{ p.booking_id }}</strong></td>
+                      <td>
+                        <div class="member-cell-stack">
+                          <strong>{{ getPassengerName(p) }}</strong>
+                          <span>Member ID: {{ p.member_id }}</span>
+                          <span>เลขบัตร: {{ p.number_id || '-' }}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div class="member-cell-stack">
+                          <span>อีเมล: {{ p.email || '-' }}</span>
+                          <span>โทร: {{ p.phone || '-' }}</span>
+                          <span>ที่อยู่: {{ p.address || '-' }}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div class="member-cell-stack">
+                          <span>เพศ: {{ getGenderLabel(p.gender) }}</span>
+                          <span>วันเกิด: {{ formatDate(p.birthday) }}</span>
+                          <span>อายุ: {{ getPassengerAge(p) }}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div class="member-cell-stack member-health-cell">
+                          <span>โรคประจำตัว: {{ p.congenital_disease || '-' }}</span>
+                          <span>ยา: {{ p.medicine || '-' }}</span>
+                          <span>แพ้: {{ p.allergic_list || '-' }}</span>
+                          <span>อื่น ๆ: {{ p.others || '-' }}</span>
+                        </div>
+                      </td>
+                      <td>{{ getPrice(p.total_price) }}</td>
+                      <td>{{ formatDate(p.booking_date) }}</td>
+                      <td><span class="status-badge active">ชำระแล้ว (Confirmed)</span></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <div class="empty-box">ยังไม่มีผู้เดินทางที่ชำระเงินเรียบร้อยแล้วในรอบทัวร์นี้</div>
+          }
+        </div>
+      </div>
+    } @else {
+      <!-- ================= 2. TABLE LIST VIEW (รายการตารางรอบทัวร์) ================= -->
+      @if (!rounds.length) {
+        <div class="empty-box">ไม่มีข้อมูลรอบทัวร์ในระบบ</div>
+      } @else {
+        <div class="member-tabs">
+          <button type="button" class="tab-btn" [class.active]="selectedTab === 'all'" (click)="selectedTab = 'all'">ทั้งหมด</button>
+          <button type="button" class="tab-btn" [class.active]="selectedTab === 'open'" (click)="selectedTab = 'open'">เปิดรับจอง</button>
+          <button type="button" class="tab-btn" [class.active]="selectedTab === 'closed'" (click)="selectedTab = 'closed'">ปิด/เต็มแล้ว</button>
+        </div>
+
+        @if (filteredRounds.length) {
+          <div class="table-wrap">
+            <table class="member-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Round ID</th>
+                  <th>ชื่อทัวร์</th>
+                  <th>เส้นทาง</th>
+                  <th>วันเดินทาง</th>
+                  <th>ราคา</th>
+                  <th>ผู้เดินทาง</th>
+                  <th>สถานะ</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (round of filteredRounds; track round.round_id; let i = $index) {
+                  <tr class="clickable-row" (click)="viewRoundDetail(round)">
+                    <td>{{ i + 1 }}</td>
+                    <td><strong>#{{ round.round_id }}</strong></td>
+                    <td>{{ round.tour_name || '-' }}</td>
+                    <td>{{ round.departure || '-' }} → {{ round.destination || '-' }}</td>
+                    <td>{{ formatDate(round.start_date) }} - {{ formatDate(round.end_date) }}</td>
+                    <td>{{ getPrice(round.price) }}</td>
+                    <td>{{ getConfirmedCount(round.round_id) }}/{{ round.max_seats || '-' }}</td>
+                    <td>
+                      <span class="status-badge" [ngClass]="round.status === 'open' ? 'active' : 'inactive'">
+                        ● {{ round.status === 'open' ? 'เปิดรับจอง' : 'ปิดแล้ว' }}
+                      </span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="empty-box">ไม่มีข้อมูลในหมวดนี้</div>
+        }
+      }
+    }
+  </section>
+}

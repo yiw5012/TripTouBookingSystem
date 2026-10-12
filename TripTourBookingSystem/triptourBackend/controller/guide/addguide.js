@@ -174,7 +174,7 @@ router.get(
 // ==========================================================
 
 router.put(
-    "/profile/:googleId",
+    "/profile/:googleId", upload_guide.single('guideimage_profile'),
     async (req, res) => {
         try {
             const {
@@ -184,6 +184,7 @@ router.put(
             const {
                 first_name,
                 last_name,
+                email,
                 age,
                 birthday,
                 phone,
@@ -257,39 +258,60 @@ router.put(
                 }
             }
 
-            // ==================================================
-            // UPDATE FIREBASE PASSWORD IF PROVIDED
-            // ==================================================
+            const currentGuide = guideRows[0];
 
-            if (
-                password !== null &&
-                password !== undefined &&
-                password.toString().trim() !== ""
-            ) {
-                const passwordText = password.toString();
+            const newGuideImage = req.file?.path ?? currentGuide.image_profile;
 
+            const firebaseUpdateData = {};
+
+            // ตรวจสอบและอัปเดตอีเมล
+            const cleanEmail = email?.toString().trim().toLowerCase();
+            if (cleanEmail && cleanEmail !== currentGuide.email) {
+                firebaseUpdateData.email = cleanEmail;
+            }
+           if (password !== null && password !== undefined && password.toString().trim() !== "") {
+                const passwordText = password.toString().trim();
                 if (passwordText.length < 6) {
                     return res.status(400).json({
                         success: false,
-                        message: "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร"
+                        message: "รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร"
                     });
                 }
-
-                await admin.auth().updateUser(googleId, {
-                    password: passwordText
-                });
+                firebaseUpdateData.password = passwordText;
+            }
+            if (Object.keys(firebaseUpdateData).length > 0) {
+                try {
+                    await admin.auth().updateUser(googleId, firebaseUpdateData);
+                    console.log(`[Firebase Auth] Updated credentials for guide: ${googleId}`);
+                } catch (fbError) {
+                    console.error("Firebase update user error:", fbError);
+                    if (fbError.code === 'auth/email-already-exists') {
+                        return res.status(400).json({
+                            success: false,
+                            message: "อีเมลนี้ถูกใช้งานในระบบ Firebase แล้ว"
+                        });
+                    }
+                    return res.status(500).json({
+                        success: false,
+                        message: "เกิดข้อผิดพลาดในการอัปเดตข้อมูลบัญชีใน Firebase: " + fbError.message
+                    });
+                }
             }
 
+            // 📌 อัปเดตข้อมูลลงตาราง guide ใน MySQL
+            const updatedEmail = cleanEmail || currentGuide.email;
             // ==================================================
             // UPDATE GUIDE
             // ==================================================
 
-            await conn.query(
+           await conn.query(
                 `
                 UPDATE guide
-                SET
+                SET 
+                    image_profile = ?,
                     first_name = ?,
                     last_name = ?,
+                    email = ?,
                     age = ?,
                     birthday = ?,
                     phone = ?,
@@ -297,8 +319,10 @@ router.put(
                 WHERE google_id = ?
                 `,
                 [
+                    newGuideImage,
                     first_name?.toString().trim() || null,
                     last_name?.toString().trim() || null,
+                    updatedEmail,
                     ageValue,
                     birthday?.toString().trim() || null,
                     phone?.toString().trim() || null,
@@ -311,28 +335,17 @@ router.put(
             // GET UPDATED GUIDE
             // ==================================================
 
-            const [updatedRows] =
-                await conn.query(
-                    `
-                    SELECT
-                        guide_id,
-                        guide_code,
-                        image_profile,
-                        first_name,
-                        last_name,
-                        email,
-                        age,
-                        birthday,
-                        phone,
-                        address,
-                        status,
-                        google_id
-                    FROM guide
-                    WHERE google_id = ?
-                    LIMIT 1
-                    `,
-                    [googleId]
-                );
+            const [updatedRows] = await conn.query(
+                `
+                SELECT
+                    guide_id, guide_code, image_profile, first_name, last_name,
+                    email, age, birthday, phone, address, status, google_id
+                FROM guide
+                WHERE google_id = ?
+                LIMIT 1
+                `,
+                [googleId]
+            );
 
             // ==================================================
             // RESPONSE

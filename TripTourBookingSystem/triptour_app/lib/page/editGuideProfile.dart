@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:triptour_app/services/serverApi.dart';
 
 class EditGuideProfile extends StatefulWidget {
@@ -15,18 +18,23 @@ class _EditGuideProfileState extends State<EditGuideProfile> {
   // ==========================================================
   // CONTROLLERS
   // ==========================================================
+  final _formKey = GlobalKey<FormState>();
 
   late final TextEditingController firstNameController;
   late final TextEditingController lastNameController;
+  late final TextEditingController emailCtl;
   late final TextEditingController ageController;
   late final TextEditingController birthdayController;
   late final TextEditingController phoneController;
   late final TextEditingController addressController;
+  late final TextEditingController passwordCtl;
 
   // ==========================================================
   // STATE
   // ==========================================================
-
+  File? _selectedImage;
+  final ImagePicker _picker = ImagePicker();
+  bool isLoading = false;
   bool isSaving = false;
 
   // ==========================================================
@@ -58,6 +66,8 @@ class _EditGuideProfileState extends State<EditGuideProfile> {
     addressController = TextEditingController(
       text: getValue(widget.guide['address']),
     );
+    emailCtl = TextEditingController(text: getValue(widget.guide['email']));
+    passwordCtl = TextEditingController();
   }
 
   // ==========================================================
@@ -68,14 +78,28 @@ class _EditGuideProfileState extends State<EditGuideProfile> {
   void dispose() {
     firstNameController.dispose();
     lastNameController.dispose();
+    emailCtl.dispose();
     ageController.dispose();
     birthdayController.dispose();
     phoneController.dispose();
     addressController.dispose();
+    passwordCtl.dispose();
 
     super.dispose();
   }
 
+  Future<void> _pickImage() async {
+    final XFile? pickedFile = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
+
+    if (pickedFile != null) {
+      setState(() {
+        _selectedImage = File(pickedFile.path);
+      });
+    }
+  }
   // ==========================================================
   // GET VALUE
   // ==========================================================
@@ -286,14 +310,20 @@ class _EditGuideProfileState extends State<EditGuideProfile> {
     // GET FIREBASE USER
     // ========================================================
 
-    final User? user = FirebaseAuth.instance.currentUser;
+    // final User? user = FirebaseAuth.instance.currentUser;
 
-    if (user == null) {
-      showMessage('กรุณาเข้าสู่ระบบก่อน');
+    // if (user == null) {
+    //   showMessage('กรุณาเข้าสู่ระบบก่อน');
 
+    //   return;
+    // }
+    final String googleId = widget.guide['google_id'] ?? '';
+    if (googleId.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('ไม่พบ Google ID ของไกด์')));
       return;
     }
-
     // ========================================================
     // START SAVING
     // ========================================================
@@ -308,11 +338,12 @@ class _EditGuideProfileState extends State<EditGuideProfile> {
       // ======================================================
 
       final result = await Serverapi.updateGuideProfile(
-        googleId: user.uid,
+        googleId: googleId,
 
         firstName: firstNameController.text.trim(),
 
         lastName: lastNameController.text.trim(),
+        email: emailCtl.text.trim(),
 
         age: ageController.text.trim(),
 
@@ -321,8 +352,12 @@ class _EditGuideProfileState extends State<EditGuideProfile> {
         phone: phoneController.text.trim(),
 
         address: addressController.text.trim(),
+        password: passwordCtl.text.trim(),
+        imageProfileFile: _selectedImage,
       );
-
+      // เพิ่ม print เพื่อดูค่าที่ Backend ตอบกลับมาจริง ๆ ใน Debug Console
+      print("StatusCode: ${result['statusCode']}");
+      print("ResponseBody: ${result['body']}");
       if (!mounted) {
         return;
       }
@@ -371,255 +406,247 @@ class _EditGuideProfileState extends State<EditGuideProfile> {
   // ==========================================================
   // BUILD
   // ==========================================================
-
-  @override
   Widget build(BuildContext context) {
+    final String currentImageUrl = widget.guide['image_profile'] ?? '';
+
     return Scaffold(
-      // ========================================================
-      // APP BAR
-      // ========================================================
       appBar: AppBar(
-        title: const Text(
-          'แก้ไขข้อมูลส่วนตัว',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
+        title: const Text('แก้ไขข้อมูลไกด์'),
+        backgroundColor: Colors.amber,
+        foregroundColor: Colors.black,
       ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Form(
+              key: _formKey,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    Center(
+                      child: Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 55,
+                            backgroundColor: Colors.grey.shade300,
+                            backgroundImage: _selectedImage != null
+                                ? FileImage(_selectedImage!) as ImageProvider
+                                : (currentImageUrl.isNotEmpty &&
+                                          currentImageUrl != '-'
+                                      ? NetworkImage(currentImageUrl)
+                                      : null),
+                            child:
+                                (_selectedImage == null &&
+                                    (currentImageUrl.isEmpty ||
+                                        currentImageUrl == '-'))
+                                ? const Icon(
+                                    Icons.person,
+                                    size: 55,
+                                    color: Colors.white,
+                                  )
+                                : null,
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: InkWell(
+                              onTap: _pickImage,
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: const BoxDecoration(
+                                  color: Colors.amber,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.camera_alt,
+                                  color: Colors.black,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
 
-      // ========================================================
-      // BODY
-      // ========================================================
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-
-        child: Column(
-          children: [
-            // ==================================================
-            // PROFILE HEADER
-            // ==================================================
-            CircleAvatar(
-              radius: 45,
-              backgroundColor: Colors.amber,
-
-              child: const Icon(Icons.explore, size: 48, color: Colors.white),
-            ),
-
-            const SizedBox(height: 20),
-
-            const Text(
-              'แก้ไขข้อมูลไกด์',
-              style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
-            ),
-
-            const SizedBox(height: 25),
-
-            // ==================================================
-            // FIRST NAME
-            // ==================================================
-            TextField(
-              controller: firstNameController,
-
-              textInputAction: TextInputAction.next,
-
-              decoration: const InputDecoration(
-                labelText: 'ชื่อ',
-
-                hintText: 'กรอกชื่อ',
-
-                prefixIcon: Icon(Icons.person_outline),
-
-                border: OutlineInputBorder(),
-              ),
-            ),
-
-            const SizedBox(height: 15),
-
-            // ==================================================
-            // LAST NAME
-            // ==================================================
-            TextField(
-              controller: lastNameController,
-
-              textInputAction: TextInputAction.next,
-
-              decoration: const InputDecoration(
-                labelText: 'นามสกุล',
-
-                hintText: 'กรอกนามสกุล',
-
-                prefixIcon: Icon(Icons.person_outline),
-
-                border: OutlineInputBorder(),
-              ),
-            ),
-
-            const SizedBox(height: 15),
-
-            // ==================================================
-            // AGE
-            // ==================================================
-            TextField(
-              controller: ageController,
-
-              keyboardType: TextInputType.number,
-
-              textInputAction: TextInputAction.next,
-
-              decoration: const InputDecoration(
-                labelText: 'อายุ',
-
-                hintText: 'กรอกอายุ',
-
-                prefixIcon: Icon(Icons.numbers_outlined),
-
-                border: OutlineInputBorder(),
-              ),
-            ),
-
-            const SizedBox(height: 15),
-
-            // ==================================================
-            // BIRTHDAY
-            // ==================================================
-            TextField(
-              controller: birthdayController,
-
-              readOnly: true,
-
-              onTap: selectBirthday,
-
-              decoration: const InputDecoration(
-                labelText: 'วันเกิด',
-
-                hintText: 'เลือกวันเกิด',
-
-                prefixIcon: Icon(Icons.cake_outlined),
-
-                suffixIcon: Icon(Icons.calendar_month),
-
-                border: OutlineInputBorder(),
-              ),
-            ),
-
-            const SizedBox(height: 15),
-
-            // ==================================================
-            // PHONE
-            // ==================================================
-            TextField(
-              controller: phoneController,
-
-              keyboardType: TextInputType.phone,
-
-              textInputAction: TextInputAction.next,
-
-              decoration: const InputDecoration(
-                labelText: 'เบอร์โทรศัพท์',
-
-                hintText: 'กรอกเบอร์โทรศัพท์',
-
-                prefixIcon: Icon(Icons.phone_outlined),
-
-                border: OutlineInputBorder(),
-              ),
-            ),
-
-            const SizedBox(height: 15),
-
-            // ==================================================
-            // ADDRESS
-            // ==================================================
-            TextField(
-              controller: addressController,
-
-              maxLines: 4,
-
-              textInputAction: TextInputAction.newline,
-
-              decoration: const InputDecoration(
-                labelText: 'ที่อยู่',
-
-                hintText: 'กรอกที่อยู่',
-
-                prefixIcon: Padding(
-                  padding: EdgeInsets.only(bottom: 60),
-
-                  child: Icon(Icons.home_outlined),
-                ),
-
-                border: OutlineInputBorder(),
-
-                alignLabelWithHint: true,
-              ),
-            ),
-
-            const SizedBox(height: 25),
-
-            // ==================================================
-            // SAVE BUTTON
-            // ==================================================
-            SizedBox(
-              width: double.infinity,
-
-              height: 52,
-
-              child: ElevatedButton(
-                onPressed: isSaving ? null : saveProfile,
-
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.amber,
-
-                  foregroundColor: Colors.black,
-
-                  disabledBackgroundColor: Colors.grey.shade300,
-
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-
-                child: isSaving
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: Colors.black,
-                        ),
-                      )
-                    : const Text(
-                        'บันทึกข้อมูล',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                    Card(
+                      elevation: 1,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'ข้อมูลบัญชีผู้ใช้ (Firebase & System)',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: emailCtl,
+                              keyboardType: TextInputType.emailAddress,
+                              decoration: const InputDecoration(
+                                labelText: 'อีเมล',
+                                border: OutlineInputBorder(),
+                                prefixIcon: Icon(Icons.email_outlined),
+                              ),
+                              validator: (val) {
+                                if (val == null || val.trim().isEmpty)
+                                  return 'กรุณากรอกอีเมล';
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: passwordCtl,
+                              obscureText: true,
+                              decoration: const InputDecoration(
+                                labelText:
+                                    'รหัสผ่านใหม่ (เว้นว่างไว้หากไม่ต้องการเปลี่ยน)',
+                                border: OutlineInputBorder(),
+                                prefixIcon: Icon(Icons.lock_outline),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // ส่วนแก้ไขข้อมูลส่วนตัว
+                    Card(
+                      elevation: 1,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'ข้อมูลส่วนตัว',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: firstNameController,
+                                    decoration: const InputDecoration(
+                                      labelText: 'ชื่อ',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    validator: (val) => val!.trim().isEmpty
+                                        ? 'กรุณากรอกชื่อ'
+                                        : null,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: lastNameController,
+                                    decoration: const InputDecoration(
+                                      labelText: 'นามสกุล',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    validator: (val) => val!.trim().isEmpty
+                                        ? 'กรุณากรอกนามสกุล'
+                                        : null,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: phoneController,
+                                    keyboardType: TextInputType.phone,
+                                    decoration: const InputDecoration(
+                                      labelText: 'เบอร์โทรศัพท์',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: ageController,
+                                    keyboardType: TextInputType.number,
+                                    decoration: const InputDecoration(
+                                      labelText: 'อายุ',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            InkWell(
+                              onTap: selectBirthday,
+                              child: IgnorePointer(
+                                child: TextFormField(
+                                  controller: birthdayController,
+                                  decoration: const InputDecoration(
+                                    labelText: 'วันเกิด',
+                                    border: OutlineInputBorder(),
+                                    suffixIcon: Icon(Icons.calendar_today),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: addressController,
+                              maxLines: 2,
+                              decoration: const InputDecoration(
+                                labelText: 'ที่อยู่',
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: isSaving ? null : saveProfile,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.amber,
+                          foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text(
+                          'บันทึกการเปลี่ยนแปลง',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-
-            const SizedBox(height: 12),
-
-            // ==================================================
-            // CANCEL BUTTON
-            // ==================================================
-            SizedBox(
-              width: double.infinity,
-
-              height: 50,
-
-              child: OutlinedButton(
-                onPressed: isSaving
-                    ? null
-                    : () {
-                        Navigator.pop(context);
-                      },
-
-                child: const Text('ยกเลิก'),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

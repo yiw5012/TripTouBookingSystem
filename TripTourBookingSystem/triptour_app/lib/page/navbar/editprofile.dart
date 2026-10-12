@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:triptour_app/model/country.dart';
 import 'package:triptour_app/services/serverApi.dart';
+import 'package:triptour_app/services/severGetApi.dart';
 
 class EditProfilePage extends StatefulWidget {
   final Map<String, dynamic> memberData;
@@ -42,6 +44,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   final List<String> genderList = ['Male', 'Female', 'Other'];
 
+  List<Country> allCountries = [];
+  List<int> selectedCountryIds = [];
+  List<String> selectedCountries = [];
+  bool isLoadingCountries = false;
+
   // ==========================================================
   // Image
   // ==========================================================
@@ -64,6 +71,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   void initState() {
     super.initState();
     loadDataToForm();
+    fetchCountry();
   }
 
   // ==========================================================
@@ -105,6 +113,34 @@ class _EditProfilePageState extends State<EditProfilePage> {
     currentProfileImage = data['image_profile']?.toString();
 
     currentPassportImage = data['image_passport']?.toString();
+
+    //ดึง favorite_countries จาก memberData
+    final rawFavs = data['favorite_countries'];
+    if (rawFavs != null && rawFavs is List) {
+      selectedCountryIds.clear();
+      selectedCountries.clear();
+
+      for (var item in rawFavs) {
+        if (item is Map) {
+          final cId = int.tryParse(item['country_id']?.toString() ?? '');
+          final cNameEn = item['country_name_en']?.toString()?.trim() ?? '';
+          final cNameTh = item['country_name_th']?.toString()?.trim() ?? '';
+          final displayName = cNameEn.isNotEmpty ? cNameEn : cNameTh;
+
+          if (cId != null) {
+            selectedCountryIds.add(cId);
+            if (displayName.isNotEmpty) {
+              selectedCountries.add(displayName);
+            }
+          }
+        } else if (item is int) {
+          selectedCountryIds.add(item);
+        } else {
+          final cId = int.tryParse(item.toString());
+          if (cId != null) selectedCountryIds.add(cId);
+        }
+      }
+    }
   }
 
   // ==========================================================
@@ -329,6 +365,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         others: othersController.text.trim(),
         imageProfile: profileImageUrl,
         imagePassport: passportImageUrl,
+        favoriteCountries: selectedCountryIds,
       );
 
       // ======================================================
@@ -450,6 +487,72 @@ class _EditProfilePageState extends State<EditProfilePage> {
   // ==========================================================
   // Build
   // ==========================================================
+  Future<void> showCountrySelectionDialog() async {
+    if (allCountries.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('กำลังโหลดรายชื่อประเทศ...')),
+      );
+      return;
+    }
+
+    final selectedSet = Set<int>.from(selectedCountryIds);
+
+    final result = await showDialog<Set<int>>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('เลือกประเทศที่ชอบ'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: allCountries.map((country) {
+                    final label = _countryLabel(country);
+                    final isChecked = selectedSet.contains(country.countryId);
+
+                    return CheckboxListTile(
+                      title: Text(label),
+                      value: isChecked,
+                      onChanged: (value) {
+                        setDialogState(() {
+                          if (value == true) {
+                            selectedSet.add(country.countryId);
+                          } else {
+                            selectedSet.remove(country.countryId);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('ยกเลิก'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, selectedSet),
+                  child: const Text('ตกลง'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (result != null) {
+      setState(() {
+        selectedCountryIds = result.toList()..sort();
+        selectedCountries = selectedCountryIds
+            .map((id) => _countryNameById(id))
+            .where((name) => name.isNotEmpty)
+            .toList();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -592,6 +695,49 @@ class _EditProfilePageState extends State<EditProfilePage> {
               label: 'เลขบัตรประชาชน / Passport',
               controller: numberIdController,
             ),
+            const SizedBox(height: 4),
+            const Text(
+              'ประเทศที่ชอบ (เลือกได้มากกว่า 1)',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+            InkWell(
+              onTap: isSaving ? null : showCountrySelectionDialog,
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 14,
+                ),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        selectedCountries.isEmpty
+                            ? 'เลือกประเทศที่ชอบ'
+                            : selectedCountries.join(', '),
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: selectedCountries.isEmpty
+                              ? Colors.grey.shade600
+                              : Colors.black87,
+                        ),
+                      ),
+                    ),
+                    const Icon(Icons.arrow_drop_down),
+                  ],
+                ),
+              ),
+            ),
 
             const Divider(height: 30),
 
@@ -708,5 +854,43 @@ class _EditProfilePageState extends State<EditProfilePage> {
     othersController.dispose();
 
     super.dispose();
+  }
+
+  Future<void> fetchCountry() async {
+    setState(() {
+      isLoadingCountries = true;
+    });
+
+    try {
+      List<Country> result = await Severgetapi.getCountry();
+      if (mounted) {
+        setState(() {
+          allCountries = result;
+          isLoadingCountries = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching country master list: $e');
+      if (mounted) {
+        setState(() {
+          isLoadingCountries = false;
+        });
+      }
+    }
+  }
+
+  String _countryLabel(Country country) {
+    final nameEn = country.countryNameEn.trim();
+    final nameTh = country.countryNameTH.trim();
+    return nameEn.isNotEmpty ? nameEn : nameTh;
+  }
+
+  String _countryNameById(int countryId) {
+    for (final country in allCountries) {
+      if (country.countryId == countryId) {
+        return _countryLabel(country);
+      }
+    }
+    return countryId.toString();
   }
 }

@@ -78,11 +78,9 @@ router.get('/overview', async (req, res) => {
     const bookingDateCondition = buildBookingDateCondition(isAllRange);
     const dateParams = isAllRange ? [] : [startDate, endDate];
 
-    // 1) สมาชิกทั้งหมด (Active)
-   const totalUsersQuery = conn.query("SELECT COUNT(*) AS totalMembers FROM member WHERE status = 'active'");
+        // 1) สมาชิกทั้งหมด (Active)
+    const totalUsersQuery = conn.query("SELECT COUNT(*) AS totalMembers FROM member WHERE status = 'active'");
     const totalGuideQuery = conn.query("SELECT COUNT(*) AS totalGuide FROM guide WHERE status = 'active'");
-
-    
 
     // 2) รายได้รวม
     const totalIncomeQuery = conn.query(
@@ -94,7 +92,7 @@ router.get('/overview', async (req, res) => {
     );
 
     // 3) ผู้เดินทางที่แจ้งรายชื่อแล้ว (passenger ของ booking ที่ไม่ถูกยกเลิก/ปฏิเสธ)
-   const toldTravelersQuery = conn.query(
+    const toldTravelersQuery = conn.query(
   `SELECT COUNT(DISTINCT b.booking_id) + COUNT(p.passenger_id) AS toldTravelers
      FROM booking b
      LEFT JOIN passenger p ON p.booking_id = b.booking_id

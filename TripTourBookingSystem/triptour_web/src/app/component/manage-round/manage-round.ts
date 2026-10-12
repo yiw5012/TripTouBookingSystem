@@ -205,6 +205,10 @@ export class ManageRound implements OnInit {
 
     });
   }
+  viewRoundDetail(roundId: number | string): void {
+    if (!roundId) return;
+    this.router.navigate(['/memberlist-roundtour', roundId]);
+  }
 
   // ==========================================================
   // LOAD TOUR / ROUND / GUIDE

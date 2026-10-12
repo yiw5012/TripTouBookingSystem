@@ -617,6 +617,9 @@
 
           <tr
             *ngFor="let round of rounds"
+            class="clickable-row" 
+            (click)="viewRoundDetail(round.round_id)"
+            title="คลิกเพื่อดูรายละเอียดผู้เดินทางในรอบนี้">
           >
 
             <!-- ROUND -->
@@ -801,7 +804,7 @@
                 <button
                   type="button"
                   class="btn-edit"
-                  (click)="editRound(round)"
+                  (click)="editRound(round); $event.stopPropagation()"
                 >
                   แก้ไข
                 </button>
@@ -809,7 +812,7 @@
                 <button
                   type="button"
                   class="btn-delete"
-                  (click)="deleteRound(round.round_id)"
+                  (click)="deleteRound(round.round_id) ;$event.stopPropagation()"
                 >
                   ลบ
                 </button>

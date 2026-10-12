@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 import 'package:triptour_app/page/Tourdetail/detailTour.dart';
 import 'package:triptour_app/page/Tourdetail/tour/tourDetailSection.dart';
 import 'package:triptour_app/page/homepage.dart';
+import 'package:triptour_app/page/wrapper.dart';
 import 'firebase_options.dart';
 
 final localNotifications = FlutterLocalNotificationsPlugin();
@@ -133,7 +134,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const Homepage(),
+      home: const Wrapper(),
     );
   }
 }

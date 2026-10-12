@@ -421,6 +421,7 @@ static Future<Map<String, dynamic>> getSearchLocations() async {
     required String others,
     String? imageProfile,
     String? imagePassport,
+    required List<int> favoriteCountries,
   }) async {
     try {
       final res = await http.put(
@@ -441,6 +442,7 @@ static Future<Map<String, dynamic>> getSearchLocations() async {
           "others": others,
           "image_profile": imageProfile,
           "image_passport": imagePassport,
+          "favorite_countries": favoriteCountries,
         }),
       );
 
@@ -585,36 +587,83 @@ static Future<Map<String, dynamic>> getSearchLocations() async {
     }
   }
 
+  // ==========================================================
+  // อัปเดตโปรไฟล์ไกด์ (รูปภาพ, ข้อมูลส่วนตัว, อีเมล, รหัสผ่าน)
+  // ==========================================================
   static Future<Map<String, dynamic>> updateGuideProfile({
     required String googleId,
     required String firstName,
     required String lastName,
+    required String email,
+    required String phone,
     required String age,
     required String birthday,
-    required String phone,
     required String address,
+    String? password,
+    File? imageProfileFile,
   }) async {
     try {
-      final response = await http.put(
-        Uri.parse("$_baseUrl/add-guide/profile/$googleId"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "first_name": firstName,
-          "last_name": lastName,
-          "age": age.isEmpty ? null : age,
-          "birthday": birthday.isEmpty ? null : birthday,
-          "phone": phone,
-          "address": address,
-        }),
-      );
+      var uri = Uri.parse("$_baseUrl/add-guide/profile/$googleId");
+      var request = http.MultipartRequest('PUT', uri);
 
+      // ใส่ Fields ข้อมูล
+      request.fields['first_name'] = firstName;
+      request.fields['last_name'] = lastName;
+      request.fields['email'] = email;
+      request.fields['phone'] = phone;
+      request.fields['age'] = age;
+      request.fields['birthday'] = birthday;
+      request.fields['address'] = address;
+
+      if (password != null && password.trim().isNotEmpty) {
+        request.fields['password'] = password.trim();
+      }
+
+      // แนบไฟล์รูปภาพโปรไฟล์ใหม่ (ถ้ามีการเลือกรูป)
+      if (imageProfileFile != null) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'guideimage_profile',
+            imageProfileFile.path,
+          ),
+        );
+      }
+
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
       final data = jsonDecode(response.body);
 
       return {"statusCode": response.statusCode, "body": data};
     } catch (e) {
+      print("Update guide profile error: $e");
       return {
         "statusCode": 500,
-        "body": {"success": false, "message": "ไม่สามารถแก้ไขข้อมูลไกด์ได้"},
+        "body": {
+          "success": false,
+          "message": "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์: $e",
+        },
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> InactiveService(String googleId) async {
+    try {
+      final res = await http.delete(
+        Uri.parse("$_baseUrl/member/delete-account"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"google_id": googleId}),
+      );
+
+      final data = jsonDecode(res.body);
+      print("Delete account status: ${res.statusCode}");
+      print("Delete account response: $data");
+
+      return {"statusCode": res.statusCode, "body": data};
+    } catch (e) {
+      print("Delete account error: $e");
+      return {
+        "statusCode": 500,
+        "body": {"success": false, "message": "Server error: $e"},
       };
     }
   }

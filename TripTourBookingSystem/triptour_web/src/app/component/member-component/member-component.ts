@@ -21,17 +21,23 @@ export class MemberComponent implements OnInit {
   members: any[] = [];
   selectedTab: 'all' | 'user' | 'guide' | 'history' | 'add-guide' | undefined   ;
   isLoading = false;
+  isSaving = false;
   errorMessage = '';
   selectedMember: any = null;
-  editingGuide: any = null;
 
-  guideForm = {
+  editingGuide: any = null;
+  selectedFile: File | null = null;
+  selectedImagePreview: string | null = null;
+
+  guideForm: any = {
     first_name: '',
     last_name: '',
+    email: '',
     phone: '',
     address: '',
     age: '',
     birthday: '',
+    image_profile: '',
     password: ''
   };
 
@@ -124,50 +130,94 @@ export class MemberComponent implements OnInit {
     }
   }
 
-  openEditGuide(member: any): void {
+ openEditGuide(member: any): void {
     this.editingGuide = member;
     this.selectedMember = member;
+    this.selectedFile = null;
+    this.selectedImagePreview = null;
+
     this.guideForm = {
       first_name: member.first_name || '',
       last_name: member.last_name || '',
+      email: member.email || '',
       phone: member.phone || '',
       address: member.address || '',
       age: member.age || '',
       birthday: member.birthday || '',
+      image_profile: member.image_profile || '',
       password: ''
     };
   }
+  onFileSelected(event: any): void {
+  const file: File = event.target.files[0];
+  if (file) {
+    this.selectedFile = file;
 
-  async saveGuideChanges(): Promise<void> {
-  const cleanGoogleId = this.editingGuide?.googleId?.toString().trim();
-  if (!cleanGoogleId) return;
-
-  this.errorMessage = ''; // ล้างข้อความ Error เก่าออกก่อน
-
-  try {
-    const res = await this.serverApi.putData(`add-guide/profile/${cleanGoogleId}`, this.guideForm);
-
-    if (res.statusCode === 200 || res.body?.success) {
-      const updated = res.body?.data ?? res.body;
-      const merged = this.normalizeMember({ ...this.editingGuide, ...updated, role: 'ไกด์' });
-
-      const idx = this.members.findIndex((m) => m.googleId === cleanGoogleId);
-      if (idx >= 0) {
-        this.members[idx] = merged;
-      }
-
-      this.selectedMember = merged;
-      this.editingGuide = null;
-
-      // บังคับให้ Angular ตรวจสอบการเปลี่ยนแปลงการแสดงผล
-      this.cdr.detectChanges();
-    } else {
-      this.errorMessage = res.body?.message || 'ไม่สามารถแก้ไขข้อมูลไกด์ได้';
-    }
-  } catch (error) {
-    this.errorMessage = 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์';
+    // อ่านไฟล์เพื่อทำรูปตัวอย่าง (Preview)
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.selectedImagePreview = reader.result as string;
+    };
+    reader.readAsDataURL(file);
   }
 }
+
+  async saveGuideChanges(): Promise<void> {
+    const cleanGoogleId = this.editingGuide?.googleId?.toString().trim();
+    if (!cleanGoogleId) return;
+
+    this.errorMessage = ''; // ล้างข้อความ Error เก่าออกก่อน
+    if (!this.guideForm.first_name || !this.guideForm.last_name) {
+      alert('กรุณากรอกชื่อและนามสกุล');
+      return;
+    }
+    this.isSaving = true;
+
+    try {
+      // 📌 สร้าง FormData เพื่อส่งรูปภาพพร้อมข้อความไปยัง Express (Multer)
+      const formData = new FormData();
+      formData.append('first_name', this.guideForm.first_name || '');
+      formData.append('last_name', this.guideForm.last_name || '');
+      formData.append('email', this.guideForm.email || '');
+      formData.append('phone', this.guideForm.phone || '');
+      formData.append('address', this.guideForm.address || '');
+      formData.append('age', this.guideForm.age ? String(this.guideForm.age) : '');
+      formData.append('birthday', this.guideForm.birthday || '');
+
+      if (this.guideForm.password && this.guideForm.password.trim() !== '') {
+        formData.append('password', this.guideForm.password.trim());
+      }
+
+      if (this.selectedFile) {
+        formData.append('guideimage_profile', this.selectedFile);
+      }
+
+      const res = await this.serverApi.putData(`add-guide/profile/${cleanGoogleId}`, formData);
+      if (res.statusCode === 200 || res.body?.success) {
+        const updated = res.body?.data ?? res.body;
+        const merged = this.normalizeMember({ ...this.editingGuide, ...updated, role: 'ไกด์' });
+
+        const idx = this.members.findIndex((m) => m.googleId === cleanGoogleId);
+        if (idx >= 0) {
+          this.members[idx] = merged;
+        }
+
+        this.selectedMember = merged;
+        this.editingGuide = null;
+        this.selectedFile = null;
+        this.selectedImagePreview = null;
+
+        // บังคับให้ Angular ตรวจสอบการเปลี่ยนแปลงการแสดงผล
+      } else {
+        this.errorMessage = res.body?.message || 'ไม่สามารถแก้ไขข้อมูลไกด์ได้';
+      }
+    } catch (error) {
+      this.errorMessage = 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์';
+    }finally {
+      this.isSaving = false;
+      this.cdr.detectChanges();
+    }
+  }
   closeHistoryView(): void {
     this.selectedMember = null;
     this.editingGuide = null;
@@ -197,6 +247,7 @@ export class MemberComponent implements OnInit {
       address: m.address ?? '',
       age: m.age ?? '',
       birthday: m.birthday ?? '',
-    };
+      image_profile: m.image_profile ?? '', 
   }
+}
 }

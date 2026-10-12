@@ -73,6 +73,11 @@ router.post("/verify-otp", async (req, res) => {
   try {
     const { email, otp } = req.body;
 
+// Normalize email to lowercase (Firebase Auth stores lowercase)
+const normalizedEmail = email ? email.toLowerCase().trim() : '';
+
+// Rest of the code remains the same
+
     if (!email || typeof email !== 'string' || email.trim() === '' || !otp || typeof otp !== 'string') {
       return res.status(400).json({ success: false, error: 'Invalid request' });
     }
