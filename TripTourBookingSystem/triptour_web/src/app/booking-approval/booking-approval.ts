@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../environments/environment.development';
 
 interface BookingItem {
 
@@ -50,9 +51,7 @@ export class BookingApproval {
   // API
   // ==========================================================
 
-  private readonly baseUrl =
-    'http://localhost:4000';
-
+  private readonly baseUrl = environment.apiBaseUrl;
 
   // ==========================================================
   // DATA
