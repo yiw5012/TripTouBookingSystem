@@ -1,0 +1,626 @@
+<div class="booking-page">
+
+  <!-- ======================================================
+       HEADER
+  ======================================================= -->
+
+  <div class="page-header">
+
+    <div>
+
+      <h1>
+        จัดการการจอง
+      </h1>
+
+      <p>
+        ตรวจสอบและจัดการรายการจองทั้งหมด
+      </p>
+
+    </div>
+
+
+    <button
+      type="button"
+      class="refresh-button"
+      (click)="loadAllBookings()"
+      [disabled]="isLoading"
+    >
+      {{ isLoading ? 'กำลังโหลด...' : 'รีเฟรช' }}
+    </button>
+
+  </div>
+
+
+  <!-- ======================================================
+       ALERT
+  ======================================================= -->
+
+  <div
+    class="alert success"
+    *ngIf="successMessage"
+  >
+    {{ successMessage }}
+  </div>
+
+
+  <div
+    class="alert error"
+    *ngIf="errorMessage"
+  >
+    {{ errorMessage }}
+  </div>
+
+
+  <!-- ======================================================
+       STAT CARDS
+  ======================================================= -->
+
+  <div
+    class="stats-grid"
+    *ngIf="!isLoading"
+  >
+
+    <div
+      class="stat-card"
+      (click)="paymentFilter = 'all'; applyFilters()"
+    >
+
+      <div class="stat-title">
+        การจองทั้งหมด
+      </div>
+
+      <div class="stat-number">
+        {{ totalCount }}
+      </div>
+
+    </div>
+
+
+    <div
+      class="stat-card warning"
+      (click)="paymentFilter = 'processing'; applyFilters()"
+    >
+
+      <div class="stat-title">
+        รอตรวจสอบ
+      </div>
+
+      <div class="stat-number">
+        {{ processingCount }}
+      </div>
+
+    </div>
+
+
+    <div
+      class="stat-card success-card"
+      (click)="paymentFilter = 'paid'; applyFilters()"
+    >
+
+      <div class="stat-title">
+        ชำระแล้ว
+      </div>
+
+      <div class="stat-number">
+        {{ paidCount }}
+      </div>
+
+    </div>
+
+
+    <div
+      class="stat-card danger"
+      (click)="paymentFilter = 'cancelled'; applyFilters()"
+    >
+
+      <div class="stat-title">
+        ยกเลิก
+      </div>
+
+      <div class="stat-number">
+        {{ cancelledCount }}
+      </div>
+
+    </div>
+
+
+    <div
+      class="stat-card expired"
+      (click)="paymentFilter = 'expired'; applyFilters()"
+    >
+
+      <div class="stat-title">
+        หมดอายุ
+      </div>
+
+      <div class="stat-number">
+        {{ expiredCount }}
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- ======================================================
+       SEARCH / FILTER
+  ======================================================= -->
+
+  <div
+    class="filter-card"
+    *ngIf="!isLoading"
+  >
+
+    <div class="search-box">
+
+      <span class="search-icon">
+        🔍
+      </span>
+
+      <input
+        type="text"
+        [(ngModel)]="searchText"
+        (ngModelChange)="applyFilters()"
+        placeholder="ค้นหา Booking ID, Member ID, ชื่อทัวร์ หรือ Round ID"
+      />
+
+      <button
+        type="button"
+        class="clear-search"
+        *ngIf="searchText"
+        (click)="clearSearch()"
+      >
+        ×
+      </button>
+
+    </div>
+
+
+    <div class="filter-box">
+
+      <label>
+        สถานะการชำระเงิน
+      </label>
+
+      <select
+        [(ngModel)]="paymentFilter"
+        (ngModelChange)="applyFilters()"
+      >
+
+        <option value="all">
+          ทุกสถานะ
+        </option>
+
+        <option value="processing">
+          รอตรวจสอบ
+        </option>
+
+        <option value="pending">
+          รอชำระ
+        </option>
+
+        <option value="paid">
+          ชำระแล้ว
+        </option>
+
+        <option value="cancelled">
+          ยกเลิก
+        </option>
+
+        <option value="expired">
+          หมดอายุ
+        </option>
+
+      </select>
+
+    </div>
+
+  </div>
+
+
+  <!-- ======================================================
+       RESULT SUMMARY
+  ======================================================= -->
+
+  <div
+    class="result-summary"
+    *ngIf="!isLoading"
+  >
+
+    แสดง
+    <strong>
+      {{ filteredBookings.length }}
+    </strong>
+    รายการ
+
+    <span *ngIf="searchText">
+      จากผลการค้นหา
+      <strong>
+        "{{ searchText }}"
+      </strong>
+    </span>
+
+  </div>
+
+
+  <!-- ======================================================
+       LOADING
+  ======================================================= -->
+
+  <div
+    class="loading"
+    *ngIf="isLoading"
+  >
+    กำลังโหลดรายการจอง...
+  </div>
+
+
+  <!-- ======================================================
+       EMPTY
+  ======================================================= -->
+
+  <div
+    class="empty"
+    *ngIf="!isLoading && filteredBookings.length === 0"
+  >
+
+    <div class="empty-icon">
+      ✓
+    </div>
+
+    <h2>
+      ไม่พบรายการ
+    </h2>
+
+    <p>
+      ลองเปลี่ยนคำค้นหาหรือตัวกรอง
+    </p>
+
+  </div>
+
+
+  <!-- ======================================================
+       TABLE
+  ======================================================= -->
+
+  <div
+    class="table-card"
+    *ngIf="!isLoading && filteredBookings.length > 0"
+  >
+
+    <div class="table-wrapper">
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th>
+              Booking
+            </th>
+
+            <th>
+              Member
+            </th>
+
+            <th>
+              ทัวร์
+            </th>
+
+            <th>
+              รอบ
+            </th>
+
+            <th>
+              เดินทาง
+            </th>
+
+            <th>
+              ยอด
+            </th>
+
+            <th>
+              สถานะ
+            </th>
+
+            <th>
+              สลิป
+            </th>
+
+            <th>
+              จัดการ
+            </th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          <tr
+            *ngFor="let payment of pagedBookings"
+          >
+
+            <!-- Booking -->
+
+            <td>
+
+              <div class="booking-id">
+                #{{ payment.booking_id }}
+              </div>
+
+              <div class="sub-text">
+                {{ formatDate(payment.booking_date) }}
+              </div>
+
+            </td>
+
+
+            <!-- Member -->
+
+            <td>
+
+              <strong>
+                {{ payment.member_id }}
+              </strong>
+
+            </td>
+
+
+            <!-- Tour -->
+
+            <td>
+
+              <div class="tour-name">
+                {{ payment.tour_name || '-' }}
+              </div>
+
+              <div class="sub-text">
+                ID {{ payment.tour_id || '-' }}
+              </div>
+
+            </td>
+
+
+            <!-- Round -->
+
+            <td>
+
+              <strong>
+                {{ payment.round_id }}
+              </strong>
+
+              <div class="sub-text route">
+                {{ payment.departure || '-' }}
+                →
+                {{ payment.destination || '-' }}
+              </div>
+
+            </td>
+
+
+            <!-- Travel -->
+
+            <td>
+
+              <div class="travel-date">
+
+                {{ formatDate(payment.start_date) }}
+
+                <span>-</span>
+
+                {{ formatDate(payment.end_date) }}
+
+              </div>
+
+              <div class="sub-text">
+
+                {{ payment.airline || '-' }}
+                /
+                {{ payment.flight || '-' }}
+
+              </div>
+
+            </td>
+
+
+            <!-- Price -->
+
+            <td>
+
+              <strong class="price">
+                {{ getPrice(payment.total_price) }}
+              </strong>
+
+            </td>
+
+
+            <!-- STATUS -->
+
+            <td>
+
+              <div
+                class="status payment"
+                [class.processing]="payment.payment_status === 'processing'"
+                [class.paid]="payment.payment_status === 'paid'"
+                [class.cancelled]="payment.payment_status === 'cancelled'"
+                [class.expired]="payment.payment_status === 'expired'"
+                [class.pending]="payment.payment_status === 'pending'"
+              >
+                {{ paymentStatusText(payment.payment_status) }}
+              </div>
+
+
+              <div class="booking-status">
+                {{ bookingStatusText(payment.status) }}
+              </div>
+
+            </td>
+
+
+            <!-- SLIP -->
+
+            <td>
+
+              <button
+                type="button"
+                class="slip-button"
+                (click)="openSlipModal(payment.slip_image)"
+                [disabled]="!payment.slip_image"
+              >
+
+                <img
+                  *ngIf="payment.slip_image"
+                  [src]="payment.slip_image"
+                  alt="Slip"
+                  class="slip-thumb"
+                />
+
+                <span
+                  *ngIf="!payment.slip_image"
+                  class="no-slip"
+                >
+                  -
+                </span>
+
+              </button>
+
+            </td>
+
+
+            <!-- ACTION -->
+
+            <td>
+
+              <div
+                class="action-buttons"
+                *ngIf="payment.payment_status === 'processing'"
+              >
+
+                <button
+                  type="button"
+                  class="reject-button"
+                  (click)="verifyBooking(payment.booking_id, 'reject')"
+                  [disabled]="processingBookingId === payment.booking_id"
+                >
+                  ปฏิเสธ
+                </button>
+
+                <button
+                  type="button"
+                  class="approve-button"
+                  (click)="verifyBooking(payment.booking_id, 'approve')"
+                  [disabled]="processingBookingId === payment.booking_id"
+                >
+                  อนุมัติ
+                </button>
+
+              </div>
+
+
+              <span
+                class="done-text"
+                *ngIf="payment.payment_status !== 'processing'"
+              >
+                ดำเนินการแล้ว
+              </span>
+
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+
+    <!-- ==================================================
+         PAGINATION
+    =================================================== -->
+
+    <div class="pagination">
+
+      <div class="page-info">
+
+        หน้า
+        <strong>
+          {{ currentPage }}
+        </strong>
+        /
+        {{ totalPages }}
+
+      </div>
+
+
+      <div class="page-buttons">
+
+        <button
+          type="button"
+          (click)="previousPage()"
+          [disabled]="currentPage === 1"
+        >
+          ‹
+        </button>
+
+
+        <button
+          type="button"
+          class="page-number active"
+        >
+          {{ currentPage }}
+        </button>
+
+
+        <button
+          type="button"
+          (click)="nextPage()"
+          [disabled]="currentPage === totalPages"
+        >
+          ›
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- ======================================================
+       SLIP MODAL
+  ======================================================= -->
+
+  <div
+    class="slip-modal"
+    *ngIf="isSlipModalOpen"
+    (click)="closeSlipModal()"
+  >
+
+    <div
+      class="slip-modal-content"
+      (click)="$event.stopPropagation()"
+    >
+
+      <button
+        type="button"
+        class="modal-close"
+        (click)="closeSlipModal()"
+      >
+        ×
+      </button>
+
+      <img
+        [src]="selectedSlipUrl"
+        alt="Payment Slip"
+        class="slip-large"
+      />
+
+    </div>
+
+  </div>
+
+</div>

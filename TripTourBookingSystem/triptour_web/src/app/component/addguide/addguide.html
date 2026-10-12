@@ -1,0 +1,212 @@
+<section class="guide-page">
+  <!-- Header -->
+  <div class="guide-header">
+    <p class="eyebrow">จัดการระบบ</p>
+    <h1>เพิ่มข้อมูลบัญชีไกด์</h1>
+  </div>
+
+  <!-- Submitting Alert -->
+  <div *ngIf="isSubmitting" class="alert-info">
+    <span class="spinner-sm"></span> กำลังบันทึกและสร้างบัญชีไกด์...
+  </div>
+
+  <form [formGroup]="guideForm" (ngSubmit)="onSubmit()" class="guide-form-container">
+    
+    <!-- 1. ข้อมูลบัญชี -->
+    <div class="ui-card">
+      <div class="card-title-bar">
+        <h3>1. ข้อมูลบัญชีผู้ใช้ (Account Information)</h3>
+      </div>
+      
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">อีเมล (Email) <span class="required">*</span></label>
+          <input 
+            type="email" 
+            class="form-input" 
+            formControlName="email" 
+            placeholder="guide.example@mail.com" 
+          />
+          <small class="error-text" *ngIf="guideForm.get('email')?.invalid && guideForm.get('email')?.touched">
+            รูปแบบอีเมลไม่ถูกต้อง
+          </small>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">รหัสผ่าน (Password) <span class="required">*</span></label>
+          <input 
+            type="password" 
+            class="form-input" 
+            formControlName="password" 
+            placeholder="กำหนดรหัสผ่านอย่างน้อย 6 ตัวอักษร" 
+          />
+          <small class="error-text" *ngIf="guideForm.get('password')?.invalid && guideForm.get('password')?.touched">
+            รหัสผ่านสั้นเกินไป (อย่างน้อย 6 ตัวอักษร)
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. รูปโปรไฟล์ไกด์ (Avatar Preview Upload) -->
+    <div class="ui-card">
+      <div class="card-title-bar">
+        <h3>2. รูปโปรไฟล์ไกด์ (Profile Picture)</h3>
+      </div>
+
+      <div class="avatar-upload-container">
+        <!-- แสดงตัวอย่างรูปภาพ (Preview Circle) -->
+        <div class="avatar-preview-box">
+          <img 
+            *ngIf="previewUrl" 
+            [src]="previewUrl" 
+            alt="Profile Preview" 
+            class="avatar-image" 
+          />
+          <div *ngIf="!previewUrl" class="avatar-placeholder">
+            <span class="avatar-icon">👤</span>
+          </div>
+        </div>
+
+        <!-- ปุ่มและคำแนะนำสำหรับเลือกไฟล์ -->
+        <div class="avatar-upload-controls">
+          <div class="upload-info">
+            <span class="upload-title">เลือกรูปโปรไฟล์ทางการ</span>
+            <span class="upload-desc">รองรับไฟล์ JPG, JPEG, PNG หรือ WEBP (ขนาดไม่เกิน 5MB)</span>
+          </div>
+
+          <div class="action-btn-group">
+            <input
+              #fileInput
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              (change)="onImageSelected($event)"
+              class="hidden-file-input"
+              id="guideAvatarInput"
+            />
+            <label for="guideAvatarInput" class="btn-outline">
+              📷 {{ selectedImage ? 'เปลี่ยนรูปภาพ' : 'อัปโหลดรูปภาพ' }}
+            </label>
+
+            <button
+              *ngIf="selectedImage"
+              type="button"
+              class="btn-danger-outline"
+              (click)="removeSelectedImage(); fileInput.value = ''"
+            >
+              🗑️ ลบรูปภาพ
+            </button>
+          </div>
+
+          <small *ngIf="selectedImage" class="file-name-badge">
+            ไฟล์ที่เลือก: {{ selectedImage.name }}
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. ข้อมูลส่วนตัว -->
+    <div class="ui-card">
+      <div class="card-title-bar">
+        <h3>3. ข้อมูลส่วนตัวไกด์ (Personal Details)</h3>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group full-width">
+          <label class="form-label">รหัสไกด์ (Guide Code) <span class="required">*</span></label>
+          <input 
+            type="text" 
+            class="form-input" 
+            formControlName="guide_code" 
+            placeholder="เช่น G-001" 
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">ชื่อ (First Name) <span class="required">*</span></label>
+          <input 
+            type="text" 
+            class="form-input" 
+            formControlName="first_name" 
+            placeholder="ระบุชื่อจริง" 
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">นามสกุล (Last Name) <span class="required">*</span></label>
+          <input 
+            type="text" 
+            class="form-input" 
+            formControlName="last_name" 
+            placeholder="ระบุนามสกุล" 
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">เบอร์โทรศัพท์ <span class="required">*</span></label>
+          <input 
+            type="tel" 
+            class="form-input" 
+            formControlName="phone" 
+            placeholder="08XXXXXXXX" 
+          />
+          <small class="error-text" *ngIf="guideForm.get('phone')?.invalid && guideForm.get('phone')?.touched">
+            กรุณากรอกเบอร์โทรศัพท์ 10 หลัก
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">อายุ (ปี) <span class="required">*</span></label>
+          <input 
+            type="number" 
+            class="form-input" 
+            formControlName="age" 
+            placeholder="18 ขึ้นไป" 
+          />
+          <small class="error-text" *ngIf="guideForm.get('age')?.invalid && guideForm.get('age')?.touched">
+            อายุต้องไม่ต่ำกว่า 18 ปี
+          </small>
+        </div>
+
+        <div class="form-group full-width">
+          <label class="form-label">วันเดือนปีเกิด (Birthday) <span class="required">*</span></label>
+          <input 
+            type="date" 
+            class="form-input" 
+            formControlName="birthday" 
+          />
+        </div>
+
+        <div class="form-group full-width">
+          <label class="form-label">ที่อยู่ปัจจุบัน (Address) <span class="required">*</span></label>
+          <textarea 
+            class="form-input form-textarea" 
+            rows="3" 
+            formControlName="address" 
+            placeholder="ระบุบ้านเลขที่ ถนน ตำบล/แขวง อำเภอ/เขต จังหวัด..."
+          ></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions Bar -->
+    <div class="form-actions-bar">
+      <button 
+        type="button" 
+        class="btn-secondary" 
+        (click)="resetGuideForm(); fileInput.value = ''" 
+        [disabled]="isSubmitting"
+      >
+        ล้างข้อมูล
+      </button>
+
+      <button 
+        type="submit" 
+        class="btn-primary" 
+        [disabled]="isSubmitting"
+      >
+        {{ isSubmitting ? 'กำลังบันทึก...' : '💾 บันทึกและสร้างบัญชีไกด์' }}
+      </button>
+    </div>
+
+  </form>
+</section>
