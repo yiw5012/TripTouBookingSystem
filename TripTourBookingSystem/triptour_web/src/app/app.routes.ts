@@ -8,6 +8,7 @@ import { ManageTour } from './component/manage-tour/manage-tour';
 import { EditTour } from './component/edit-tour/edit-tour';
 import { ManageRound } from './component/manage-round/manage-round';
 import { BookingApproval } from './booking-approval/booking-approval';
+import { MemberListComponent } from './component/manage-round/member-list/member-list.component';
 export const routes: Routes = [
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
   { path: 'dashboard', component: DashboardComponent },
