@@ -6,7 +6,7 @@ const port = process.env.PORT || 4000;
 const server = http.createServer(app);
 const allowedOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
-  : ['http://localhost:4200', 'http://localhost:4000', 'http://localhost:5000'];
+  : ['https://webadmintriptour-production.up.railway.app', 'https://triptoubookingsystem-production.up.railway.app', 'http://localhost:4200'];
 
 const io = new Server(server, {
   cors: {
