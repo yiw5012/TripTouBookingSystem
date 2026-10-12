@@ -134,29 +134,41 @@
              DEPARTURE
              ================================================== -->
 
-        <div class="form-group">
+        <!-- ==================================================
+     DEPARTURE
+     ================================================== -->
 
-          <label>
-            จุดออกเดินทาง *
-          </label>
+<div class="form-group">
 
-          <input
-            type="text"
-            formControlName="departure"
-            placeholder="เช่น สนามบินสุวรรณภูมิ"
-          />
+  <label>
+    {{
+      isFlightIncluded
+        ? 'จุดเดินทาง / ต้นทาง *'
+        : 'จุดนัดพบ / จุดเริ่มต้น *'
+    }}
+  </label>
 
-          <small
-            class="field-error"
-            *ngIf="
-              form.get('departure')?.touched &&
-              form.get('departure')?.invalid
-            "
-          >
-            กรุณากรอกจุดออกเดินทาง
-          </small>
+  <input
+    type="text"
+    formControlName="departure"
+    [placeholder]="
+      isFlightIncluded
+        ? 'เช่น สนามบินสุวรรณภูมิ'
+        : 'เช่น สถานีรถไฟฟ้าอโศก หรือโรงแรมที่กำหนด'
+    "
+  />
 
-        </div>
+  <small
+    class="field-error"
+    *ngIf="
+      form.get('departure')?.touched &&
+      form.get('departure')?.invalid
+    "
+  >
+    กรุณากรอกจุดเริ่มต้นการเดินทาง
+  </small>
+
+</div>
 
 
         <!-- ==================================================
@@ -170,10 +182,14 @@
           </label>
 
           <input
-            type="text"
-            formControlName="destination"
-            placeholder="เช่น สนามบินนาริตะ"
-          />
+  type="text"
+  formControlName="destination"
+  [placeholder]="
+    isFlightIncluded
+      ? 'เช่น สนามบินนาริตะ'
+      : 'เช่น โรงแรมหรือสถานที่ปลายทาง'
+  "
+/>
 
           <small
             class="field-error"
@@ -228,7 +244,7 @@
              AIRLINE
              ================================================== -->
 
-        <div class="form-group">
+        <div class="form-group" *ngIf="isFlightIncluded">
 
           <label>
             สายการบิน
@@ -247,37 +263,35 @@
              FLIGHT
              ================================================== -->
 
-        <div class="form-group">
+        <!-- FLIGHT -->
+<div class="form-group" *ngIf="isFlightIncluded">
 
-          <label>
-            เที่ยวบิน
-          </label>
+  <label>
+    เที่ยวบิน
+  </label>
 
-          <input
-            type="text"
-            formControlName="flight"
-            placeholder="เช่น TG640"
-          />
+  <input
+    type="text"
+    formControlName="flight"
+    placeholder="เช่น TG640"
+  />
 
-        </div>
+</div>
 
 
-        <!-- ==================================================
-             FLIGHT TIME
-             ================================================== -->
+        <!-- FLIGHT TIME -->
+<div class="form-group" *ngIf="isFlightIncluded">
 
-        <div class="form-group">
+  <label>
+    เวลาเที่ยวบิน
+  </label>
 
-          <label>
-            เวลาเที่ยวบิน
-          </label>
+  <input
+    type="time"
+    formControlName="flight_time"
+  />
 
-          <input
-            type="time"
-            formControlName="flight_time"
-          />
-
-        </div>
+</div>
 
 
         <!-- ==================================================

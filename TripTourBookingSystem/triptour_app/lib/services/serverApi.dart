@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
-const String _defaultBaseUrl = 'http://192.168.1.8:4000';
+const String _defaultBaseUrl = 'http://192.168.1.146:4000';
 
 String normalizeBaseUrl(String? value) {
   final raw = (value ?? '').trim();
@@ -206,6 +206,60 @@ class Serverapi {
     }
   }
 
+  static Future<Map<String, dynamic>> getSearchContinents() async {
+  try {
+    final res = await http.get(
+      Uri.parse("$_baseUrl/add-tour/search-options/continents"),
+      headers: {"Content-Type": "application/json"},
+    );
+
+    final data = jsonDecode(res.body);
+
+    print("Search continents: $data");
+
+    return {
+      'statusCode': res.statusCode,
+      'body': data,
+    };
+  } catch (e) {
+    print("Get search continents error: $e");
+
+    return {
+      'statusCode': 500,
+      'body': {
+        'success': false,
+        'message': 'ไม่สามารถโหลดรายชื่อทวีปได้',
+      },
+    };
+  }
+}
+
+static Future<Map<String, dynamic>> getSearchLocations() async {
+  try {
+    final res = await http.get(
+      Uri.parse("$_baseUrl/add-tour/search-options/locations"),
+      headers: {"Content-Type": "application/json"},
+    );
+
+    final data = jsonDecode(res.body);
+
+    return {
+      'statusCode': res.statusCode,
+      'body': data,
+    };
+  } catch (e) {
+    print("Get search locations error: $e");
+
+    return {
+      'statusCode': 500,
+      'body': {
+        'success': false,
+        'message': 'ไม่สามารถโหลดรายการต้นทางและปลายทางได้',
+      },
+    };
+  }
+}
+
   static Future<Map<String, dynamic>?> uploadImage(
     File? selectedImage,
     File? selectedImage_passport,
@@ -279,11 +333,16 @@ class Serverapi {
 
   static Future<Map<String, dynamic>> searchTours({
     String? keyword,
+    String? continent,
     int? countryId,
     List<String>? airlines,
     DateTime? startDate,
     DateTime? endDate,
     String? sortBy,
+    String? departure,
+    String? destination,
+    double? minPrice,
+    double? maxPrice,
   }) async {
     try {
       final res = await http.post(
@@ -291,6 +350,7 @@ class Serverapi {
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "keyword": keyword,
+          "continent": continent,
           "countryId": countryId,
           "airlines": airlines ?? [],
 
@@ -303,6 +363,10 @@ class Serverapi {
               : endDate.toIso8601String().split('T').first,
 
           "sortBy": sortBy,
+          "departure": departure,
+          "destination": destination,
+          "minPrice": minPrice,
+          "maxPrice": maxPrice,
         }),
       );
 

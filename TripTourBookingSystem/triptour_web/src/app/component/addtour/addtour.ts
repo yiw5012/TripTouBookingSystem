@@ -42,11 +42,51 @@ export class Addtour implements OnInit {
 
   isSubmitting = false;
 
+  // ==========================================
+// COUNTRIES
+// ==========================================
+
+countries: any[] = [];
+isLoadingCountries = false;
+countryError = '';
+
+// ==========================================================
+// CLOUDINARY IMAGE PICKER
+// ==========================================================
+
+cloudImages: any[] = [];
+
+selectedCloudImages: any[] = [];
+
+showCloudImagePicker = false;
+
+isLoadingCloudImages = false;
+
+cloudImagesError = '';
+
+cloudImagesNextCursor: string | null = null;
+
+hasLoadedCloudImages = false;
+
 
   constructor(
     private fb: FormBuilder,
     private api: ServerApi
   ) { }
+
+private updateConditionControlState(): void {
+  const mode = this.tourForm.get('condition_mode')?.value;
+  const conditionControl = this.tourForm.get('condition_detail');
+
+  if (!conditionControl) return;
+
+  if (mode === 'custom') {
+    conditionControl.enable({ emitEvent: false });
+  } else {
+    conditionControl.setValue('', { emitEvent: false });
+    conditionControl.disable({ emitEvent: false });
+  }
+}
 
 
   // ==========================================================
@@ -65,6 +105,14 @@ export class Addtour implements OnInit {
         '',
         Validators.required
       ],
+
+      tour_code: [
+  '',
+  [
+    Validators.required,
+    Validators.maxLength(50)
+  ]
+],
 
       country_id: [
         null,
@@ -100,6 +148,11 @@ export class Addtour implements OnInit {
         ''
       ],
 
+      condition_mode: [
+  'default',
+  Validators.required
+],
+
       condition_detail: [
         ''
       ],
@@ -128,11 +181,22 @@ export class Addtour implements OnInit {
 
     });
 
+    this.tourForm.get('condition_mode')?.valueChanges.subscribe(() => {
+  this.updateConditionControlState();
+});
+
+this.updateConditionControlState();
+
 
     // เพิ่มวันที่ 1
     this.addDay();
+
+    // โหลดประเทศสำหรับ Dropdown
+    void this.loadCountries();
   }
 
+  readonly defaultConditionDetail =
+  'เงื่อนไขการเดินทางและการให้บริการเป็นไปตามรายละเอียดโปรแกรมทัวร์ที่ระบุไว้ กรุณาตรวจสอบข้อมูลและเอกสารการเดินทางให้ครบถ้วนก่อนยืนยันการจอง';
 
   // ==========================================================
   // TOUR DETAILS FORM ARRAY
@@ -144,6 +208,170 @@ export class Addtour implements OnInit {
       'tour_details'
     ) as FormArray;
   }
+
+  async loadCountries(): Promise<void> {
+  this.isLoadingCountries = true;
+  this.countryError = '';
+
+  try {
+    const result = await this.api.getData('add-tour/countries');
+
+    if (
+      result.statusCode === 200 &&
+      result.body?.success === true
+    ) {
+      this.countries = result.body.data ?? [];
+
+      if (this.countries.length === 0) {
+        this.countryError = 'ยังไม่มีข้อมูลประเทศในระบบ';
+      }
+    } else {
+      this.countries = [];
+      this.countryError =
+        result.body?.message ?? 'ไม่สามารถโหลดรายชื่อประเทศได้';
+    }
+  } catch (error) {
+    console.error('Load countries error:', error);
+    this.countries = [];
+    this.countryError = 'เกิดข้อผิดพลาดในการโหลดรายชื่อประเทศ';
+  } finally {
+    this.isLoadingCountries = false;
+  }
+}
+
+// ==========================================================
+// เปิด / ปิดคลังรูปภาพ Cloudinary
+// ==========================================================
+
+async toggleCloudImagePicker(): Promise<void> {
+  this.showCloudImagePicker = !this.showCloudImagePicker;
+
+  if (
+    this.showCloudImagePicker &&
+    !this.hasLoadedCloudImages
+  ) {
+    await this.loadCloudImages(true);
+  }
+}
+
+// ==========================================================
+// โหลดรูปจาก Cloudinary
+// reset = true คือเริ่มจากหน้าแรก
+// reset = false คือโหลดหน้าถัดไป
+// ==========================================================
+
+async loadCloudImages(reset = false): Promise<void> {
+  if (this.isLoadingCloudImages) {
+    return;
+  }
+
+  const cursor = reset
+    ? null
+    : this.cloudImagesNextCursor;
+
+  if (!reset && !cursor) {
+    return;
+  }
+
+  this.isLoadingCloudImages = true;
+  this.cloudImagesError = '';
+
+  try {
+    const endpoint = cursor
+      ? `add-tour/cloud-images?next_cursor=${encodeURIComponent(cursor)}`
+      : 'add-tour/cloud-images';
+
+    const result = await this.api.getData(endpoint);
+
+    if (
+      result?.statusCode === 200 &&
+      result?.body?.success === true
+    ) {
+      const receivedImages: any[] =
+        result.body.data ?? [];
+
+      if (reset) {
+        this.cloudImages = receivedImages;
+      } else {
+        const existingIds = new Set(
+          this.cloudImages.map((image) => image.public_id)
+        );
+
+        this.cloudImages = [
+          ...this.cloudImages,
+          ...receivedImages.filter(
+            (image) => !existingIds.has(image.public_id)
+          ),
+        ];
+      }
+
+      this.cloudImagesNextCursor =
+        result.body.next_cursor ?? null;
+
+      this.hasLoadedCloudImages = true;
+    } else {
+      this.cloudImagesError =
+        result?.body?.message ??
+        'ไม่สามารถโหลดรูปจาก Cloudinary ได้';
+    }
+  } catch (error) {
+    console.error('Load Cloudinary Images Error:', error);
+
+    this.cloudImagesError =
+      'เกิดข้อผิดพลาดในการโหลดรูปจาก Cloudinary';
+  } finally {
+    this.isLoadingCloudImages = false;
+  }
+}
+
+// ==========================================================
+// โหลดหน้าถัดไป
+// ==========================================================
+
+async loadMoreCloudImages(): Promise<void> {
+  await this.loadCloudImages(false);
+}
+
+// ==========================================================
+// เลือก / ยกเลิกรูปจาก Cloudinary
+// ==========================================================
+
+toggleCloudImage(image: any): void {
+  const index = this.selectedCloudImages.findIndex(
+    (item) => item.public_id === image.public_id
+  );
+
+  if (index >= 0) {
+    this.selectedCloudImages.splice(index, 1);
+  } else {
+    this.selectedCloudImages.push(image);
+  }
+
+  this.selectedCloudImages = [
+    ...this.selectedCloudImages,
+  ];
+}
+
+// ==========================================================
+// ตรวจว่ารูปถูกเลือกแล้วหรือยัง
+// ==========================================================
+
+isCloudImageSelected(publicId: string): boolean {
+  return this.selectedCloudImages.some(
+    (image) => image.public_id === publicId
+  );
+}
+
+// ==========================================================
+// นำรูปที่เลือกออกจากรายการรอบันทึก
+// ==========================================================
+
+removeCloudImage(publicId: string): void {
+  this.selectedCloudImages =
+    this.selectedCloudImages.filter(
+      (image) => image.public_id !== publicId
+    );
+}
 
 
   // ==========================================================
@@ -548,6 +776,11 @@ export class Addtour implements OnInit {
           ?.value ?? ''
       );
 
+      formData.append(
+  'tour_code',
+  String(this.tourForm.get('tour_code')?.value ?? '').trim()
+);
+
 
       formData.append(
         'country_id',
@@ -595,12 +828,19 @@ export class Addtour implements OnInit {
       );
 
 
-      formData.append(
-        'condition_detail',
-        this.tourForm
-          .get('condition_detail')
-          ?.value ?? ''
-      );
+      const conditionMode =
+  this.tourForm.get('condition_mode')?.value ?? 'default';
+
+const customCondition = String(
+  this.tourForm.get('condition_detail')?.value ?? ''
+).trim();
+
+formData.append('condition_mode', conditionMode);
+
+formData.append(
+  'condition_detail',
+  conditionMode === 'custom' ? customCondition : ''
+);
 
 
       formData.append(
@@ -639,16 +879,23 @@ export class Addtour implements OnInit {
       // รูปภาพหลายรูป
       // ======================================================
 
-      for (
-        const image of this.selectedImages
-      ) {
-
+      for ( const image of this.selectedImages) {
         formData.append(
           'tour_images',
           image
         );
 
       }
+
+      // รูปที่เลือกจาก Cloudinary
+formData.append(
+  'cloud_image_ids',
+  JSON.stringify(
+    this.selectedCloudImages.map(
+      (image) => image.public_id
+    )
+  )
+);
 
 
       // ======================================================
@@ -777,13 +1024,16 @@ export class Addtour implements OnInit {
           result.body.data?.tour_id ??
           result.body.tour_id;
 
+          const newTourCode = String(
+  this.tourForm.get('tour_code')?.value ?? ''
+).trim();
+
 
         alert(
-          `เพิ่มข้อมูลทัวร์สำเร็จ${newTourId
-            ? `\nรหัสทัวร์: ${newTourId}`
-            : ''
-          }`
-        );
+  `เพิ่มข้อมูลทัวร์สำเร็จ\n` +
+  `รหัสโปรแกรมทัวร์: ${newTourCode}` +
+  (newTourId ? `\nรหัสอ้างอิงระบบ: ${newTourId}` : '')
+);
 
 
         // ----------------------------------------------------
@@ -791,30 +1041,20 @@ export class Addtour implements OnInit {
         // ----------------------------------------------------
 
         this.tourForm.reset({
-
-          tour_name: '',
-
-          country_id: null,
-
-          type: 'ในประเทศ',
-
-          duration_day: 1,
-
-          price: 0,
-
-          video: '',
-
-          promotion: '',
-
-          condition_detail: '',
-
-          include_flight: 'ไม่รวม',
-
-          pdf_file: '',
-
-          status: 'open'
-
-        });
+  tour_name: '',
+  tour_code: '',
+  country_id: null,
+  type: 'ในประเทศ',
+  duration_day: 1,
+  price: 0,
+  video: '',
+  promotion: '',
+  include_flight: 'ไม่รวม',
+  pdf_file: '',
+  status: 'open',
+  condition_mode: 'default',
+  condition_detail: ''
+});
 
 
         // ----------------------------------------------------
@@ -840,6 +1080,8 @@ export class Addtour implements OnInit {
         this.selectedVideo = null;
 
         this.selectedPdf = null;
+
+        this.selectedCloudImages = [];
 
 
       } else {

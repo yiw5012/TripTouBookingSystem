@@ -1,8 +1,10 @@
 import express from "express";
 import { conn } from "../../config/db.js";
-import { tourUpload } from "../middleware/upload.js"; 
-
+import { tourUpload, resolveTourCloudImages, } from "../middleware/upload.js"; 
 export const router = express.Router();
+
+const DEFAULT_CONDITION_DETAIL =
+  "เงื่อนไขการเดินทางและการให้บริการเป็นไปตามรายละเอียดโปรแกรมทัวร์ที่ระบุไว้ กรุณาตรวจสอบข้อมูลและเอกสารการเดินทางให้ครบถ้วนก่อนยืนยันการจอง";
 
 /*
 ==========================================================
@@ -15,6 +17,7 @@ router.get("/list", async (req, res) => {
     const [rows] = await conn.query(`
       SELECT
         t.tour_id,
+        t.tour_code,
         t.tour_name,
         t.country_id,
         c.country_name_th,
@@ -193,8 +196,7 @@ router.get("/:tourId", async (req, res) => {
 // ==========================================================
 // PUT : แก้ไขข้อมูล Tour
 // ==========================================================
-router.put(
-  "/:tourId",
+router.put("/:tourId",
   tourUpload.fields([
     { name: "tour_images", maxCount: 20 },
     { name: "video", maxCount: 1 },
@@ -225,16 +227,19 @@ router.put(
 
       const {
         tour_name,
+        tour_code,
         country_id,
         type,
         duration_day,
         price,
         promotion,
         condition_detail,
+        condition_mode,
         include_flight,
         status,
         tour_details,
         keep_image_ids,
+        cloud_image_ids,
       } = req.body || {};
       console.log("====================================");
       console.log("EDIT TOUR REQUEST");
@@ -340,13 +345,59 @@ router.put(
       }
 
       // ==========================================================
+// รูปที่เลือกจาก Cloudinary สำหรับทัวร์ที่กำลังแก้ไข
+// ==========================================================
+
+let cloudImageIds = [];
+
+if (cloud_image_ids) {
+  try {
+    const parsed =
+      typeof cloud_image_ids === "string"
+        ? JSON.parse(cloud_image_ids)
+        : cloud_image_ids;
+
+    if (!Array.isArray(parsed)) {
+      return res.status(400).json({
+        success: false,
+        message: "รูปแบบรายการรูปภาพ Cloudinary ไม่ถูกต้อง",
+      });
+    }
+
+    cloudImageIds = parsed;
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: "ไม่สามารถอ่านรายการรูปภาพ Cloudinary ได้",
+    });
+  }
+}
+
+let selectedCloudImages = [];
+
+try {
+  selectedCloudImages =
+    await resolveTourCloudImages(cloudImageIds);
+} catch (error) {
+  console.error("Resolve Cloudinary images error:", error);
+
+  return res.status(400).json({
+    success: false,
+    message:
+      "มีรูปภาพจาก Cloudinary ที่ไม่ถูกต้องหรือไม่สามารถใช้งานได้",
+  });
+}
+
+      // ==========================================================
       // 6. ดึงข้อมูลเดิมของ Tour
       // ==========================================================
 
-      const [existingTourRows] = await connection.query(
+const [existingTourRows] = await connection.query(
   `
   SELECT
     tour_id,
+    tour_code,
+    condition_detail,
     status,
     video,
     pdf_file
@@ -365,6 +416,65 @@ router.put(
       }
 
       const existingTour = existingTourRows[0];
+
+      // ตรวจสอบรหัสโปรแกรมทัวร์
+const normalizedTourCode = String(
+  tour_code ?? existingTour.tour_code ?? ""
+).trim();
+
+if (!normalizedTourCode) {
+  return res.status(400).json({
+    success: false,
+    message: "กรุณากรอกรหัสโปรแกรมทัวร์",
+  });
+}
+
+if (normalizedTourCode.length > 50) {
+  return res.status(400).json({
+    success: false,
+    message: "รหัสโปรแกรมทัวร์ต้องไม่เกิน 50 ตัวอักษร",
+  });
+}
+
+// ตรวจรหัสซ้ำ โดยไม่นับทัวร์รายการที่กำลังแก้ไข
+const [duplicateTourCodes] = await connection.query(
+  `
+  SELECT tour_id
+  FROM tour
+  WHERE tour_code = ?
+    AND tour_id <> ?
+  LIMIT 1
+  `,
+  [normalizedTourCode, tourIdNumber]
+);
+
+if (duplicateTourCodes.length > 0) {
+  return res.status(409).json({
+    success: false,
+    message: "รหัสโปรแกรมทัวร์นี้มีอยู่แล้ว กรุณาใช้รหัสอื่น",
+  });
+}
+
+// เลือกเงื่อนไขสำหรับบันทึก
+const submittedCondition =
+  typeof condition_detail === "string"
+    ? condition_detail.trim()
+    : "";
+
+let normalizedConditionDetail;
+
+if (condition_mode === "default") {
+  normalizedConditionDetail = DEFAULT_CONDITION_DETAIL;
+} else if (condition_mode === "custom") {
+  normalizedConditionDetail =
+    submittedCondition || DEFAULT_CONDITION_DETAIL;
+} else {
+  // รองรับกรณีที่ยังมี Client รุ่นเก่าส่งข้อมูลมา
+  normalizedConditionDetail =
+    submittedCondition ||
+    String(existingTour.condition_detail ?? "").trim() ||
+    DEFAULT_CONDITION_DETAIL;
+}
 
       // ==========================================================
       // 7. รับไฟล์ใหม่จาก Cloudinary
@@ -447,37 +557,39 @@ if (
       // ==========================================================
 
       await connection.query(
-        `
-        UPDATE tour
-        SET
-          tour_name = ?,
-          country_id = ?,
-          type = ?,
-          duration_day = ?,
-          price = ?,
-          video = ?,
-          promotion = ?,
-          condition_detail = ?,
-          include_flight = ?,
-          pdf_file = ?,
-          status = ?
-        WHERE tour_id = ?
-        `,
-        [
-          tour_name.trim(),
-          Number(country_id),
-          normalizedType,
-          Number(duration_day),
-          Number(price),
-          videoUrl,
-          promotion || null,
-          condition_detail || null,
-          normalizedIncludeFlight,
-          pdfUrl,
-          normalizedStatus,
-          tourIdNumber,
-        ]
-      );
+  `
+  UPDATE tour
+  SET
+    tour_name = ?,
+    tour_code = ?,
+    country_id = ?,
+    type = ?,
+    duration_day = ?,
+    price = ?,
+    video = ?,
+    promotion = ?,
+    condition_detail = ?,
+    include_flight = ?,
+    pdf_file = ?,
+    status = ?
+  WHERE tour_id = ?
+  `,
+  [
+    tour_name.trim(),
+    normalizedTourCode,
+    Number(country_id),
+    normalizedType,
+    Number(duration_day),
+    Number(price),
+    videoUrl,
+    promotion || null,
+    normalizedConditionDetail,
+    normalizedIncludeFlight,
+    pdfUrl,
+    normalizedStatus,
+    tourIdNumber,
+  ]
+);
 
       // ==========================================================
       // 10. ลบรูปเก่าที่ผู้ใช้เอาออก
@@ -505,26 +617,53 @@ if (
       }
 
       // ==========================================================
-      // 11. เพิ่มรูปใหม่
-      // ==========================================================
+// 11. เพิ่มรูปจากเครื่องและ Cloudinary
+// โดยไม่เพิ่ม URL ซ้ำกับรูปที่ยังเก็บอยู่
+// ==========================================================
 
-      if (imageFiles.length > 0) {
-        const imageValues = imageFiles.map((file) => [
-          tourIdNumber,
-          file.path,
-        ]);
+// หลังจากลบรูปที่ไม่ต้องการแล้ว รูปที่ยังอยู่ในตารางคือรูปที่เก็บไว้
+const [retainedImageRows] = await connection.query(
+  `
+  SELECT image
+  FROM tour_image
+  WHERE tour_id = ?
+  `,
+  [tourIdNumber]
+);
 
-        await connection.query(
-          `
-          INSERT INTO tour_image (
-            tour_id,
-            image
-          )
-          VALUES ?
-          `,
-          [imageValues]
-        );
-      }
+const retainedImageUrls = new Set(
+  retainedImageRows.map((row) => row.image)
+);
+
+const candidateImageUrls = [
+  ...(imageFiles ?? []).map((file) => file.path),
+  ...selectedCloudImages.map((image) => image.secure_url),
+].filter(Boolean);
+
+const newImageUrls = [
+  ...new Set(candidateImageUrls)
+].filter((imageUrl) => !retainedImageUrls.has(imageUrl));
+
+// เพิ่มรูปใหม่เป็นชุด ๆ โดยไม่จำกัดไว้แค่ 20 รูปจาก Cloudinary
+for (let i = 0; i < newImageUrls.length; i += 500) {
+  const batch = newImageUrls.slice(i, i + 500);
+
+  const imageValues = batch.map((imageUrl) => [
+    tourIdNumber,
+    imageUrl,
+  ]);
+
+  await connection.query(
+    `
+    INSERT INTO tour_image (
+      tour_id,
+      image
+    )
+    VALUES ?
+    `,
+    [imageValues]
+  );
+}
 
       // ==========================================================
       // 12. ลบรายละเอียดรายวันเดิม

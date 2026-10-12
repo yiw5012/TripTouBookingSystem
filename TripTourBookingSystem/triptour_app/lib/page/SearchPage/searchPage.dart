@@ -30,6 +30,15 @@ class _SearchPageState extends State<SearchPage> {
   bool isLoadingCountries = true;
 
   // =====================================================
+  // Continent
+  // =====================================================
+
+  String? selectedContinent;
+
+  List<dynamic> continents = [];
+  bool isLoadingContinents = true;
+
+  // =====================================================
   // Airline
   // =====================================================
 
@@ -37,6 +46,26 @@ class _SearchPageState extends State<SearchPage> {
   bool isLoadingAirlines = true;
 
   final List<String> selectedAirlines = [];
+
+  // ============================================
+  // Departure / Destination
+  // ============================================
+
+  String? selectedDeparture;
+  String? selectedDestination;
+
+  List<dynamic> departures = [];
+  List<dynamic> destinations = [];
+
+  bool isLoadingLocations = true;
+
+  // ============================================
+  // Price range
+  // ============================================
+
+  final TextEditingController minPriceController = TextEditingController();
+
+  final TextEditingController maxPriceController = TextEditingController();
 
   // =====================================================
   // Search Result
@@ -64,8 +93,10 @@ class _SearchPageState extends State<SearchPage> {
   void initState() {
     super.initState();
 
+    loadContinents();
     loadCountries();
     loadAirlines();
+    loadSearchLocations();
   }
 
   // =====================================================
@@ -86,6 +117,28 @@ class _SearchPageState extends State<SearchPage> {
       setState(() {
         countries = [];
         isLoadingCountries = false;
+      });
+    }
+  }
+
+  // =====================================================
+  // LOAD CONTINENTS
+  // =====================================================
+
+  Future<void> loadContinents() async {
+    final result = await Serverapi.getSearchContinents();
+
+    if (!mounted) return;
+
+    if (result['statusCode'] == 200 && result['body']['success'] == true) {
+      setState(() {
+        continents = result['body']['data'] ?? [];
+        isLoadingContinents = false;
+      });
+    } else {
+      setState(() {
+        continents = [];
+        isLoadingContinents = false;
       });
     }
   }
@@ -180,6 +233,27 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   // =====================================================
+  // CONTINENT
+  // =====================================================
+
+  Future<void> selectContinent() async {
+    final String? result = await SearchOptionSheets.showContinentPicker(
+      context: context,
+      continents: continents,
+      isLoadingContinents: isLoadingContinents,
+      selectedContinent: selectedContinent,
+    );
+
+    // null หมายถึงปิดหน้าต่างเลือกโดยไม่ได้เลือก
+    if (result == null) return;
+
+    setState(() {
+      // สตริงว่างหมายถึงเลือก "ทุกทวีป"
+      selectedContinent = result.isEmpty ? null : result;
+    });
+  }
+
+  // =====================================================
   // AIRLINE
   // =====================================================
 
@@ -202,11 +276,90 @@ class _SearchPageState extends State<SearchPage> {
     });
   }
 
+  Future<void> selectDeparture() async {
+    final result = await SearchOptionSheets.showLocationPicker(
+      context: context,
+      title: 'เลือกต้นทาง',
+      locations: departures,
+      isLoading: isLoadingLocations,
+      selectedValue: selectedDeparture,
+    );
+
+    if (result == null) return;
+
+    setState(() {
+      selectedDeparture = result.isEmpty ? null : result;
+    });
+  }
+
+  Future<void> selectDestination() async {
+    final result = await SearchOptionSheets.showLocationPicker(
+      context: context,
+      title: 'เลือกปลายทาง',
+      locations: destinations,
+      isLoading: isLoadingLocations,
+      selectedValue: selectedDestination,
+    );
+
+    if (result == null) return;
+
+    setState(() {
+      selectedDestination = result.isEmpty ? null : result;
+    });
+  }
+
+  Future<void> loadSearchLocations() async {
+    final result = await Serverapi.getSearchLocations();
+
+    if (!mounted) return;
+
+    final body = result['body'];
+    final data = body is Map ? body['data'] : null;
+
+    if (result['statusCode'] == 200 &&
+        body is Map &&
+        body['success'] == true &&
+        data is Map) {
+      setState(() {
+        departures = List<dynamic>.from(data['departures'] ?? []);
+        destinations = List<dynamic>.from(data['destinations'] ?? []);
+        isLoadingLocations = false;
+      });
+    } else {
+      setState(() {
+        departures = [];
+        destinations = [];
+        isLoadingLocations = false;
+      });
+    }
+  }
+
   // =====================================================
   // SEARCH
   // =====================================================
 
   Future<void> submitSearch() async {
+    final minText = minPriceController.text.trim();
+    final maxText = maxPriceController.text.trim();
+
+    final minPrice = minText.isEmpty ? null : double.tryParse(minText);
+    final maxPrice = maxText.isEmpty ? null : double.tryParse(maxText);
+
+    if ((minText.isNotEmpty && minPrice == null) ||
+        (maxText.isNotEmpty && maxPrice == null)) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('กรุณากรอกราคาให้ถูกต้อง')));
+      return;
+    }
+
+    if (minPrice != null && maxPrice != null && minPrice > maxPrice) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('ราคาต่ำสุดต้องไม่มากกว่าราคาสูงสุด')),
+      );
+      return;
+    }
+
     setState(() {
       isSearchingTours = true;
       hasSearched = true;
@@ -215,11 +368,16 @@ class _SearchPageState extends State<SearchPage> {
 
     final result = await Serverapi.searchTours(
       keyword: keywordController.text.trim(),
+      continent: selectedContinent,
       countryId: selectedCountryId,
       airlines: selectedAirlines,
       startDate: startDate,
       endDate: endDate,
       sortBy: selectedSort,
+      departure: selectedDeparture,
+      destination: selectedDestination,
+      minPrice: minPrice,
+      maxPrice: maxPrice,
     );
 
     if (!mounted) return;
@@ -259,6 +417,8 @@ class _SearchPageState extends State<SearchPage> {
   @override
   void dispose() {
     keywordController.dispose();
+    minPriceController.dispose();
+    maxPriceController.dispose();
 
     super.dispose();
   }
@@ -285,6 +445,9 @@ class _SearchPageState extends State<SearchPage> {
 
                 selectedCountry: selectedCountry,
 
+                selectedContinent: selectedContinent,
+                onContinentTap: selectContinent,
+
                 selectedAirlines: selectedAirlines,
 
                 startDate: startDate,
@@ -304,6 +467,13 @@ class _SearchPageState extends State<SearchPage> {
                 formatDate: formatDate,
 
                 selectedSort: selectedSort,
+
+                selectedDeparture: selectedDeparture,
+                selectedDestination: selectedDestination,
+                onDepartureTap: selectDeparture,
+                onDestinationTap: selectDestination,
+                minPriceController: minPriceController,
+                maxPriceController: maxPriceController,
 
                 onSortChanged: (value) {
                   if (value == null) return;
