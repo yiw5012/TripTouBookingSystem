@@ -1,5 +1,4 @@
 import express from 'express';
-import multer from 'multer';
 import generatePayload from 'promptpay-qr';
 import { conn } from '../../config/db.js';
 import admin from "../../config/firebase.js";
@@ -359,10 +358,16 @@ router.get('/admin/all-bookings', async (req, res) => {
   }
 });
 
-// ==========================================================
-// 4.1 Admin - ดึงรายการจองที่รอตรวจสอบการชำระเงิน
-// ==========================================================
-router.get('/admin/pending-payments', async (req, res) => {
+router.get('/admin/confirmed-members/:roundId', async (req, res) => {
+  const roundId = Number(req.params.roundId);
+
+  if (!roundId || Number.isNaN(roundId)) {
+    return res.status(400).json({
+      success: false,
+      message: 'round_id ไม่ถูกต้อง',
+    });
+  }
+
   try {
     const [rows] = await conn.query(
       `
@@ -374,35 +379,85 @@ router.get('/admin/pending-payments', async (req, res) => {
         b.total_price,
         b.status,
         b.payment_status,
-        b.payment_date,
-        b.slip_image,
-
-        t.tour_id,
-        t.tour_name,
-
-        r.start_date,
-        r.end_date,
-        r.departure,
-        r.destination,
-        r.airline,
-        r.flight
-
+        m.first_name,
+        m.last_name,
+        m.email,
+        m.phone,
+        m.gender,
+        m.number_id,
+        m.birthday,
+        m.address,
+        m.medicine,
+        m.congenital_disease,
+        m.allergic_list,
+        m.others,
+        CONCAT_WS(' ', m.first_name, m.last_name) AS display_name
       FROM booking b
-
-      LEFT JOIN tour_round r
-        ON b.round_id = r.round_id
-
-      LEFT JOIN tour t
-        ON r.tour_id = t.tour_id
-
-      WHERE b.payment_status = 'processing'
-        AND b.slip_image IS NOT NULL
-        AND TRIM(b.slip_image) <> ''
-
-      ORDER BY b.booking_date DESC
-      `
+      INNER JOIN member m
+        ON m.member_id = b.member_id
+      WHERE b.round_id = ?
+        AND b.status = 'confirmed'
+        AND b.payment_status = 'paid'
+      ORDER BY b.booking_date ASC, b.booking_id ASC
+      `,
+      [roundId]
     );
 
+    return res.status(200).json({
+      success: true,
+      data: rows,
+    });
+  } catch (error) {
+    console.error('❌ Admin confirmed members error:', error);
+
+    return res.status(500).json({
+      success: false,
+      message: 'ไม่สามารถดึงรายชื่อผู้เดินทางที่ยืนยันแล้วได้',
+      error: error.message,
+    });
+  }
+});
+
+// ==========================================================
+// 4.1 Admin - ดึงรายการจองที่รอตรวจสอบการชำระเงิน
+// ==========================================================
+router.get('/admin/pending-payments', async (req, res) => {
+  try {
+    const [rows] = await conn.query(
+      `
+      SELECT
+  b.booking_id,
+  b.member_id,
+  b.round_id,
+  b.booking_date,
+  b.total_price,
+  b.status,
+  b.payment_status,
+  b.payment_date,
+  b.slip_image,
+
+  t.tour_id,
+  t.tour_name,
+
+  r.start_date,
+  r.end_date,
+  r.departure,
+  r.destination,
+  r.airline,
+  r.flight
+
+FROM booking b
+INNER JOIN tour_round r ON b.round_id = r.round_id
+INNER JOIN tour t ON r.tour_id = t.tour_id
+
+WHERE b.payment_status = 'paid'
+AND b.status = 'pending'
+ 	
+  
+ORDER BY b.booking_date DESC;
+      `
+    );
+    console.log(rows)
     return res.status(200).json({
       success: true,
       data: rows,
@@ -623,11 +678,11 @@ router.post('/add-passengers', upload.single('passpot_passenger'), async (req, r
     const passengers = payload.passengers || [];
     const roomSelections = payload.rooms || payload.booking?.rooms || [];
 
-    // 2. ตรวจสอบไฟล์รูปภาพอย่างปลอดภัย 
+    //  ตรวจสอบไฟล์รูปภาพอย่างปลอดภัย 
     const passportFile = req.file;
     const uploadedPassportPath = passportFile ? passportFile.path : null;
 
-    // 3. ตรวจสอบความถูกต้องของข้อมูล
+    // ตรวจสอบความถูกต้องของข้อมูล
     if (!bookingId || !Array.isArray(passengers) || passengers.length === 0) {
       return res.status(400).json({
         success: false,
@@ -820,6 +875,39 @@ router.get('/history/:memberId', async (req, res) => {
       message: 'Internal Server Error',
       error: error.message
     });
+  }
+});
+
+router.get('/booking/all', async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        b.booking_id,
+        b.booking_date,
+        b.member_id,
+        b.round_id,
+        b.total_price,
+        b.payment_status,
+        b.status,
+        b.slip_image,
+        r.tour_id,
+        t.tour_name,
+        r.departure,
+        r.destination,
+        r.start_date,
+        r.end_date,
+        r.airline,
+        r.flight
+      FROM booking b
+      LEFT JOIN tour_round r ON b.round_id = r.round_id
+      LEFT JOIN tour t ON r.tour_id = t.tour_id
+      ORDER BY b.booking_id DESC
+    `;
+    const [rows] = await db.query(query);
+    return res.status(200).json({ statusCode: 200, body: rows });
+  } catch (error) {
+    console.error('Error fetching bookings:', error);
+    return res.status(500).json({ statusCode: 500, message: 'Internal Server Error' });
   }
 });
 export default router;

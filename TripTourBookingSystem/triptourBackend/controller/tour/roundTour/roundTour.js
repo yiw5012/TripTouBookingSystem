@@ -74,6 +74,58 @@ router.get("/guide/:guideId", async (req, res) => {
     });
   }
 });
+
+router.get("/:roundId", async (req, res) => {
+  const roundId = Number(req.params.roundId);
+
+  if (!roundId || Number.isNaN(roundId)) {
+    return res.status(400).json({
+      success: false,
+      message: "round_id ไม่ถูกต้อง",
+    });
+  }
+
+  try {
+    const [roundRows] = await conn.query(
+      `
+      SELECT
+        tr.*, 
+        t.tour_name,
+        t.pdf_file
+      FROM tour_round tr
+      LEFT JOIN tour t
+        ON t.tour_id = tr.tour_id
+      WHERE tr.round_id = ?
+      LIMIT 1
+      `,
+      [roundId]
+    );
+
+    if (!roundRows || roundRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Tour round not found",
+      });
+    }
+
+    const statusSummary = await checkAndUpdateRoundStatus(conn, roundId);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        ...roundRows[0],
+        total_paid: statusSummary.total_paid,
+        status: statusSummary.status,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+});
 // router.put('/:roundId/finish', async (req, res) => {
 //   const roundId = Number(req.params.roundId);
 //   const guideId = Number(req.body.guide_id ?? req.query.guide_id);

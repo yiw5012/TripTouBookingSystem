@@ -452,6 +452,7 @@ router.post(
       
 
       // SEND FCM NOTIFICATION TO FAVORED USERS
+      if (status === 'open') {
       try {
         // ดึงข้อมูลประเทศเพื่อเอาชื่อ EN มาทำ Topic 
         const [countryRows] = await conn.query(
@@ -486,11 +487,13 @@ router.post(
           };
 
           await admin.messaging().send(notificationMessage);
-          console.log(`✅ FCM Notification sent successfully to topic: ${targetTopic} noti : ${notificationMessage}` );
+          console.log(` FCM Notification sent successfully to topic: ${targetTopic} noti : ${notificationMessage}` );
         }
       } catch (notiError) {
-        console.error("⚠️ Send Notification Error:", notiError.message);
+        console.error(" Send Notification Error:", notiError.message);
       }
+    }
+    
       return res.status(201).json({
  
         success: true,

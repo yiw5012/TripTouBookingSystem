@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:triptour_app/model/country.dart';
 import 'package:triptour_app/page/auth/loginPage.dart';
+import 'package:triptour_app/page/homepage.dart';
 import 'package:triptour_app/page/wrapper.dart';
 import 'package:triptour_app/services/noti_service.dart';
 import 'package:triptour_app/services/serverApi.dart';
@@ -25,6 +26,8 @@ String formatRegistrationError(Object error) {
         return 'รหัสผ่านต้องมีความปลอดภัยมากขึ้น';
       case 'operation-not-allowed':
         return 'ระบบไม่อนุญาตให้สมัครด้วยอีเมลนี้';
+      case 'user-disabled':
+        return 'บัญชีนี้ถูกปิดใช้งาน กรุณาติดต่อผู้ดูแลระบบ';
       default:
         return error.message?.isNotEmpty == true
             ? error.message!
@@ -56,8 +59,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final medicinectl = TextEditingController(); // ยาที่ใช้ประจำ
   final allergic_listctl = TextEditingController(); // รายการแพ้ยา
   final otherctl = TextEditingController(); // อื่น ๆ
-  List<String> selectedGender = ['Male', 'Female'];
-
+  List<String> selectedGender = ['Male', 'Female', 'Other'];
   List<String> selectedCountries = [];
   List<int> selectedCountryIds = [];
   String dropdownValue = 'Male';
@@ -92,6 +94,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   void initState() {
     super.initState();
+    genderctl.text = 'Male';
     fecthData();
     // รับข้อมูลจากหน้า LoginPage ผ่าน Get.arguments
     final args = Get.arguments;
@@ -150,7 +153,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   bool _validateCurrentStep() {
     if (_currentStep == 1 && google_id == null) {
-      final email = emailctl.text.trim();
+      final email = emailctl.text.trim().toLowerCase();
       final password = passwordctl.text.trim();
 
       if (email.isEmpty || password.isEmpty) {
@@ -350,7 +353,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 onPressed: () async {
                   await FirebaseAuth.instance.signOut();
                   await GoogleSignIn().signOut();
-                  Get.offAll(() => const Wrapper());
+                  Get.offAll(() => const Homepage());
                 },
                 child: Text("ยกเลิกการสมัครสมาชิก"),
                 style: TextButton.styleFrom(
@@ -426,7 +429,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         "Google Sign In Success: ID=${googleId}, Email=${gmail}",
                       );
 
-                      Get.offAll(() => const Wrapper());
+                      Get.offAll(() => const Homepage());
                     }
                   },
 
@@ -505,11 +508,11 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Future<void> signUp() async {
     try {
-      print(google_id);
+      final cleanEmail = emailctl.text.trim().toLowerCase();
       if (google_id == null) {
         print("process 1 - สร้างบัญชีใหม่ด้วย Email/Password");
         await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: emailctl.text.trim(),
+          email: cleanEmail,
           password: passwordctl.text.trim(),
         );
         print("สร้างบัญชีสำเร็จ");
@@ -554,7 +557,7 @@ class _RegisterPageState extends State<RegisterPage> {
       print("Passport URL: $passportUrl");
       final result = await Serverapi.registerUser(
         google_id!,
-        emailctl.text.trim(),
+        cleanEmail,
         firstName,
         lastName,
         phonectl.text.trim(),
@@ -574,7 +577,7 @@ class _RegisterPageState extends State<RegisterPage> {
         print("process 4 - ไปหน้า Wrapper เพื่อเช็คข้อมูลผู้ใช้และเข้าสู่ระบบ");
         print(selectedCountries.toString());
         await NotiService.subscribeToPreferredCountries(selectedCountries);
-        Get.off(() => const Wrapper());
+        Get.offAll(() => const Homepage());
       } else {
         print(result);
         ScaffoldMessenger.of(
@@ -645,18 +648,7 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
 
               const SizedBox(width: 10), // เว้นระยะห่างระหว่าง 2 ช่อง
-              // Expanded(
-              //   child: SizedBox(
-              //     height: 40, // กำหนดความสูงของ TextField
-              //     child: TextField(
-              //       controller: lastnamectl,
-              //       decoration: const InputDecoration(
-              //         labelText: "นามสกุล",
-              //         border: OutlineInputBorder(),
-              //       ),
-              //     ),
-              //   ),
-              // ),
+
               Expanded(
                 flex: 2,
                 child: Container(
@@ -672,11 +664,12 @@ class _RegisterPageState extends State<RegisterPage> {
                     elevation: 16,
 
                     onChanged: (String? value) {
-                      setState(() {
-                        dropdownValue = value!;
-                        genderctl.text = value;
-                        print(genderctl.text);
-                      });
+                      if (value != null) {
+                        setState(() {
+                          dropdownValue = value;
+                          genderctl.text = value;
+                        });
+                      }
                     },
                     items: selectedGender.map<DropdownMenuItem<String>>((
                       String value,

@@ -184,6 +184,7 @@ Future<void> generateAndPrintAllMembersPdf(
             headers: [
               'ลำดับ',
               'ชื่อ-นามสกุล',
+              'อีเมล',
               'เบอร์โทรศัพท์',
               'ประวัติการแพ้/โรคประจำตัว',
               'ตำแหน่ง',
@@ -192,6 +193,7 @@ Future<void> generateAndPrintAllMembersPdf(
               final m = membersList[index];
               final fullName =
                   "${m['first_name'] ?? ''} ${m['last_name'] ?? ''}".trim();
+              final email = m['email'] ?? '-';
               final phone = m['phone'] ?? '-';
               final allergy =
                   (m['allergic_list'] != null &&
@@ -203,6 +205,7 @@ Future<void> generateAndPrintAllMembersPdf(
               return [
                 '${index + 1}',
                 fullName.isEmpty ? 'ไม่ระบุชื่อ' : fullName,
+                email,
                 phone,
                 allergy,
                 role,

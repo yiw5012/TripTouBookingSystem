@@ -24,7 +24,22 @@ router.post("/", async (req, res) => {
     image_profile,
   } = req.body;
 
-  const genderValue = (gender && gender.trim() !== 'Other') ? gender : null;
+  if (!email || typeof email !== 'string' || !email.includes('@')) {
+    return res.status(400).json({
+      status: "error",
+      message: "รูปแบบอีเมลไม่ถูกต้อง"
+    });
+  }
+  const cleanEmail = email.toLowerCase().trim();
+
+  //Gender Formatting (Male / Female / Other)
+  let genderValue = null;
+  if (gender && typeof gender === 'string') {
+    const formattedGender = gender.trim().charAt(0).toUpperCase() + gender.trim().slice(1).toLowerCase();
+    if (['Male', 'Female', 'Other'].includes(formattedGender)) {
+      genderValue = formattedGender;
+    }
+  }
 
   const passportImg = image_passport || 'default_passport.jpg';
   const profileImg = image_profile || 'default_profile.jpg';
@@ -93,7 +108,15 @@ router.post("/", async (req, res) => {
     res.json({ status: "success", message: "User registered successfully", userId: memberId });
   } catch (error) {
     console.error("❌ Backend Error Trace:", error);
-
+    // Rollback: ลบ Firebase Auth ทิ้งทันทีหากการบันทึก MySQL หรือ Realtime DB ล้มเหลว
+    if (google_id) {
+      try {
+        await admin.auth().deleteUser(google_id);
+        console.log(`Rollback: Deleted orphaned Firebase Auth user (${google_id})`);
+      } catch (rollbackErr) {
+        console.error("Rollback failed:", rollbackErr.message);
+      }
+    }
     if (error && error.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ status: 'error', message: error.message, sqlMessage: error.sqlMessage });
     }

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:get/route_manager.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:triptour_app/page/auth/forgetpassword.dart';
-import 'package:triptour_app/page/homepage.dart';
 import 'package:triptour_app/page/auth/registerPage.dart';
 import 'package:triptour_app/page/wrapper.dart';
 import 'package:triptour_app/services/serverApi.dart';
@@ -16,10 +15,15 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final emailforgetclt = TextEditingController();
-
   final emailctl = TextEditingController();
   final passwordctl = TextEditingController();
+
+  @override
+  void dispose() {
+    emailctl.dispose();
+    passwordctl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,21 +36,17 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             children: [
               const SizedBox(height: 20),
-
               Image.asset("assets/logo.png", height: 200),
-
               const SizedBox(height: 20),
-
               TextField(
                 controller: emailctl,
+                keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(
                   labelText: "Email",
                   border: OutlineInputBorder(),
                 ),
               ),
-
               const SizedBox(height: 10),
-
               TextField(
                 controller: passwordctl,
                 obscureText: true,
@@ -55,7 +55,6 @@ class _LoginPageState extends State<LoginPage> {
                   border: OutlineInputBorder(),
                 ),
               ),
-
               const SizedBox(height: 20),
 
               /// LOGIN EMAIL
@@ -63,7 +62,6 @@ class _LoginPageState extends State<LoginPage> {
                 onPressed: () => signInEmail(),
                 child: const Text("เข้าสู่ระบบ"),
               ),
-
               const SizedBox(height: 10),
 
               /// GOOGLE LOGIN
@@ -71,13 +69,34 @@ class _LoginPageState extends State<LoginPage> {
                 onPressed: () async {
                   final userCredential = await signInWithGoogle();
                   if (userCredential != null) {
-                    String? google_id = userCredential.user?.uid;
-                    String? gmail = userCredential.user?.email;
-                    print(
-                      "Google Sign In Success: ID=${google_id}, Email=${gmail}",
-                    );
+                    String? googleId = userCredential.user?.uid;
 
-                    Get.offAll(() => Wrapper());
+                    if (googleId != null) {
+                      print(emailctl.text);
+                      final profile = await Serverapi.checkuser(
+                        googleId,
+                        emailctl.text,
+                      );
+
+                      if (profile == null) {
+                        // 📌 สั่ง Sign Out ออกจากแอปทันทีเนื่องจากบัญชีติด inactive (Backend ตอบ 403)
+                        await FirebaseAuth.instance.signOut();
+                        await GoogleSignIn().signOut();
+
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'บัญชีนี้ถูกปิดใช้งาน กรุณาติดต่อผู้ดูแลระบบ',
+                            ),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+                    }
+
+                    Get.offAll(() => const Wrapper());
                   }
                 },
                 child: const Text("สมัคร/เข้าสู่ระบบด้วย Google"),
@@ -101,8 +120,7 @@ class _LoginPageState extends State<LoginPage> {
               /// FORGOT PASSWORD
               TextButton(
                 onPressed: () {
-                  //callForgetPassword(context);
-                  Get.offAll(Forgetpassword());
+                  Get.to(() => const Forgetpassword());
                 },
                 child: const Text("Forgot password?"),
               ),
@@ -121,13 +139,6 @@ class _LoginPageState extends State<LoginPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('กรุณากรอกอีเมลและรหัสผ่านให้ครบ')),
       );
-      return;
-    }
-
-    if (!isValidEmail(email)) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('รูปแบบอีเมลไม่ถูกต้อง')));
       return;
     }
 
@@ -150,6 +161,8 @@ class _LoginPageState extends State<LoginPage> {
         'user-not-found' => 'ไม่พบผู้ใช้นี้ในระบบ',
         'wrong-password' => 'รหัสผ่านไม่ถูกต้อง',
         'invalid-email' => 'รูปแบบอีเมลไม่ถูกต้อง',
+        'user-disabled' =>
+          'บัญชีผู้ใช้นี้ถูกปิดใช้งานหรือถูกระงับ กรุณาติดต่อผู้ดูแลระบบ',
         _ => e.message ?? 'เข้าสู่ระบบไม่สำเร็จ',
       };
 
@@ -181,6 +194,18 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       return await FirebaseAuth.instance.signInWithCredential(credential);
+    } on FirebaseAuthException catch (e) {
+      print("Google Sign In FirebaseAuthException: ${e.code}");
+      if (mounted) {
+        String msg = "Google Sign In Error: ${e.message}";
+        if (e.code == 'user-disabled') {
+          msg = 'บัญชีผู้ใช้นี้ถูกปิดใช้งานหรือถูกระงับ กรุณาติดต่อผู้ดูแลระบบ';
+        }
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(msg)));
+      }
+      return null;
     } catch (e) {
       print("Google Sign In Error: $e");
       if (mounted) {
@@ -192,163 +217,3 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 }
-
-Future<void> callForgetPassword(BuildContext context) async {
-  final emailforgetpass = TextEditingController();
-  showDialog(
-    context: context, // ต้องส่ง context มาด้วย
-    builder: (context) => SimpleDialog(
-      title: ListTile(title: Text("ลืมรหัสผ่าน")),
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-
-          child: Column(
-            children: [
-              Text("กรุณากรอกอีเมลที่คุณลืมรหัสผ่าน"),
-              SizedBox(height: 10),
-              TextField(
-                controller: emailforgetpass,
-                decoration: const InputDecoration(
-                  labelText: "อีเมล",
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-        ),
-        TextButton(
-          onPressed: () {
-            // reset(emailforgetpass.text, context);
-          },
-          child: Text("ตกลง"),
-        ),
-        TextButton(
-          onPressed: () {
-            navigator?.pop();
-          },
-          child: Text("ยกเลิก"),
-        ),
-      ],
-    ),
-  );
-}
-
-Future<void> reset(String emailforget, BuildContext context) async {
-  if (emailforget.trim().isEmpty) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text("กรุณากรอกอีเมล")));
-    return;
-  }
-
-  try {
-    await FirebaseAuth.instance.sendPasswordResetEmail(
-      email: emailforget.trim(),
-    );
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลแล้ว")),
-    );
-
-    Navigator.pop(context); // ปิด dialog
-  } on FirebaseAuthException catch (e) {
-    String message = "เกิดข้อผิดพลาด";
-
-    if (e.code == "user-not-found") {
-      message = "ไม่พบอีเมลนี้ในระบบ";
-    }
-
-    if (e.code == "invalid-email") {
-      message = "รูปแบบอีเมลไม่ถูกต้อง";
-    }
-
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  } catch (e) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text("Error: $e")));
-  }
-
-  Future<void> callForgetPassword(BuildContext context) async {
-    final emailforgetpass = TextEditingController();
-    showDialog(
-      context: context, // ต้องส่ง context มาด้วย
-      builder: (context) => SimpleDialog(
-        title: ListTile(title: Text("ลืมรหัสผ่าน")),
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-
-            child: Column(
-              children: [
-                Text("กรุณากรอกอีเมลที่คุณลืมรหัสผ่าน"),
-                SizedBox(height: 10),
-                TextField(
-                  controller: emailforgetpass,
-                  decoration: const InputDecoration(
-                    labelText: "อีเมล",
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              reset(emailforgetpass.text, context);
-            },
-            child: Text("ตกลง"),
-          ),
-          TextButton(
-            onPressed: () {
-              navigator?.pop();
-            },
-            child: Text("ยกเลิก"),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Future<void> reset(String emailforget, BuildContext context) async {
-//   if (emailforget.trim().isEmpty) {
-//     ScaffoldMessenger.of(
-//       context,
-//     ).showSnackBar(const SnackBar(content: Text("กรุณากรอกอีเมล")));
-//     return;
-//   }
-
-//   try {
-//     await FirebaseAuth.instance.sendPasswordResetEmail(
-//       email: emailforget.trim(),
-//     );
-
-//     ScaffoldMessenger.of(context).showSnackBar(
-//       const SnackBar(content: Text("ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลแล้ว")),
-//     );
-
-//     Navigator.pop(context); // ปิด dialog
-//   } on FirebaseAuthException catch (e) {
-//     String message = "เกิดข้อผิดพลาด";
-
-//     if (e.code == "user-not-found") {
-//       message = "ไม่พบอีเมลนี้ในระบบ";
-//     }
-
-//     if (e.code == "invalid-email") {
-//       message = "รูปแบบอีเมลไม่ถูกต้อง";
-//     }
-
-//     ScaffoldMessenger.of(
-//       context,
-//     ).showSnackBar(SnackBar(content: Text(message)));
-//   } catch (e) {
-//     ScaffoldMessenger.of(
-//       context,
-//     ).showSnackBar(SnackBar(content: Text("Error: $e")));
-//   }
-// }

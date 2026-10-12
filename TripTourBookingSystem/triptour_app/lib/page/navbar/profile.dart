@@ -1,6 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:triptour_app/page/homepage.dart';
 import 'package:triptour_app/services/serverApi.dart';
 import 'package:triptour_app/page/navbar/editprofile.dart';
 
@@ -52,7 +55,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
     try {
       final User? user = FirebaseAuth.instance.currentUser;
-
       // ยังไม่ได้ Login
       if (user == null) {
         setState(() {
@@ -93,6 +95,88 @@ class _ProfilePageState extends State<ProfilePage> {
         isLoading = false;
         errorMessage = 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
       });
+    }
+  }
+
+  Future<void> InactiveAccount() async {
+    // แสดง Dialog ยืนยันการลบบัญชี
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('ยืนยันการลบบัญชี'),
+        content: const Text(
+          'คุณแน่ใจหรือไม่ว่าต้องการลบบัญชีผู้ใช้นี้?\n\n'
+          'บัญชีของคุณจะถูกปิดใช้งาน และจะไม่สามารถเข้าสู่ระบบได้อีกต่อไป',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('ยกเลิก'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('ลบบัญชี'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    final User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('ไม่พบข้อมูลผู้ใช้งาน')));
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      // 2. เรียก API ลบบัญชี (Soft Delete)
+      final res = await Serverapi.InactiveService(user.uid);
+
+      if (!mounted) return;
+
+      if (res['statusCode'] == 200 && res['body']?['success'] == true) {
+        // ถ้าสำเร็จ ทำการ ออกจากระบบ (Firebase + Google)
+        await FirebaseAuth.instance.signOut();
+        await GoogleSignIn().signOut();
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('ลบบัญชีผู้ใช้เรียบร้อยแล้ว')),
+        );
+        Get.offAll(() => const Homepage());
+      } else {
+        // หากติดเงื่อนไข (เช่น มียอดจอง status = pending/confirmed AND payment_status = paid)
+        final String errorMsg =
+            res['body']?['message'] ?? 'ไม่สามารถลบบัญชีได้';
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('เกิดข้อผิดพลาดในการลบบัญชี: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -287,18 +371,27 @@ class _ProfilePageState extends State<ProfilePage> {
   // ==========================================================
   Widget buildFavoriteCountrySection() {
     final dynamic countries = memberData?['favorite_countries'];
-
+    print(countries);
     if (countries == null) {
       return const SizedBox();
     }
 
-    String countryText;
-
+    String countryText = '-';
     if (countries is List) {
-      if (countries.isEmpty) {
-        countryText = '-';
-      } else {
-        countryText = countries.join(', ');
+      if (countries.isNotEmpty) {
+        final names = countries
+            .map((item) {
+              if (item is Map) {
+                final nameEn = item['country_name_en']?.toString().trim() ?? '';
+                final nameTh = item['country_name_th']?.toString().trim() ?? '';
+                return nameEn.isNotEmpty ? nameEn : nameTh;
+              }
+              return item.toString();
+            })
+            .where((name) => name.isNotEmpty)
+            .toList();
+
+        countryText = names.isEmpty ? '-' : names.join(', ');
       }
     } else {
       countryText = countries.toString();
@@ -418,7 +511,7 @@ class _ProfilePageState extends State<ProfilePage> {
         backgroundColor: Colors.greenAccent,
         actions: [
           IconButton(
-            onPressed: loadProfile,
+            onPressed: sigout,
             icon: const Icon(Icons.refresh),
             tooltip: 'โหลดข้อมูลใหม่',
           ),
@@ -483,7 +576,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     const SizedBox(height: 20),
                     Center(
                       child: TextButton(
-                        onPressed: sigout,
+                        onPressed: InactiveAccount,
                         child: const Text(
                           'ลบบัญชีผู้ใช้',
                           style: TextStyle(color: Colors.red),

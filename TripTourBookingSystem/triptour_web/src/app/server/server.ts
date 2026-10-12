@@ -272,6 +272,49 @@ async putData(endpoint: string, data: any): Promise<any> {
       };
     }
   }
+  async getmemberListData(
+    endpoint: string, 
+    params?: Record<string, string | number | boolean | null | undefined>
+  ): Promise<{ statusCode: number; body: any; error?: any }> {
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
+    const url = `${this.baseUrl}/${cleanEndpoint}`;
+
+    let httpParams = new HttpParams();
+    if (params) {
+      Object.keys(params).forEach(key => {
+        const val = params[key];
+        if (val !== null && val !== undefined && val !== '') {
+          httpParams = httpParams.set(key, String(val));
+        }
+      });
+    }
+
+    try {
+      const response = await firstValueFrom(
+        this.http.get<any>(url, { params: httpParams, observe: 'response' })
+      );
+
+      return {
+        statusCode: response.status,
+        body: response.body
+      };
+    } catch (error: any) {
+      console.error('GET DASHBOARD ERROR =', error);
+      return {
+        statusCode: error?.status ?? 0,
+        body: error?.error ?? { message: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้' },
+        error
+      };
+    }
+  }
+
+  async getRoundById(roundId: string | number): Promise<any> {
+    return this.getData(`roundTour/${roundId}`);
+  }
+
+  async getConfirmedMembersByRound(roundId: string | number): Promise<any> {
+    return this.getData(`api/booking/admin/confirmed-members/${roundId}`);
+  }
   
 
 async getDashboardData(endpoint: string, params?: Record<string, string>, bodyData?: any): Promise<any> {
@@ -306,4 +349,7 @@ async getDashboardData(endpoint: string, params?: Record<string, string>, bodyDa
       };
     }
   }
+  
+  
+
 }

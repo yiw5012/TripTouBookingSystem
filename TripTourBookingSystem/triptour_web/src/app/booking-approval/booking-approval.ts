@@ -272,8 +272,8 @@ export class BookingApproval {
 
         const matchesPayment =
           this.paymentFilter === 'all' ||
-          booking.payment_status ===
-            this.paymentFilter;
+          booking.payment_status === this.paymentFilter 
+            ;
 
 
         return (
@@ -282,6 +282,15 @@ export class BookingApproval {
         );
 
       });
+      //let matchesPayment = false;
+
+        // if (this.paymentFilter === 'all') {
+        //   matchesPayment = true;
+        // } else if (this.paymentFilter === 'processing') {
+        //   matchesPayment = booking.status === 'pending' && booking.payment_status === 'paid';
+        // } else {
+        //   matchesPayment = booking.payment_status === this.paymentFilter;
+        // }
 
 
     this.currentPage = 1;
@@ -393,7 +402,7 @@ export class BookingApproval {
     return this.allBookings.filter(
       booking =>
         booking.payment_status ===
-        'processing'
+        'paid' && booking.status === 'pending'
     ).length;
 
   }
