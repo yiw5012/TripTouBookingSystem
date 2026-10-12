@@ -1,9 +1,12 @@
 import express from "express";
 import { conn } from "../../config/db.js";
-import { tourUpload } from "../middleware/upload.js";
+import { tourUpload, cloudinary, TOUR_CLOUD_FOLDER, resolveTourCloudImages } from "../middleware/upload.js";
 import admin from "../../config/firebase.js";
 
 export const router = express.Router();
+const DEFAULT_CONDITION_DETAIL =
+  "เงื่อนไขการเดินทางและการให้บริการเป็นไปตามรายละเอียดโปรแกรมทัวร์ที่ระบุไว้ กรุณาตรวจสอบข้อมูลและเอกสารการเดินทางให้ครบถ้วนก่อนยืนยันการจอง";
+
 
 // GET : ดึงข้อมูล Tour มาแสดง
 // ==========================================
@@ -61,6 +64,108 @@ router.get("/", async (req, res) => {
 });
 
 // ==========================================================
+// GET /add-tour/cloud-images
+// ดึงรูปภาพจาก Cloudinary สำหรับหน้าเพิ่ม/แก้ไขทัวร์
+// รองรับ Pagination ผ่าน next_cursor
+// ==========================================================
+
+router.get("/cloud-images", async (req, res) => {
+  try {
+    const cursor =
+      typeof req.query.next_cursor === "string"
+        ? req.query.next_cursor
+        : null;
+
+    const options = {
+      max_results: 100,
+      ...(cursor ? { next_cursor: cursor } : {}),
+    };
+
+    let result;
+
+    try {
+      // ใช้ Asset Folder API สำหรับ Cloudinary
+      // ที่รองรับระบบ Asset Folders
+      result = await cloudinary.api.resources_by_asset_folder(
+        TOUR_CLOUD_FOLDER,
+        options
+      );
+    } catch (folderError) {
+      // Fallback สำหรับบัญชีที่ใช้ Legacy Fixed Folder
+      result = await cloudinary.api.resources({
+        resource_type: "image",
+        type: "upload",
+        prefix: `${TOUR_CLOUD_FOLDER}/`,
+        ...options,
+      });
+    }
+
+    const images = (result.resources ?? [])
+      .filter((asset) => {
+        const publicId = String(asset.public_id ?? "");
+        const assetFolder = String(asset.asset_folder ?? "");
+
+        const belongsToTourFolder =
+          publicId.startsWith(`${TOUR_CLOUD_FOLDER}/`) ||
+          assetFolder === TOUR_CLOUD_FOLDER ||
+          assetFolder.startsWith(`${TOUR_CLOUD_FOLDER}/`);
+
+        return (
+          asset.resource_type === "image" &&
+          Boolean(asset.secure_url) &&
+          belongsToTourFolder
+        );
+      })
+      .map((asset) => ({
+        public_id: asset.public_id,
+        secure_url: asset.secure_url,
+        format: asset.format,
+        width: asset.width,
+        height: asset.height,
+        created_at: asset.created_at,
+      }));
+
+    return res.status(200).json({
+      success: true,
+      data: images,
+      next_cursor: result.next_cursor ?? null,
+    });
+  } catch (error) {
+    console.error("GET /add-tour/cloud-images error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "ไม่สามารถโหลดคลังรูปภาพ Cloudinary ได้",
+    });
+  }
+});
+
+router.get("/countries", async (req, res) => {
+  try {
+    const [rows] = await conn.query(`
+      SELECT
+        country_id,
+        country_name_th,
+        country_name_en
+      FROM country
+      ORDER BY country_name_th
+    `);
+
+    res.status(200).json({
+      success: true,
+      data: rows,
+    });
+  } catch (error) {
+    console.error("Get countries for add tour error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "ไม่สามารถโหลดรายชื่อประเทศได้",
+    });
+  }
+});
+
+// ==========================================================
 // POST : เพิ่มข้อมูลทัวร์
 // รองรับ
 // 1. ข้อมูลทัวร์
@@ -70,8 +175,7 @@ router.get("/", async (req, res) => {
 // 5. รายละเอียดรายวัน
 // ==========================================================
 
-router.post(
-  "/",
+router.post("/",
   tourUpload.fields([
     {
       name: "tour_images",
@@ -112,17 +216,42 @@ router.post(
 
       let {
         tour_name,
+        tour_code,
         country_id,
         type,
         duration_day,
         price,
         promotion,
         condition_detail,
+        condition_mode,
         include_flight,
         status,
-        tour_details
+        tour_details,
+        cloud_image_ids
       } = req.body;
 
+const normalizedTourCode = String(tour_code ?? "").trim();
+
+if (!normalizedTourCode) {
+  return res.status(400).json({
+    success: false,
+    message: "กรุณากรอกรหัสโปรแกรมทัวร์",
+  });
+}
+
+if (normalizedTourCode.length > 50) {
+  return res.status(400).json({
+    success: false,
+    message: "รหัสโปรแกรมทัวร์ต้องไม่เกิน 50 ตัวอักษร",
+  });
+}
+
+const normalizedConditionDetail =
+  condition_mode === "custom" &&
+  typeof condition_detail === "string" &&
+  condition_detail.trim() !== ""
+    ? condition_detail.trim()
+    : DEFAULT_CONDITION_DETAIL;
 
       // ======================================================
       // รองรับค่าจาก HTML เดิม
@@ -259,6 +388,59 @@ router.post(
 
       }
 
+      // ======================================================
+// รูปที่เลือกจาก Cloudinary
+// ======================================================
+
+let cloudImageIds = [];
+
+if (cloud_image_ids) {
+  try {
+    const parsed =
+      typeof cloud_image_ids === "string"
+        ? JSON.parse(cloud_image_ids)
+        : cloud_image_ids;
+
+    if (!Array.isArray(parsed)) {
+      return res.status(400).json({
+        success: false,
+        message: "รูปแบบรายการรูปภาพ Cloudinary ไม่ถูกต้อง",
+      });
+    }
+
+    cloudImageIds = parsed;
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: "ไม่สามารถอ่านรายการรูปภาพ Cloudinary ได้",
+    });
+  }
+}
+
+let selectedCloudImages = [];
+
+try {
+  selectedCloudImages =
+    await resolveTourCloudImages(cloudImageIds);
+} catch (error) {
+  console.error("Resolve Cloudinary images error:", error);
+
+  return res.status(400).json({
+    success: false,
+    message:
+      "มีรูปภาพจาก Cloudinary ที่ไม่ถูกต้องหรือไม่สามารถใช้งานได้",
+  });
+}
+
+// รวมรูปจากเครื่องและรูปจาก Cloudinary
+// ไม่บันทึก URL ซ้ำ
+const imageUrls = [
+  ...new Set([
+    ...(imageFiles ?? []).map((file) => file.path),
+    ...selectedCloudImages.map((image) => image.secure_url),
+  ].filter(Boolean)),
+];
+
 
       // ======================================================
       // URL จาก Cloudinary
@@ -299,6 +481,24 @@ router.post(
 
       await connection.beginTransaction();
 
+const [duplicateTourCodes] = await connection.query(
+  `
+  SELECT tour_id
+  FROM tour
+  WHERE tour_code = ?
+  LIMIT 1
+  `,
+  [normalizedTourCode]
+);
+
+if (duplicateTourCodes.length > 0) {
+  await connection.rollback();
+
+  return res.status(409).json({
+    success: false,
+    message: "รหัสโปรแกรมทัวร์นี้มีอยู่แล้ว กรุณาใช้รหัสอื่น",
+  });
+}
 
       // ======================================================
       // 1. INSERT TOUR
@@ -307,6 +507,7 @@ router.post(
       const insertTourQuery = `
         INSERT INTO tour (
           tour_name,
+          tour_code,
           country_id,
           type,
           duration_day,
@@ -318,25 +519,24 @@ router.post(
           pdf_file,
           status
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
 
       const tourValues = [
-
-        tour_name,
-        Number(country_id),
-        type || null,
-        Number(duration_day),
-        Number(price),
-        videoUrl,
-        promotion || null,
-        condition_detail || null,
-        include_flight,
-        pdfUrl,
-        status
-
-      ];
+  tour_name,
+  normalizedTourCode,
+  Number(country_id),
+  type || null,
+  Number(duration_day),
+  Number(price),
+  videoUrl,
+  promotion || null,
+  normalizedConditionDetail,
+  include_flight,
+  pdfUrl,
+  status
+];
 
 
       const [tourResult] =
@@ -411,37 +611,30 @@ router.post(
 
 
       // ======================================================
-      // 3. INSERT TOUR IMAGE
-      // ======================================================
+// INSERT TOUR IMAGE
+// รวมรูปจากเครื่องและ Cloudinary
+// แบ่ง INSERT เป็นชุดละ 500 แถว
+// ======================================================
 
-      if (imageFiles.length > 0) {
+for (let i = 0; i < imageUrls.length; i += 500) {
+  const batch = imageUrls.slice(i, i + 500);
 
-        const imageValues =
-          imageFiles.map(
-            (file) => [
+  const imageValues = batch.map((imageUrl) => [
+    newTourId,
+    imageUrl,
+  ]);
 
-              newTourId,
-              file.path
-
-            ]
-          );
-
-
-        const insertImageQuery = `
-          INSERT INTO tour_image (
-            tour_id,
-            image
-          )
-          VALUES ?
-        `;
-
-
-        await connection.query(
-          insertImageQuery,
-          [imageValues]
-        );
-
-      }
+  await connection.query(
+    `
+    INSERT INTO tour_image (
+      tour_id,
+      image
+    )
+    VALUES ?
+    `,
+    [imageValues]
+  );
+}
 
 
       // ======================================================
@@ -603,6 +796,38 @@ router.get("/search-options/countries", async (req, res) => {
   }
 });
 
+// ==========================================
+// GET : ดึงรายชื่อทวีปสำหรับตัวกรองค้นหาทัวร์
+// ==========================================
+router.get("/search-options/continents", async (req, res) => {
+  try {
+    const [rows] = await conn.query(`
+      SELECT DISTINCT
+        c.continent
+      FROM country c
+      INNER JOIN tour t
+        ON t.country_id = c.country_id
+      WHERE t.status = 'open'
+        AND c.continent IS NOT NULL
+        AND TRIM(c.continent) <> ''
+      ORDER BY c.continent
+    `);
+
+    res.status(200).json({
+      success: true,
+      data: rows,
+    });
+  } catch (error) {
+    console.error("Get continents error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "ไม่สามารถดึงรายชื่อทวีปได้",
+    });
+  }
+});
+
+
 router.get("/search-options/airlines", async (req, res) => {
   try {
     const [rows] = await conn.query(`
@@ -628,16 +853,98 @@ router.get("/search-options/airlines", async (req, res) => {
   }
 });
 
+// ==========================================
+// GET: ตัวเลือกต้นทางและปลายทาง
+// ==========================================
+router.get("/search-options/locations", async (req, res) => {
+  try {
+    const [departureRows] = await conn.query(`
+      SELECT DISTINCT tr.departure
+      FROM tour_round tr
+      INNER JOIN tour t ON t.tour_id = tr.tour_id
+      WHERE t.status = 'open'
+        AND tr.status = 'open'
+        AND tr.departure IS NOT NULL
+        AND TRIM(tr.departure) <> ''
+      ORDER BY tr.departure
+    `);
+
+    const [destinationRows] = await conn.query(`
+      SELECT DISTINCT tr.destination
+      FROM tour_round tr
+      INNER JOIN tour t ON t.tour_id = tr.tour_id
+      WHERE t.status = 'open'
+        AND tr.status = 'open'
+        AND tr.destination IS NOT NULL
+        AND TRIM(tr.destination) <> ''
+      ORDER BY tr.destination
+    `);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        departures: departureRows.map(row => row.departure),
+        destinations: destinationRows.map(row => row.destination),
+      },
+    });
+  } catch (error) {
+    console.error("Get locations error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "ไม่สามารถโหลดรายการต้นทางและปลายทางได้",
+    });
+  }
+});
+
 router.post("/search-tour", async (req, res) => {
   try {
     const {
       keyword,
+      continent,
       countryId,
       airlines,
       startDate,
       endDate,
       sortBy,
+      departure,
+      destination,
+      minPrice,
+      maxPrice,
     } = req.body;
+
+    const parsedMinPrice =
+  minPrice == null || String(minPrice).trim() === ""
+    ? null
+    : Number(minPrice);
+
+const parsedMaxPrice =
+  maxPrice == null || String(maxPrice).trim() === ""
+    ? null
+    : Number(maxPrice);
+
+if (
+  (parsedMinPrice !== null &&
+    (!Number.isFinite(parsedMinPrice) || parsedMinPrice < 0)) ||
+  (parsedMaxPrice !== null &&
+    (!Number.isFinite(parsedMaxPrice) || parsedMaxPrice < 0))
+) {
+  return res.status(400).json({
+    success: false,
+    message: "ช่วงราคาไม่ถูกต้อง",
+  });
+}
+
+if (
+  parsedMinPrice !== null &&
+  parsedMaxPrice !== null &&
+  parsedMinPrice > parsedMaxPrice
+) {
+  return res.status(400).json({
+    success: false,
+    message: "ราคาต่ำสุดต้องไม่มากกว่าราคาสูงสุด",
+  });
+}
 
 
     let sql = `
@@ -647,6 +954,7 @@ router.post("/search-tour", async (req, res) => {
         t.country_id,
         c.country_name_th,
         c.country_name_en,
+        c.continent,
         t.type,
         t.duration_day,
         t.price,
@@ -726,6 +1034,17 @@ if (sortBy === 'price_desc') {
         `%${searchKeyword}%`
       );
     }
+    // ============================================
+// 1. Continent
+// ค้นหาจาก country.continent
+// ============================================
+if (continent && String(continent).trim() !== "") {
+  sql += `
+    AND c.continent = ?
+  `;
+
+  params.push(String(continent).trim());
+}
 
     // ============================================
     // 2. Country
@@ -770,6 +1089,35 @@ if (sortBy === 'price_desc') {
         endDate
       );
     }
+
+    // ============================================
+// 5. Departure
+// ============================================
+if (departure && String(departure).trim() !== "") {
+  sql += ` AND tr.departure = ? `;
+  params.push(String(departure).trim());
+}
+
+// ============================================
+// 6. Destination
+// ============================================
+if (destination && String(destination).trim() !== "") {
+  sql += ` AND tr.destination = ? `;
+  params.push(String(destination).trim());
+}
+
+// ============================================
+// 7. Price Range: tour.price
+// ============================================
+if (parsedMinPrice !== null) {
+  sql += ` AND t.price >= ? `;
+  params.push(parsedMinPrice);
+}
+
+if (parsedMaxPrice !== null) {
+  sql += ` AND t.price <= ? `;
+  params.push(parsedMaxPrice);
+}
 
     // ============================================
     // 5. เรียงข้อมูล

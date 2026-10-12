@@ -6,9 +6,17 @@ class SearchFilterSection extends StatelessWidget {
   final String selectedSort;
   final ValueChanged<String?> onSortChanged;
 
+  // Continent
+  final String? selectedContinent;
+  final VoidCallback onContinentTap;
+
+  // Country
   final String? selectedCountry;
+
+  // Airline
   final List<String> selectedAirlines;
 
+  // Date
   final DateTime? startDate;
   final DateTime? endDate;
 
@@ -18,11 +26,24 @@ class SearchFilterSection extends StatelessWidget {
   final VoidCallback onClearDate;
   final VoidCallback onSearch;
 
+  final String? selectedDeparture;
+  final String? selectedDestination;
+
+  final VoidCallback onDepartureTap;
+  final VoidCallback onDestinationTap;
+
+  final TextEditingController minPriceController;
+  final TextEditingController maxPriceController;
+
   final String Function(DateTime?) formatDate;
 
   const SearchFilterSection({
     super.key,
     required this.keywordController,
+    required this.selectedSort,
+    required this.onSortChanged,
+    required this.selectedContinent,
+    required this.onContinentTap,
     required this.selectedCountry,
     required this.selectedAirlines,
     required this.startDate,
@@ -33,8 +54,12 @@ class SearchFilterSection extends StatelessWidget {
     required this.onClearDate,
     required this.onSearch,
     required this.formatDate,
-    required this.selectedSort,
-    required this.onSortChanged,
+    required this.selectedDeparture,
+    required this.selectedDestination,
+    required this.onDepartureTap,
+    required this.onDestinationTap,
+    required this.minPriceController,
+    required this.maxPriceController,
   });
 
   @override
@@ -44,6 +69,9 @@ class SearchFilterSection extends StatelessWidget {
       children: [
         const SizedBox(height: 10),
 
+        // ============================================
+        // คำค้นหา
+        // ============================================
         const Text(
           'คำค้นหา',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -69,6 +97,56 @@ class SearchFilterSection extends StatelessWidget {
 
         const SizedBox(height: 20),
 
+        // ============================================
+        // เลือกทวีป
+        // ============================================
+        const Text(
+          'ทวีป',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+
+        const SizedBox(height: 8),
+
+        InkWell(
+          onTap: onContinentTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            width: double.infinity,
+            height: 58,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.public, color: Colors.teal, size: 21),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    selectedContinent ?? 'ทุกทวีป',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: selectedContinent == null
+                          ? Colors.grey
+                          : Colors.black,
+                    ),
+                  ),
+                ),
+                const Icon(Icons.keyboard_arrow_down, size: 20),
+              ],
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
+        // ============================================
+        // ประเทศและสายการบิน
+        // ============================================
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -190,6 +268,167 @@ class SearchFilterSection extends StatelessWidget {
 
         const SizedBox(height: 20),
 
+        // ============================================
+        // ต้นทางและปลายทาง
+        // ============================================
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'ต้นทาง',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  InkWell(
+                    onTap: onDepartureTap,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      height: 58,
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.flight_takeoff, color: Colors.teal),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              selectedDeparture ?? 'เลือกต้นทาง',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: selectedDeparture == null
+                                    ? Colors.grey
+                                    : Colors.black,
+                              ),
+                            ),
+                          ),
+                          const Icon(Icons.arrow_drop_down),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'ปลายทาง',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  InkWell(
+                    onTap: onDestinationTap,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      height: 58,
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.flight_land,
+                            color: Colors.deepOrange,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              selectedDestination ?? 'เลือกปลายทาง',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: selectedDestination == null
+                                    ? Colors.grey
+                                    : Colors.black,
+                              ),
+                            ),
+                          ),
+                          const Icon(Icons.arrow_drop_down),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 20),
+
+        // ============================================
+        // ช่วงราคา อ้างอิงจาก tour.price
+        // ============================================
+        const Text(
+          'ช่วงราคาโปรแกรม (บาท)',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+
+        const SizedBox(height: 8),
+
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: minPriceController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'ราคาต่ำสุด',
+                  prefixIcon: const Icon(Icons.payments_outlined),
+                  filled: true,
+                  fillColor: Colors.grey.shade100,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 10),
+              child: Text('ถึง'),
+            ),
+            Expanded(
+              child: TextField(
+                controller: maxPriceController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'ราคาสูงสุด',
+                  prefixIcon: const Icon(Icons.payments_outlined),
+                  filled: true,
+                  fillColor: Colors.grey.shade100,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        // ============================================
+        // ช่วงเวลาเดินทาง
+        // ============================================
         const Text(
           'ช่วงเวลาเดินทาง',
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -229,7 +468,8 @@ class SearchFilterSection extends StatelessWidget {
                       Text(
                         startDate == null || endDate == null
                             ? 'วันเริ่มต้น - วันสิ้นสุด'
-                            : '${formatDate(startDate)} - ${formatDate(endDate)}',
+                            : '${formatDate(startDate)} - '
+                                  '${formatDate(endDate)}',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: startDate != null && endDate != null
@@ -250,6 +490,7 @@ class SearchFilterSection extends StatelessWidget {
             ),
           ),
         ),
+
         const SizedBox(height: 20),
 
         // ============================================
@@ -259,6 +500,9 @@ class SearchFilterSection extends StatelessWidget {
 
         const SizedBox(height: 30),
 
+        // ============================================
+        // ปุ่มค้นหา
+        // ============================================
         SizedBox(
           width: double.infinity,
           height: 52,
@@ -307,7 +551,7 @@ class SearchFilterSection extends StatelessWidget {
             DropdownMenuItem(value: 'price_asc', child: Text('ราคาต่ำ → สูง')),
             DropdownMenuItem(value: 'price_desc', child: Text('ราคาสูง → ต่ำ')),
           ],
-          onChanged: onSortChanged,
+          onChanged: onChanged,
         ),
       ],
     );

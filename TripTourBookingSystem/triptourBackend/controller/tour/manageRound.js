@@ -385,17 +385,18 @@ router.get("/tour/:tourId", async (req, res) => {
     // ======================================================
 
     const [tourRows] = await conn.query(
-      `
-      SELECT
-        tour_id,
-        tour_name,
-        status
-      FROM tour
-      WHERE tour_id = ?
-      LIMIT 1
-      `,
-      [tourId]
-    );
+  `
+  SELECT
+    tour_id,
+    tour_name,
+    status,
+    include_flight
+  FROM tour
+  WHERE tour_id = ?
+  LIMIT 1
+  `,
+  [tourId]
+);
 
     if (tourRows.length === 0) {
       return res.status(404).json({
@@ -622,16 +623,17 @@ const normalizedStatus =
     // ======================================================
 
     const [tourRows] = await connection.query(
-      `
-      SELECT
-        tour_id,
-        tour_name
-      FROM tour
-      WHERE tour_id = ?
-      LIMIT 1
-      `,
-      [Number(tour_id)]
-    );
+  `
+  SELECT
+    tour_id,
+    tour_name,
+    include_flight
+  FROM tour
+  WHERE tour_id = ?
+  LIMIT 1
+  `,
+  [Number(tour_id)]
+);
 
     if (tourRows.length === 0) {
       await connection.rollback();
@@ -643,6 +645,25 @@ const normalizedStatus =
     }
 
     const tour = tourRows[0];
+
+    // ======================================================
+// ตรวจว่ารวมตั๋วเครื่องบินหรือไม่
+// ======================================================
+
+const isFlightIncluded =
+  String(tour.include_flight ?? '').trim() === 'รวม';
+
+const savedAirline = isFlightIncluded
+  ? emptyToNull(airline)
+  : null;
+
+const savedFlight = isFlightIncluded
+  ? emptyToNull(flight)
+  : null;
+
+const savedFlightTime = isFlightIncluded
+  ? emptyToNull(flight_time)
+  : null;
 
     // ======================================================
     // GUIDE
@@ -684,9 +705,9 @@ const normalizedStatus =
         destination.trim(),
         start_date,
         end_date,
-        emptyToNull(airline),
-        emptyToNull(flight),
-        emptyToNull(flight_time),
+        savedAirline,
+        savedFlight,
+        savedFlightTime,
         Number(price_single),
         Number(price_double),
         Number(price_triple),
@@ -932,16 +953,17 @@ const normalizedStatus =
     // ======================================================
 
     const [tourRows] = await connection.query(
-      `
-      SELECT
-        tour_id,
-        tour_name
-      FROM tour
-      WHERE tour_id = ?
-      LIMIT 1
-      `,
-      [Number(tour_id)]
-    );
+  `
+  SELECT
+    tour_id,
+    tour_name,
+    include_flight
+  FROM tour
+  WHERE tour_id = ?
+  LIMIT 1
+  `,
+  [Number(tour_id)]
+);
 
     if (tourRows.length === 0) {
       await connection.rollback();
@@ -953,6 +975,13 @@ const normalizedStatus =
     }
 
     const tour = tourRows[0];
+
+    // ======================================================
+// ตรวจว่ารวมตั๋วเครื่องบินหรือไม่
+// ======================================================
+
+const isFlightIncluded =
+  String(tour.include_flight ?? '').trim() === 'รวม';
 
     // ======================================================
     // GUIDE ใหม่
@@ -1004,9 +1033,9 @@ const normalizedStatus =
         destination.trim(),
         start_date,
         end_date,
-        emptyToNull(airline),
-        emptyToNull(flight),
-        emptyToNull(flight_time),
+        isFlightIncluded ? emptyToNull(airline) : null,
+        isFlightIncluded ? emptyToNull(flight) : null,
+        isFlightIncluded ? emptyToNull(flight_time) : null,
         Number(price_single),
         Number(price_double),
         Number(price_triple),

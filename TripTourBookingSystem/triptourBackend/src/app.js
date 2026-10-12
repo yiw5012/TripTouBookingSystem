@@ -1,5 +1,5 @@
-import express from "express";
 import cors from "cors";
+import express from "express";
 import {router as index} from "../controller/index.js";  
 import {router as checkUser} from "../controller/user/checkUser.js";   
 import {router as register} from "../controller/user/register.js"; 

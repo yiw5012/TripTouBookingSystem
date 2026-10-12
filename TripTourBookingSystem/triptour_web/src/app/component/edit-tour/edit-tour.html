@@ -11,12 +11,15 @@
         แก้ไขโปรแกรมทัวร์
       </h2>
 
-      <div
-        class="text-muted"
-        *ngIf="tour"
-      >
-        รหัสทัวร์: {{ tour.tour_id }}
-      </div>
+     <div class="text-muted" *ngIf="tour">
+  <div>
+    รหัสโปรแกรมทัวร์: {{ tour.tour_code }}
+  </div>
+
+  <div>
+    รหัสอ้างอิงระบบ: {{ tour.tour_id }}
+  </div>
+</div>
     </div>
 
     <button
@@ -113,6 +116,30 @@
 
         </div>
 
+        <!-- รหัสโปรแกรมทัวร์ -->
+<div class="mb-3">
+  <label class="form-label">
+    รหัสโปรแกรมทัวร์ *
+  </label>
+
+  <input
+    type="text"
+    class="form-control"
+    formControlName="tour_code"
+    maxlength="50"
+    placeholder="เช่น JP001 หรือ TR-JAPAN-001"
+  />
+
+  <div
+    class="text-danger mt-1"
+    *ngIf="
+      tourForm.get('tour_code')?.touched &&
+      tourForm.get('tour_code')?.invalid
+    "
+  >
+    กรุณากรอกรหัสโปรแกรมทัวร์ ไม่เกิน 50 ตัวอักษร
+  </div>
+</div>
 
         <!-- Country + Type -->
         <div class="row">
@@ -256,19 +283,55 @@
 
 
         <!-- Condition -->
-        <div class="mb-3">
+        <!-- Condition -->
+<div class="mb-3">
+  <label class="form-label">
+    เงื่อนไขเพิ่มเติม
+  </label>
 
-          <label class="form-label">
-            เงื่อนไข / หมายเหตุ
-          </label>
+  <div class="d-flex flex-wrap gap-3 my-2">
+    <label class="form-check-label">
+      <input
+        class="form-check-input me-1"
+        type="radio"
+        formControlName="condition_mode"
+        value="default"
+      />
+      ใช้เงื่อนไขมาตรฐาน
+    </label>
 
-          <textarea
-            rows="5"
-            class="form-control"
-            formControlName="condition_detail"
-          ></textarea>
+    <label class="form-check-label">
+      <input
+        class="form-check-input me-1"
+        type="radio"
+        formControlName="condition_mode"
+        value="custom"
+      />
+      เขียนเงื่อนไขเอง
+    </label>
+  </div>
 
-        </div>
+  <!-- เงื่อนไขมาตรฐาน -->
+  <div
+    *ngIf="tourForm.get('condition_mode')?.value === 'default'"
+    class="p-3 border rounded bg-light"
+  >
+    <strong>เงื่อนไขที่จะบันทึก:</strong>
+
+    <p class="mb-0 mt-2">
+      {{ defaultConditionDetail }}
+    </p>
+  </div>
+
+  <!-- เงื่อนไขกำหนดเอง -->
+  <textarea
+    *ngIf="tourForm.get('condition_mode')?.value === 'custom'"
+    rows="5"
+    class="form-control"
+    formControlName="condition_detail"
+    placeholder="กรอกเงื่อนไขเพิ่มเติมสำหรับโปรแกรมทัวร์นี้"
+  ></textarea>
+</div>
 
 
         <!-- Status -->
@@ -332,6 +395,244 @@
 
         </div>
 
+        <!-- =================================================== -->
+<!-- เลือกรูปจาก Cloudinary -->
+<!-- =================================================== -->
+
+<div style="margin: 16px 0;">
+
+  <button
+    type="button"
+    (click)="toggleCloudImagePicker()"
+    style="
+      padding: 10px 16px;
+      border: 1px solid #0d6efd;
+      border-radius: 6px;
+      background: #0d6efd;
+      color: white;
+      cursor: pointer;
+    "
+  >
+    {{
+      showCloudImagePicker
+        ? 'ปิดคลังรูปภาพ'
+        : 'เลือกรูปจาก Cloudinary'
+    }}
+  </button>
+
+  <div
+    *ngIf="showCloudImagePicker"
+    style="
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    "
+  >
+
+    <h4>
+      คลังรูปภาพ Cloudinary
+    </h4>
+
+    <p>
+      เลือกได้หลายรูป และกดโหลดรูปเพิ่มเติมเพื่อดูรูปภาพหน้าถัดไป
+    </p>
+
+    <div
+      *ngIf="cloudImagesError"
+      style="color: #dc3545; margin: 10px 0;"
+    >
+      {{ cloudImagesError }}
+    </div>
+
+    <div
+      *ngIf="isLoadingCloudImages"
+      style="margin: 10px 0;"
+    >
+      กำลังโหลดรูปภาพ...
+    </div>
+
+    <div
+      *ngIf="cloudImages.length > 0"
+      style="
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 12px;
+        max-height: 450px;
+        overflow-y: auto;
+      "
+    >
+
+      <button
+        type="button"
+        *ngFor="let image of cloudImages"
+        (click)="toggleCloudImage(image)"
+        [style.border]="
+          isCloudImageSelected(image.public_id)
+            ? '3px solid #198754'
+            : '1px solid #ddd'
+        "
+        style="
+          padding: 8px;
+          border-radius: 8px;
+          background: white;
+          text-align: left;
+          cursor: pointer;
+          min-width: 0;
+        "
+      >
+
+        <img
+          [src]="image.secure_url"
+          alt="Cloudinary image"
+          loading="lazy"
+          style="
+            display: block;
+            width: 100%;
+            height: 115px;
+            object-fit: cover;
+            border-radius: 5px;
+          "
+        />
+
+        <div
+          style="
+            margin-top: 8px;
+            font-size: 12px;
+            overflow-wrap: anywhere;
+          "
+        >
+          {{ image.public_id }}
+        </div>
+
+        <div
+          style="
+            margin-top: 6px;
+            font-size: 12px;
+            color: #198754;
+          "
+        >
+          {{
+            isCloudImageSelected(image.public_id)
+              ? '✓ เลือกแล้ว'
+              : 'กดเพื่อเลือก'
+          }}
+        </div>
+
+      </button>
+
+    </div>
+
+    <div
+      *ngIf="
+        !isLoadingCloudImages &&
+        cloudImages.length === 0 &&
+        !cloudImagesError
+      "
+    >
+      ยังไม่พบรูปภาพในโฟลเดอร์นี้
+    </div>
+
+    <button
+      *ngIf="cloudImagesNextCursor"
+      type="button"
+      (click)="loadMoreCloudImages()"
+      [disabled]="isLoadingCloudImages"
+      style="
+        margin-top: 14px;
+        padding: 8px 14px;
+        border: 1px solid #198754;
+        border-radius: 5px;
+        background: white;
+        color: #198754;
+        cursor: pointer;
+      "
+    >
+      {{
+        isLoadingCloudImages
+          ? 'กำลังโหลด...'
+          : 'โหลดรูปเพิ่มเติม'
+      }}
+    </button>
+
+  </div>
+
+</div>
+
+<!-- =================================================== -->
+<!-- รูปจาก Cloudinary ที่เลือกแล้ว -->
+<!-- =================================================== -->
+
+<div
+  *ngIf="selectedCloudImages.length > 0"
+  style="margin: 20px 0;"
+>
+
+  <h4>
+    รูปจาก Cloudinary ที่เลือก
+    ({{ selectedCloudImages.length }} รูป)
+  </h4>
+
+  <div
+    style="
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+    "
+  >
+
+    <div
+      *ngFor="let image of selectedCloudImages"
+      style="
+        padding: 8px;
+        border: 1px solid #198754;
+        border-radius: 8px;
+      "
+    >
+
+      <img
+        [src]="image.secure_url"
+        alt="Selected tour image"
+        style="
+          width: 100%;
+          height: 120px;
+          object-fit: cover;
+          border-radius: 5px;
+        "
+      />
+
+      <div
+        style="
+          margin-top: 6px;
+          font-size: 12px;
+          overflow-wrap: anywhere;
+        "
+      >
+        {{ image.public_id }}
+      </div>
+
+      <button
+        type="button"
+        (click)="removeCloudImage(image.public_id)"
+        style="
+          width: 100%;
+          margin-top: 8px;
+          padding: 6px;
+          border: 1px solid #dc3545;
+          border-radius: 5px;
+          background: white;
+          color: #dc3545;
+          cursor: pointer;
+        "
+      >
+        นำรูปนี้ออก
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
 
         <!-- รูปเดิม -->
 

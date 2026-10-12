@@ -23,6 +23,16 @@ class _HomepageState extends State<Homepage> {
   bool isLoading = true;
   bool isSearching = false;
   String _memberId = '';
+
+  // แสดงเฉพาะทัวร์ที่มีโปรโมชั่น
+  List<dynamic> get promotionTours {
+    return tours.where((tour) {
+      final promotion = tour['promotion'];
+
+      return promotion != null && promotion.toString().trim().isNotEmpty;
+    }).toList();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -317,11 +327,14 @@ class _HomepageState extends State<Homepage> {
   Widget buildPromotionSection() {
     if (isLoading) {
       return const SizedBox(
-        height: 150,
+        height: 160,
         child: Center(child: CircularProgressIndicator()),
       );
     }
-    if (tours.isEmpty) {
+
+    final promotions = promotionTours;
+
+    if (promotions.isEmpty) {
       return Container(
         height: 150,
         width: double.infinity,
@@ -329,49 +342,107 @@ class _HomepageState extends State<Homepage> {
           color: Colors.grey.shade200,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: const Center(child: Text("ยังไม่มีข้อมูลทริป")),
+        child: const Center(child: Text('ยังไม่มีประกาศโปรโมชั่น')),
       );
     }
+
     return SizedBox(
-      height: 160,
+      height: 165,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: tours.length,
+        itemCount: promotions.length,
         itemBuilder: (context, index) {
-          final tour = tours[index];
+          final tour = promotions[index];
+
+          final imageUrl = (tour['image'] ?? '').toString().trim();
+
+          final promotion = tour['promotion'].toString().trim();
+
           return Container(
             width: 280,
             margin: const EdgeInsets.only(right: 12),
-            decoration: BoxDecoration(
+            child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              color: Colors.grey.shade200,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(15),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  Text(
-                    tour['tour_name'] ?? 'ไม่มีชื่อทริป',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                  // ภาพปกทัวร์
+                  if (imageUrl.isNotEmpty)
+                    Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.grey.shade300,
+                          child: const Icon(
+                            Icons.image_not_supported,
+                            size: 40,
+                            color: Colors.grey,
+                          ),
+                        );
+                      },
+                    )
+                  else
+                    Container(
+                      color: Colors.grey.shade300,
+                      child: const Icon(
+                        Icons.image,
+                        size: 40,
+                        color: Colors.grey,
+                      ),
+                    ),
+
+                  // ไล่สีพื้นหลัง ช่วยให้ข้อความอ่านง่าย
+                  Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.transparent, Colors.black87],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    "${tour['duration_day'] ?? '-'} วัน",
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    "${tour['price'] ?? '-'} บาท",
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+
+                  // ข้อมูลโปรโมชั่นบนภาพปก
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Align(
+                      alignment: Alignment.bottomLeft,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            (tour['tour_name'] ?? 'ไม่มีชื่อทริป').toString(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            promotion,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${tour['price'] ?? '-'} บาท',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -399,6 +470,7 @@ class _HomepageState extends State<Homepage> {
         itemCount: tours.length,
         itemBuilder: (context, index) {
           final tour = tours[index];
+          final imageUrl = (tour['image'] ?? '').toString().trim();
 
           return Container(
             width: 180,
@@ -432,19 +504,37 @@ class _HomepageState extends State<Homepage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    height: 100,
-                    width: double.infinity,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFE0E0E0),
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(12),
-                      ),
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(12),
                     ),
-                    child: const Icon(
-                      Icons.image,
-                      size: 40,
-                      color: Colors.grey,
+                    child: Container(
+                      height: 100,
+                      width: double.infinity,
+                      color: const Color(0xFFE0E0E0),
+                      child: imageUrl.isNotEmpty
+                          ? Image.network(
+                              imageUrl,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: 100,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Center(
+                                  child: Icon(
+                                    Icons.image_not_supported,
+                                    size: 40,
+                                    color: Colors.grey,
+                                  ),
+                                );
+                              },
+                            )
+                          : const Center(
+                              child: Icon(
+                                Icons.image,
+                                size: 40,
+                                color: Colors.grey,
+                              ),
+                            ),
                     ),
                   ),
 

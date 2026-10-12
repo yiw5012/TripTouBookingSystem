@@ -44,6 +44,12 @@ export class ManageRound implements OnInit {
 
   tour: any = null;
 
+  get isFlightIncluded(): boolean {
+  return String(
+    this.tour?.include_flight ?? ''
+  ).trim() === 'รวม';
+}
+
   // ==========================================================
   // ข้อมูล Round
   // ==========================================================
@@ -341,15 +347,19 @@ export class ManageRound implements OnInit {
         ),
 
       airline:
-        round.airline ?? '',
+  this.isFlightIncluded
+    ? round.airline ?? ''
+    : '',
 
-      flight:
-        round.flight ?? '',
+flight:
+  this.isFlightIncluded
+    ? round.flight ?? ''
+    : '',
 
-      flight_time:
-        this.toTimeInput(
-          round.flight_time
-        ),
+flight_time:
+  this.isFlightIncluded
+    ? this.toTimeInput(round.flight_time)
+    : '',
 
       price_single:
         round.price_single ?? '',
@@ -458,20 +468,17 @@ status:
         end_date:
           value.end_date,
 
-        airline:
-          String(
-            value.airline ?? ''
-          ).trim(),
+        airline: this.isFlightIncluded
+  ? String(value.airline ?? '').trim()
+  : '',
 
-        flight:
-          String(
-            value.flight ?? ''
-          ).trim(),
+flight: this.isFlightIncluded
+  ? String(value.flight ?? '').trim()
+  : '',
 
-        flight_time:
-          String(
-            value.flight_time ?? ''
-          ).trim(),
+flight_time: this.isFlightIncluded
+  ? String(value.flight_time ?? '').trim()
+  : '',
 
         price_single:
           Number(
