@@ -12,3 +12,15 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+
+# Firebase Native Config Files
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+ios/GoogleService-Info.plist
+
+# FlutterFire Generated File
+lib/firebase_options.dart
+
+# Firebase CLI Temporary Files
+.firebase/
+.firebaserc

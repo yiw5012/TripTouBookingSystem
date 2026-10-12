@@ -1,0 +1,111 @@
+<div class="chat-page">
+  <div class="chat-shell">
+
+    <!-- ฝั่งซ้าย: รายชื่อห้องแชท -->
+    <aside class="chat-sidebar">
+      <div class="sidebar-header">
+        <p class="eyebrow">Messages</p>
+        <h2>แชทลูกค้า</h2>
+      </div>
+
+      <div class="user-list">
+        <button
+          type="button"
+          class="user-item"
+          *ngFor="let room of rooms"
+          [class.active]="(selectedRoom?.roomId || selectedRoom?.userId) === (room.roomId || room.userId)"
+          (click)="selectRoom(room)">
+          <div class="avatar online">
+            <span>{{ (room.userName || 'U').charAt(0) }}</span>
+          </div>
+          <div class="user-meta">
+            <div class="user-topline">
+              <strong>{{ room.userName || 'ผู้ใช้งาน' }}</strong>
+              <span *ngIf="room.lastUpdated">{{ room.lastUpdated | date: 'HH:mm' }}</span>
+            </div>
+            <div class="user-subline">
+              <span class="role-pill" *ngIf="room.unreadByAdmin && room.unreadByAdmin > 0">
+                {{ room.unreadByAdmin }} ใหม่
+              </span>
+              <span *ngIf="!room.unreadByAdmin || room.unreadByAdmin === 0">
+                {{ room.lastMessage || 'ไม่มีข้อความ' }}
+              </span>
+            </div>
+          </div>
+        </button>
+
+        <div class="empty-state" *ngIf="rooms.length === 0">
+          ไม่พบรายการแชท
+        </div>
+      </div>
+    </aside>
+
+    <!-- ฝั่งขวา: ห้องสนทนา -->
+    <main class="chat-panel">
+
+      <!-- Header ห้องแชท -->
+      <header class="chat-header" *ngIf="selectedRoom; else noRoomHeader">
+        <div class="chat-user">
+          <div class="avatar large online">
+            <span>{{ (selectedRoom.userName || 'U').charAt(0) }}</span>
+          </div>
+          <div>
+            <h3>{{ selectedRoom.userName || 'ผู้ใช้งาน' }}</h3>
+            <p>สถานะ: ออนไลน์</p>
+          </div>
+        </div>
+      </header>
+
+      <ng-template #noRoomHeader>
+        <header class="chat-header">
+          <div class="chat-user">
+            <div>
+              <h3>ระบบแชท</h3>
+              <p>กรุณาเลือกห้องแชทจากรายการด้านซ้าย</p>
+            </div>
+          </div>
+        </header>
+      </ng-template>
+
+      <!-- รายการข้อความ -->
+      <div class="message-list" #messageList *ngIf="selectedRoom; else selectRoomPlaceholder">
+        <ng-container *ngIf="messages.length > 0; else noMessages">
+          <div
+            class="message-row"
+            *ngFor="let message of messages; trackBy: trackByMessage"
+            [class.admin]="(message.senderType || message.senderRole) === 'admin'"
+            [class.user]="(message.senderType || message.senderRole) === 'user'">
+            <div class="message-bubble">
+              <p>{{ message.text }}</p>
+              <span>{{ message.timestamp | date: 'HH:mm' }}</span>
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-template #noMessages>
+          <div class="empty-panel">
+            <p>ยังไม่มีข้อความในห้องนี้ เริ่มต้นสนทนาได้เลย</p>
+          </div>
+        </ng-template>
+      </div>
+
+      <ng-template #selectRoomPlaceholder>
+        <div class="message-list empty-panel">
+          <p>เลือกห้องแชทเพื่อเริ่มการสนทนา</p>
+        </div>
+      </ng-template>
+
+      <!-- ช่องพิมพ์ข้อความ (แสดงเสมอเมื่อเลือกห้องแล้ว) -->
+      <div class="composer" *ngIf="selectedRoom">
+        <input
+          type="text"
+          [(ngModel)]="newMessageText"
+          placeholder="พิมพ์ข้อความตอบกลับ..."
+          (keyup.enter)="onSendMessage()"
+        />
+        <button type="button" (click)="onSendMessage()">ส่ง</button>
+      </div>
+
+    </main>
+  </div>
+</div>

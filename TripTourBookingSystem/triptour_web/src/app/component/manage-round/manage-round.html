@@ -1,0 +1,834 @@
+<div class="page-container">
+
+  <!-- ======================================================
+       HEADER
+       ====================================================== -->
+
+  <div class="page-header">
+
+    <div>
+
+      <h1>
+        จัดการรอบทัวร์
+      </h1>
+
+      <p *ngIf="tour">
+
+        {{ tour.tour_name }}
+
+        <span class="separator">
+          |
+        </span>
+
+        รหัสทัวร์:
+        {{ tour.tour_id }}
+
+      </p>
+
+    </div>
+
+    <button
+      type="button"
+      class="btn-secondary"
+      (click)="goBack()"
+    >
+      ← กลับ
+    </button>
+
+  </div>
+
+
+  <!-- ======================================================
+       SUCCESS
+       ====================================================== -->
+
+  <div
+    *ngIf="successMessage"
+    class="message success"
+  >
+    {{ successMessage }}
+  </div>
+
+
+  <!-- ======================================================
+       ERROR
+       ====================================================== -->
+
+  <div
+    *ngIf="errorMessage"
+    class="message error"
+  >
+    {{ errorMessage }}
+  </div>
+
+
+  <!-- ======================================================
+       LOADING
+       ====================================================== -->
+
+  <div
+    *ngIf="isLoading"
+    class="loading"
+  >
+
+    <div class="spinner"></div>
+
+    <p>
+      กำลังโหลดข้อมูล...
+    </p>
+
+  </div>
+
+
+  <!-- ======================================================
+       FORM
+       ====================================================== -->
+
+  <div
+    class="card"
+    *ngIf="!isLoading"
+  >
+
+    <div class="card-header">
+
+      <div>
+
+        <h2>
+          {{
+            editingRoundId !== null
+              ? 'แก้ไขรอบทัวร์'
+              : 'เพิ่มรอบทัวร์'
+          }}
+        </h2>
+
+        <p>
+          {{
+            editingRoundId !== null
+              ? 'แก้ไขข้อมูลของรอบทัวร์ที่เลือก'
+              : 'สร้างรอบทัวร์ใหม่'
+          }}
+        </p>
+
+      </div>
+
+      <button
+        *ngIf="editingRoundId !== null"
+        type="button"
+        class="btn-secondary"
+        (click)="cancelEdit()"
+      >
+        + เพิ่มรอบใหม่
+      </button>
+
+    </div>
+
+
+    <form
+      [formGroup]="form"
+      (ngSubmit)="onSubmit()"
+    >
+
+      <div class="form-grid">
+
+        <!-- ==================================================
+             DEPARTURE
+             ================================================== -->
+
+        <!-- ==================================================
+     DEPARTURE
+     ================================================== -->
+
+<div class="form-group">
+
+  <label>
+    {{
+      isFlightIncluded
+        ? 'จุดเดินทาง / ต้นทาง *'
+        : 'จุดนัดพบ / จุดเริ่มต้น *'
+    }}
+  </label>
+
+  <input
+    type="text"
+    formControlName="departure"
+    [placeholder]="
+      isFlightIncluded
+        ? 'เช่น สนามบินสุวรรณภูมิ'
+        : 'เช่น สถานีรถไฟฟ้าอโศก หรือโรงแรมที่กำหนด'
+    "
+  />
+
+  <small
+    class="field-error"
+    *ngIf="
+      form.get('departure')?.touched &&
+      form.get('departure')?.invalid
+    "
+  >
+    กรุณากรอกจุดเริ่มต้นการเดินทาง
+  </small>
+
+</div>
+
+
+        <!-- ==================================================
+             DESTINATION
+             ================================================== -->
+
+        <div class="form-group">
+
+          <label>
+            จุดหมายปลายทาง *
+          </label>
+
+          <input
+  type="text"
+  formControlName="destination"
+  [placeholder]="
+    isFlightIncluded
+      ? 'เช่น สนามบินนาริตะ'
+      : 'เช่น โรงแรมหรือสถานที่ปลายทาง'
+  "
+/>
+
+          <small
+            class="field-error"
+            *ngIf="
+              form.get('destination')?.touched &&
+              form.get('destination')?.invalid
+            "
+          >
+            กรุณากรอกจุดหมายปลายทาง
+          </small>
+
+        </div>
+
+
+        <!-- ==================================================
+             START DATE
+             ================================================== -->
+
+        <div class="form-group">
+
+          <label>
+            วันเริ่มทัวร์ *
+          </label>
+
+          <input
+            type="date"
+            formControlName="start_date"
+          />
+
+        </div>
+
+
+        <!-- ==================================================
+             END DATE
+             ================================================== -->
+
+        <div class="form-group">
+
+          <label>
+            วันสิ้นสุด *
+          </label>
+
+          <input
+            type="date"
+            formControlName="end_date"
+          />
+
+        </div>
+
+
+        <!-- ==================================================
+             AIRLINE
+             ================================================== -->
+
+        <div class="form-group" *ngIf="isFlightIncluded">
+
+          <label>
+            สายการบิน
+          </label>
+
+          <input
+            type="text"
+            formControlName="airline"
+            placeholder="เช่น Thai Airways"
+          />
+
+        </div>
+
+
+        <!-- ==================================================
+             FLIGHT
+             ================================================== -->
+
+        <!-- FLIGHT -->
+<div class="form-group" *ngIf="isFlightIncluded">
+
+  <label>
+    เที่ยวบิน
+  </label>
+
+  <input
+    type="text"
+    formControlName="flight"
+    placeholder="เช่น TG640"
+  />
+
+</div>
+
+
+        <!-- FLIGHT TIME -->
+<div class="form-group" *ngIf="isFlightIncluded">
+
+  <label>
+    เวลาเที่ยวบิน
+  </label>
+
+  <input
+    type="time"
+    formControlName="flight_time"
+  />
+
+</div>
+
+
+        <!-- ==================================================
+             COUNT
+             ================================================== -->
+
+        <div class="form-group">
+
+          <label>
+            จำนวนที่นั่ง *
+          </label>
+
+          <input
+            type="number"
+            min="1"
+            formControlName="count"
+            placeholder="เช่น 30"
+          />
+
+          <small
+            class="field-error"
+            *ngIf="
+              form.get('count')?.touched &&
+              form.get('count')?.invalid
+            "
+          >
+            จำนวนที่นั่งต้องมากกว่า 0
+          </small>
+
+        </div>
+
+
+        <!-- ==================================================
+             SINGLE PRICE
+             ================================================== -->
+
+        <div class="form-group">
+
+          <label>
+            ราคาบุคคลเดี่ยว *
+          </label>
+
+          <input
+            type="number"
+            min="0"
+            formControlName="price_single"
+            placeholder="เช่น 45000"
+          />
+
+        </div>
+
+
+        <!-- ==================================================
+             DOUBLE PRICE
+             ================================================== -->
+
+        <div class="form-group">
+
+          <label>
+            ราคาห้องคู่ *
+          </label>
+
+          <input
+            type="number"
+            min="0"
+            formControlName="price_double"
+            placeholder="เช่น 39000"
+          />
+
+        </div>
+
+
+        <!-- ==================================================
+             TRIPLE PRICE
+             ================================================== -->
+
+        <div class="form-group">
+
+          <label>
+            ราคาห้องสามคน *
+          </label>
+
+          <input
+            type="number"
+            min="0"
+            formControlName="price_triple"
+            placeholder="เช่น 37000"
+          />
+
+        </div>
+
+
+        <!-- ==================================================
+             GUIDE
+             ================================================== -->
+
+        <div class="form-group">
+
+          <label>
+            Guide
+          </label>
+
+          <select
+            formControlName="guide_id"
+          >
+
+            <option [ngValue]="null">
+
+              -- ยังไม่กำหนด Guide --
+
+            </option>
+
+            <option
+              *ngFor="let guide of guides"
+              [ngValue]="guide.guide_id"
+            >
+
+              {{ guide.guide_code }}
+
+              -
+
+              {{ guide.first_name }}
+              {{ guide.last_name }}
+
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <!-- ==================================================
+             STATUS
+             ================================================== -->
+
+        <div class="form-group">
+
+          <label>
+            สถานะ
+          </label>
+
+          <select
+            formControlName="status"
+          >
+
+            <option value="open">
+              เปิดจอง
+            </option>
+
+            <option value="closed">
+              ปิดจอง
+            </option>
+
+            <option value="success">
+              จบรอบทัวร์
+            </option>
+
+          </select>
+
+        </div>
+
+      </div>
+
+
+      <!-- ====================================================
+           FORM BUTTONS
+           ==================================================== -->
+
+      <div class="form-actions">
+
+        <button
+          type="submit"
+          class="btn-primary"
+          [disabled]="isSaving"
+        >
+
+          {{
+            isSaving
+              ? 'กำลังบันทึก...'
+              : editingRoundId !== null
+                ? 'บันทึกการแก้ไข'
+                : 'เพิ่มรอบทัวร์'
+          }}
+
+        </button>
+
+
+        <button
+          *ngIf="editingRoundId !== null"
+          type="button"
+          class="btn-secondary"
+          (click)="cancelEdit()"
+        >
+          ยกเลิก
+        </button>
+
+      </div>
+
+    </form>
+
+  </div>
+
+
+  <!-- ======================================================
+       ROUND LIST
+       ====================================================== -->
+
+  <div
+    class="card"
+    *ngIf="!isLoading"
+  >
+
+    <div class="card-header">
+
+      <div>
+
+        <h2>
+          รอบทัวร์ทั้งหมด
+        </h2>
+
+        <p>
+          จำนวน {{ rounds.length }} รอบ
+        </p>
+
+      </div>
+
+      <button
+        type="button"
+        class="btn-primary"
+        (click)="startCreate()"
+      >
+        + เพิ่มรอบ
+      </button>
+
+    </div>
+
+
+    <!-- ====================================================
+         EMPTY
+         ==================================================== -->
+
+    <div
+      *ngIf="rounds.length === 0"
+      class="empty"
+    >
+
+      <div class="empty-icon">
+        📅
+      </div>
+
+      <h3>
+        ยังไม่มีรอบทัวร์
+      </h3>
+
+      <p>
+        กดปุ่ม “เพิ่มรอบ” เพื่อสร้างรอบแรก
+      </p>
+
+    </div>
+
+
+    <!-- ====================================================
+         TABLE
+         ==================================================== -->
+
+    <div
+      class="table-wrapper"
+      *ngIf="rounds.length > 0"
+    >
+
+      <table>
+
+        <thead>
+
+          <tr>
+
+            <th>
+              รอบ
+            </th>
+
+            <th>
+              การเดินทาง
+            </th>
+
+            <th>
+              วันที่
+            </th>
+
+            <th>
+              เที่ยวบิน
+            </th>
+
+            <th>
+              ราคา
+            </th>
+
+            <th>
+              ที่นั่ง
+            </th>
+
+            <th>
+              Guide
+            </th>
+
+            <th>
+              สถานะ
+            </th>
+
+            <th>
+              Chat Room
+            </th>
+
+            <th>
+              จัดการ
+            </th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody>
+
+          <tr
+            *ngFor="let round of rounds"
+            class="clickable-row" 
+            (click)="viewRoundDetail(round.round_id)"
+            title="คลิกเพื่อดูรายละเอียดผู้เดินทางในรอบนี้">
+          >
+
+            <!-- ROUND -->
+
+            <td>
+
+              <strong>
+                #{{ round.round_id }}
+              </strong>
+
+            </td>
+
+
+            <!-- ROUTE -->
+
+            <td>
+
+              <div class="route-from">
+                {{ round.departure }}
+              </div>
+
+              <div class="route-arrow">
+                ↓
+              </div>
+
+              <div class="route-to">
+                {{ round.destination }}
+              </div>
+
+            </td>
+
+
+            <!-- DATE -->
+
+            <td>
+
+              <div>
+                {{
+                  round.start_date
+                    | date:'dd/MM/yyyy'
+                }}
+              </div>
+
+              <div class="date-separator">
+                ถึง
+              </div>
+
+              <div>
+                {{
+                  round.end_date
+                    | date:'dd/MM/yyyy'
+                }}
+              </div>
+
+            </td>
+
+
+            <!-- FLIGHT -->
+
+            <td>
+
+              <div>
+                {{ round.airline || '-' }}
+              </div>
+
+              <div class="flight-code">
+                {{ round.flight || '-' }}
+              </div>
+
+              <div class="flight-time">
+                {{ round.flight_time || '-' }}
+              </div>
+
+            </td>
+
+
+            <!-- PRICE -->
+
+            <td>
+
+              <div>
+                เดี่ยว:
+                {{
+                  round.price_single
+                    | number:'1.0-2'
+                }}
+              </div>
+
+              <div>
+                คู่:
+                {{
+                  round.price_double
+                    | number:'1.0-2'
+                }}
+              </div>
+
+              <div>
+                สาม:
+                {{
+                  round.price_triple
+                    | number:'1.0-2'
+                }}
+              </div>
+
+            </td>
+
+
+            <!-- COUNT -->
+
+            <td>
+
+              <span class="seat-count">
+                {{ round.count }}
+              </span>
+
+              ที่นั่ง
+
+            </td>
+
+
+            <!-- GUIDE -->
+
+            <td>
+
+              <span
+                [class.guide-assigned]="round.guide_id"
+                [class.guide-empty]="!round.guide_id"
+              >
+
+                {{
+                  getGuideName(round)
+                }}
+
+              </span>
+
+            </td>
+
+
+            <!-- STATUS -->
+
+            <td>
+
+              <span
+  class="status"
+  [class.open]="round.status === 'open'"
+  [class.closed]="round.status === 'closed'"
+  [class.success]="round.status === 'success'"
+>
+  {{
+    round.status === 'open'
+      ? 'เปิดจอง'
+      : round.status === 'closed'
+        ? 'ปิดจอง'
+        : round.status === 'success'
+          ? 'จบทัวร์'
+          : 'ไม่ทราบสถานะ'
+  }}
+</span>
+
+            </td>
+
+
+            <!-- CHAT -->
+
+            <td>
+
+              <span class="room-id">
+                {{
+                  round.chat_room_id
+                }}
+              </span>
+
+            </td>
+
+
+            <!-- ACTION -->
+
+            <td>
+
+              <div class="actions">
+
+                <button
+                  type="button"
+                  class="btn-edit"
+                  (click)="editRound(round); $event.stopPropagation()"
+                >
+                  แก้ไข
+                </button>
+
+                <button
+                  type="button"
+                  class="btn-delete"
+                  (click)="deleteRound(round.round_id) ;$event.stopPropagation()"
+                >
+                  ลบ
+                </button>
+
+              </div>
+
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+</div>

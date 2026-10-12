@@ -1,0 +1,670 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+
+const String _defaultBaseUrl = 'http://192.168.1.146:4000';
+
+String normalizeBaseUrl(String? value) {
+  final raw = (value ?? '').trim();
+  if (raw.isEmpty) {
+    return _defaultBaseUrl;
+  }
+  return raw.endsWith('/') ? raw.substring(0, raw.length - 1) : raw;
+}
+
+int? parseTourId(Object? value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+
+  final text = value.toString().trim();
+  if (text.isEmpty) return null;
+  return int.tryParse(text);
+}
+
+bool isValidEmail(String? value) {
+  final email = value?.trim() ?? '';
+  if (email.isEmpty) return false;
+  return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
+}
+
+class Serverapi {
+  static final String _baseUrl = normalizeBaseUrl(
+    const String.fromEnvironment('APP_BASE_URL', defaultValue: _defaultBaseUrl),
+  );
+
+  static Future<Map<String, dynamic>> checkuser(
+    String google_id,
+    String email,
+  ) async {
+    try {
+      final res = await http.post(
+        Uri.parse("$_baseUrl/checkuser"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"google_id": google_id, "email": email}),
+      );
+
+      final body = jsonDecode(res.body);
+
+      print(body);
+
+      return {'statusCode': res.statusCode, 'body': body};
+    } catch (e) {
+      print('Login error: $e');
+      return {
+        'statusCode': 500,
+        'body': {'message': 'Server error'},
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> registerUser(
+    String google_id,
+    String email,
+    String first_name,
+    String last_name,
+    String phone,
+    String number_id,
+    String birthday,
+    String address,
+    String gender,
+    String medicine,
+    String congenital_disease,
+    String allergic_list,
+    String other, {
+    String? imageProfileUrl,
+    String? passportUrl,
+    List<int>? favoriteCountries,
+  }) async {
+    try {
+      print("REGISTER URL: $_baseUrl/register");
+
+      final res = await http.post(
+        Uri.parse("$_baseUrl/register"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "google_id": google_id,
+          "email": email,
+          "first_name": first_name,
+          "last_name": last_name,
+          "phone": phone,
+          "number_id": number_id,
+          "birthday": birthday,
+          "address": address,
+          "gender": gender,
+          "medicine": medicine,
+          "congenital_disease": congenital_disease,
+          "allergic_list": allergic_list,
+          "other": other,
+          "image_profile": imageProfileUrl,
+          "image_passport": passportUrl,
+          "favorite_countries": favoriteCountries ?? [],
+        }),
+      );
+
+      print("Response status: ${res.statusCode}");
+      final data = jsonDecode(res.body);
+
+      print(data);
+      return data;
+    } catch (e) {
+      print('Registration error: $e');
+      return {
+        'statusCode': 500,
+        'body': {'message': 'Server error'},
+      };
+    }
+  }
+
+  static Future<bool> sendOtp(String email) async {
+    try {
+      final res = await http.post(
+        Uri.parse("$_baseUrl/otp/send-otp"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"email": email}),
+      );
+
+      if (res.statusCode != 200) {
+        return false;
+      }
+
+      final data = jsonDecode(res.body);
+      return data["success"] == true;
+    } catch (e) {
+      print('Send OTP error: $e');
+      return false;
+    }
+  }
+
+  static Future<bool> verifyOtp(String email, String otp) async {
+    final res = await http.post(
+      Uri.parse("$_baseUrl/otp/verify-otp"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"email": email, "otp": otp}),
+    );
+
+    print(res.body);
+    final data = jsonDecode(res.body);
+
+    return data["success"];
+  }
+
+  static Future<bool> resetpassword(String email, String password) async {
+    final res = await http.post(
+      Uri.parse("$_baseUrl/otp/reset-password"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"email": email, "password": password}),
+    );
+
+    final data = jsonDecode(res.body);
+
+    return data["success"];
+  }
+
+  static Future<Map<String, dynamic>> getTours() async {
+    try {
+      final res = await http.get(
+        Uri.parse("$_baseUrl/add-tour"),
+        headers: {"Content-Type": "application/json"},
+      );
+
+      final data = jsonDecode(res.body);
+
+      print("Get tours: $data");
+
+      return {'statusCode': res.statusCode, 'body': data};
+    } catch (e) {
+      print('Get tours error: $e');
+
+      return {
+        'statusCode': 500,
+        'body': {'message': 'Server error'},
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> getSearchCountries() async {
+    try {
+      final res = await http.get(
+        Uri.parse("$_baseUrl/add-tour/search-options/countries"),
+        headers: {"Content-Type": "application/json"},
+      );
+
+      final data = jsonDecode(res.body);
+
+      print("Search countries: $data");
+
+      return {'statusCode': res.statusCode, 'body': data};
+    } catch (e) {
+      print("Get search countries error: $e");
+
+      return {
+        'statusCode': 500,
+        'body': {'success': false, 'message': 'Server error'},
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> getSearchContinents() async {
+  try {
+    final res = await http.get(
+      Uri.parse("$_baseUrl/add-tour/search-options/continents"),
+      headers: {"Content-Type": "application/json"},
+    );
+
+    final data = jsonDecode(res.body);
+
+    print("Search continents: $data");
+
+    return {
+      'statusCode': res.statusCode,
+      'body': data,
+    };
+  } catch (e) {
+    print("Get search continents error: $e");
+
+    return {
+      'statusCode': 500,
+      'body': {
+        'success': false,
+        'message': 'ไม่สามารถโหลดรายชื่อทวีปได้',
+      },
+    };
+  }
+}
+
+static Future<Map<String, dynamic>> getSearchLocations() async {
+  try {
+    final res = await http.get(
+      Uri.parse("$_baseUrl/add-tour/search-options/locations"),
+      headers: {"Content-Type": "application/json"},
+    );
+
+    final data = jsonDecode(res.body);
+
+    return {
+      'statusCode': res.statusCode,
+      'body': data,
+    };
+  } catch (e) {
+    print("Get search locations error: $e");
+
+    return {
+      'statusCode': 500,
+      'body': {
+        'success': false,
+        'message': 'ไม่สามารถโหลดรายการต้นทางและปลายทางได้',
+      },
+    };
+  }
+}
+
+  static Future<Map<String, dynamic>?> uploadImage(
+    File? selectedImage,
+    File? selectedImage_passport,
+  ) async {
+    if (selectedImage == null && selectedImage_passport == null) {
+      print("No image selected for upload. ");
+      return null;
+    }
+
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse("$_baseUrl/uploads/upload"),
+    );
+    if (selectedImage != null) {
+      request.files.add(
+        await http.MultipartFile.fromPath('image', selectedImage.path),
+      );
+    }
+    if (selectedImage_passport != null) {
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'passport',
+          selectedImage_passport.path,
+        ),
+      );
+    }
+
+    try {
+      final response = await request.send();
+
+      if (response.statusCode == 200) {
+        final responseBody = await response.stream.bytesToString();
+        final Map<String, dynamic> data =
+            jsonDecode(responseBody) as Map<String, dynamic>;
+        print("Image uploaded successfully: $data");
+        return {
+          'imageUrl': data['imageUrl'],
+          'passportUrl': data['passportUrl'],
+        };
+      } else {
+        print("Image upload failed with status: ${response.statusCode}");
+        return null;
+      }
+    } catch (e) {
+      print('Image upload error: $e');
+      return null;
+    }
+  }
+
+  static Future<Map<String, dynamic>> getSearchAirlines() async {
+    try {
+      final res = await http.get(
+        Uri.parse("$_baseUrl/add-tour/search-options/airlines"),
+        headers: {"Content-Type": "application/json"},
+      );
+
+      final data = jsonDecode(res.body);
+
+      print("Search airlines: $data");
+
+      return {'statusCode': res.statusCode, 'body': data};
+    } catch (e) {
+      print("Get search airlines error: $e");
+
+      return {
+        'statusCode': 500,
+        'body': {'success': false, 'message': 'Server error'},
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> searchTours({
+    String? keyword,
+    String? continent,
+    int? countryId,
+    List<String>? airlines,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? sortBy,
+    String? departure,
+    String? destination,
+    double? minPrice,
+    double? maxPrice,
+  }) async {
+    try {
+      final res = await http.post(
+        Uri.parse("$_baseUrl/add-tour/search-tour"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "keyword": keyword,
+          "continent": continent,
+          "countryId": countryId,
+          "airlines": airlines ?? [],
+
+          "startDate": startDate == null
+              ? null
+              : startDate.toIso8601String().split('T').first,
+
+          "endDate": endDate == null
+              ? null
+              : endDate.toIso8601String().split('T').first,
+
+          "sortBy": sortBy,
+          "departure": departure,
+          "destination": destination,
+          "minPrice": minPrice,
+          "maxPrice": maxPrice,
+        }),
+      );
+
+      final data = jsonDecode(res.body);
+
+      print("Search tours: $data");
+
+      return {"statusCode": res.statusCode, "body": data};
+    } catch (e) {
+      print("Search tours error: $e");
+
+      return {
+        "statusCode": 500,
+        "body": {"success": false, "message": "Server error"},
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>?> getMemberDetail(String uid) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/member/detail'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'targetUid': uid}),
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        if (body['success'] == true) {
+          return body['data'] as Map<String, dynamic>;
+        }
+      }
+      return null;
+    } catch (e) {
+      print("Error: $e");
+      return null;
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateMember({
+    required String googleId,
+    required String firstName,
+    required String lastName,
+    required String phone,
+    required String numberId,
+    required String birthday,
+    required String address,
+    required String gender,
+    required String medicine,
+    required String congenitalDisease,
+    required String allergicList,
+    required String others,
+    String? imageProfile,
+    String? imagePassport,
+    required List<int> favoriteCountries,
+  }) async {
+    try {
+      final res = await http.put(
+        Uri.parse("$_baseUrl/member/update"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "google_id": googleId,
+          "first_name": firstName,
+          "last_name": lastName,
+          "phone": phone,
+          "number_id": numberId,
+          "birthday": birthday,
+          "address": address,
+          "gender": gender,
+          "medicine": medicine,
+          "congenital_disease": congenitalDisease,
+          "allergic_list": allergicList,
+          "others": others,
+          "image_profile": imageProfile,
+          "image_passport": imagePassport,
+          "favorite_countries": favoriteCountries,
+        }),
+      );
+
+      final data = jsonDecode(res.body);
+
+      print("Update member status: ${res.statusCode}");
+      print("Update member response: $data");
+
+      return {"statusCode": res.statusCode, "body": data};
+    } catch (e) {
+      print("Update member error: $e");
+
+      return {
+        "statusCode": 500,
+        "body": {"success": false, "message": "Server error"},
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> getTourDetail(int tourId) async {
+    try {
+      final res = await http.get(
+        Uri.parse("$_baseUrl/add-tour/detail/$tourId"),
+        headers: {"Content-Type": "application/json"},
+      );
+
+      final data = jsonDecode(res.body);
+
+      print("Tour detail: $data");
+
+      return {"statusCode": res.statusCode, "body": data};
+    } catch (e) {
+      print("Get tour detail error: $e");
+
+      return {
+        "statusCode": 500,
+        "body": {"success": false, "message": "Server error"},
+      };
+    }
+  }
+
+  // =====================================================
+  // REVIEW : ตรวจสอบสิทธิ์ในการรีวิว
+  // =====================================================
+
+  static Future<Map<String, dynamic>> checkReviewEligibility({
+    required String googleId,
+    required int tourId,
+  }) async {
+    try {
+      final res = await http.post(
+        Uri.parse("$_baseUrl/review/check"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"google_id": googleId, "tour_id": tourId}),
+      );
+
+      final data = jsonDecode(res.body);
+
+      return {"statusCode": res.statusCode, "body": data};
+    } catch (e) {
+      return {
+        "statusCode": 500,
+        "body": {
+          "success": false,
+          "canReview": false,
+          "message": "ไม่สามารถตรวจสอบสิทธิ์รีวิวได้",
+        },
+      };
+    }
+  }
+
+  // =====================================================
+  // REVIEW : ส่งคะแนนรีวิว
+  // =====================================================
+
+  static Future<Map<String, dynamic>> submitReview({
+    required String googleId,
+    required int tourId,
+    required int rating,
+  }) async {
+    try {
+      final res = await http.post(
+        Uri.parse("$_baseUrl/review"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "google_id": googleId,
+          "tour_id": tourId,
+          "rating": rating,
+        }),
+      );
+
+      final data = jsonDecode(res.body);
+
+      return {"statusCode": res.statusCode, "body": data};
+    } catch (e) {
+      return {
+        "statusCode": 500,
+        "body": {"success": false, "message": "ไม่สามารถส่งรีวิวได้"},
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> getGuideProfile({
+    required String googleId,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse("$_baseUrl/add-guide/profile/$googleId"),
+        headers: {"Content-Type": "application/json"},
+      );
+
+      final data = jsonDecode(response.body);
+
+      return {"statusCode": response.statusCode, "body": data};
+    } catch (e) {
+      return {
+        "statusCode": 500,
+        "body": {"success": false, "message": "ไม่สามารถโหลดข้อมูลไกด์ได้"},
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> closeGuideTourRound({
+    required int roundId,
+    required int guideId,
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse("$_baseUrl/roundTour/$roundId/finish"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"guide_id": guideId}),
+      );
+
+      final data = jsonDecode(response.body);
+
+      return {"statusCode": response.statusCode, "body": data};
+    } catch (e) {
+      return {
+        "statusCode": 500,
+        "body": {"success": false, "message": "ไม่สามารถปิดรอบทัวร์ได้"},
+      };
+    }
+  }
+
+  // ==========================================================
+  // อัปเดตโปรไฟล์ไกด์ (รูปภาพ, ข้อมูลส่วนตัว, อีเมล, รหัสผ่าน)
+  // ==========================================================
+  static Future<Map<String, dynamic>> updateGuideProfile({
+    required String googleId,
+    required String firstName,
+    required String lastName,
+    required String email,
+    required String phone,
+    required String age,
+    required String birthday,
+    required String address,
+    String? password,
+    File? imageProfileFile,
+  }) async {
+    try {
+      var uri = Uri.parse("$_baseUrl/add-guide/profile/$googleId");
+      var request = http.MultipartRequest('PUT', uri);
+
+      // ใส่ Fields ข้อมูล
+      request.fields['first_name'] = firstName;
+      request.fields['last_name'] = lastName;
+      request.fields['email'] = email;
+      request.fields['phone'] = phone;
+      request.fields['age'] = age;
+      request.fields['birthday'] = birthday;
+      request.fields['address'] = address;
+
+      if (password != null && password.trim().isNotEmpty) {
+        request.fields['password'] = password.trim();
+      }
+
+      // แนบไฟล์รูปภาพโปรไฟล์ใหม่ (ถ้ามีการเลือกรูป)
+      if (imageProfileFile != null) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'guideimage_profile',
+            imageProfileFile.path,
+          ),
+        );
+      }
+
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+      final data = jsonDecode(response.body);
+
+      return {"statusCode": response.statusCode, "body": data};
+    } catch (e) {
+      print("Update guide profile error: $e");
+      return {
+        "statusCode": 500,
+        "body": {
+          "success": false,
+          "message": "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์: $e",
+        },
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> InactiveService(String googleId) async {
+    try {
+      final res = await http.delete(
+        Uri.parse("$_baseUrl/member/delete-account"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"google_id": googleId}),
+      );
+
+      final data = jsonDecode(res.body);
+      print("Delete account status: ${res.statusCode}");
+      print("Delete account response: $data");
+
+      return {"statusCode": res.statusCode, "body": data};
+    } catch (e) {
+      print("Delete account error: $e");
+      return {
+        "statusCode": 500,
+        "body": {"success": false, "message": "Server error: $e"},
+      };
+    }
+  }
+}

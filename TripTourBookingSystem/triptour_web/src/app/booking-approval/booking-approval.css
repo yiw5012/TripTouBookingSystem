@@ -1,0 +1,907 @@
+/* ==========================================================
+   PAGE
+========================================================== */
+
+.booking-page {
+  padding: 20px;
+  background: #f5f6f8;
+  min-height: 100%;
+}
+
+
+/* ==========================================================
+   HEADER
+========================================================== */
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.page-header p {
+  margin: 5px 0 0;
+  font-size: 13px;
+  color: #777;
+}
+
+
+/* ==========================================================
+   REFRESH
+========================================================== */
+
+.refresh-button {
+  border: none;
+  border-radius: 7px;
+  padding: 9px 16px;
+  background: #111827;
+  color: white;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.refresh-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+
+/* ==========================================================
+   ALERT
+========================================================== */
+
+.alert {
+  padding: 10px 14px;
+  margin-bottom: 15px;
+  border-radius: 7px;
+  font-size: 13px;
+}
+
+.alert.success {
+  background: #e9f8ef;
+  color: #16733b;
+}
+
+.alert.error {
+  background: #fdecec;
+  color: #b42318;
+}
+
+
+/* ==========================================================
+   STATS
+========================================================== */
+
+.stats-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(5, minmax(130px, 1fr));
+
+  gap: 10px;
+
+  margin-bottom: 15px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 9px;
+  padding: 14px 16px;
+  border: 1px solid #eceff2;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+.stat-card:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 3px 10px rgba(0,0,0,0.05);
+}
+
+.stat-title {
+  font-size: 12px;
+  color: #777;
+}
+
+.stat-number {
+  margin-top: 5px;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.stat-card.warning {
+  border-left: 4px solid #e8a900;
+}
+
+.stat-card.success-card {
+  border-left: 4px solid #27a65a;
+}
+
+.stat-card.danger {
+  border-left: 4px solid #dc4040;
+}
+
+.stat-card.expired {
+  border-left: 4px solid #8b8b8b;
+}
+
+
+/* ==========================================================
+   FILTER
+========================================================== */
+
+.filter-card {
+  display: flex;
+  gap: 12px;
+
+  background: white;
+
+  border-radius: 9px;
+
+  padding: 12px;
+
+  margin-bottom: 10px;
+
+  border: 1px solid #eceff2;
+}
+
+.search-box {
+  position: relative;
+  flex: 1;
+}
+
+.search-box input {
+  width: 100%;
+  box-sizing: border-box;
+
+  border: 1px solid #d9dde2;
+  border-radius: 7px;
+
+  padding: 10px 40px;
+
+  outline: none;
+
+  font-size: 13px;
+}
+
+.search-box input:focus {
+  border-color: #999;
+}
+
+.search-icon {
+  position: absolute;
+
+  left: 12px;
+  top: 9px;
+
+  font-size: 15px;
+}
+
+.clear-search {
+  position: absolute;
+
+  right: 8px;
+  top: 6px;
+
+  width: 25px;
+  height: 25px;
+
+  border: none;
+
+  background: transparent;
+
+  font-size: 20px;
+
+  color: #999;
+
+  cursor: pointer;
+}
+
+.filter-box {
+  min-width: 190px;
+}
+
+.filter-box label {
+  display: block;
+  margin-bottom: 5px;
+
+  font-size: 11px;
+  color: #777;
+}
+
+.filter-box select {
+  width: 100%;
+
+  border: 1px solid #d9dde2;
+  border-radius: 7px;
+
+  padding: 9px;
+
+  font-size: 13px;
+
+  background: white;
+}
+
+
+/* ==========================================================
+   RESULT SUMMARY
+========================================================== */
+
+.result-summary {
+  margin: 10px 2px;
+
+  font-size: 12px;
+
+  color: #777;
+}
+
+
+/* ==========================================================
+   LOADING
+========================================================== */
+
+.loading {
+  background: white;
+
+  padding: 40px;
+
+  border-radius: 9px;
+
+  text-align: center;
+
+  color: #777;
+}
+
+
+/* ==========================================================
+   EMPTY
+========================================================== */
+
+.empty {
+  background: white;
+
+  padding: 50px 20px;
+
+  border-radius: 9px;
+
+  text-align: center;
+}
+
+.empty-icon {
+  width: 50px;
+  height: 50px;
+
+  line-height: 50px;
+
+  margin: 0 auto 12px;
+
+  border-radius: 50%;
+
+  background: #e9f8ef;
+
+  color: #16733b;
+
+  font-weight: bold;
+
+  font-size: 22px;
+}
+
+.empty h2 {
+  margin: 0 0 5px;
+
+  font-size: 19px;
+}
+
+.empty p {
+  margin: 0;
+
+  font-size: 13px;
+
+  color: #777;
+}
+
+
+/* ==========================================================
+   TABLE
+========================================================== */
+
+.table-card {
+  background: white;
+
+  border-radius: 9px;
+
+  overflow: hidden;
+
+  border: 1px solid #eceff2;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+
+  min-width: 1150px;
+
+  border-collapse: collapse;
+}
+
+thead {
+  background: #f8f9fa;
+}
+
+th {
+  padding: 11px 9px;
+
+  text-align: left;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  color: #555;
+
+  border-bottom: 1px solid #e7eaed;
+
+  white-space: nowrap;
+}
+
+td {
+  padding: 10px 9px;
+
+  font-size: 12px;
+
+  border-bottom: 1px solid #eef0f2;
+
+  vertical-align: middle;
+}
+
+tbody tr:hover {
+  background: #fafafa;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+
+/* ==========================================================
+   TEXT
+========================================================== */
+
+.booking-id {
+  font-weight: 700;
+}
+
+.sub-text {
+  margin-top: 3px;
+
+  font-size: 10px;
+
+  color: #999;
+}
+
+.tour-name {
+  max-width: 150px;
+
+  font-weight: 600;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+}
+
+.route {
+  max-width: 140px;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+}
+
+.travel-date {
+  white-space: nowrap;
+
+  font-size: 11px;
+}
+
+.travel-date span {
+  padding: 0 3px;
+
+  color: #999;
+}
+
+.price {
+  white-space: nowrap;
+}
+
+
+/* ==========================================================
+   STATUS
+========================================================== */
+
+.status {
+  display: inline-block;
+
+  padding: 5px 8px;
+
+  border-radius: 20px;
+
+  font-size: 10px;
+
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+.status.processing {
+  background: #fff3cd;
+  color: #946200;
+}
+
+.status.paid {
+  background: #e8f7ee;
+  color: #16733b;
+}
+
+.status.cancelled {
+  background: #fdecec;
+  color: #b42318;
+}
+
+.status.expired {
+  background: #eeeeee;
+  color: #666;
+}
+
+.status.pending {
+  background: #edf2ff;
+  color: #4257a6;
+}
+
+.booking-status {
+  margin-top: 4px;
+
+  font-size: 10px;
+
+  color: #888;
+}
+
+
+/* ==========================================================
+   SLIP
+========================================================== */
+
+.slip-button {
+  padding: 0;
+
+  border: none;
+
+  background: transparent;
+
+  cursor: pointer;
+}
+
+.slip-thumb {
+  width: 42px;
+  height: 54px;
+
+  object-fit: cover;
+
+  border-radius: 5px;
+
+  border: 1px solid #ddd;
+}
+
+.slip-thumb:hover {
+  opacity: 0.75;
+}
+
+.no-slip {
+  color: #aaa;
+}
+
+
+/* ==========================================================
+   ACTION
+========================================================== */
+
+.action-buttons {
+  display: flex;
+
+  gap: 5px;
+}
+
+.action-buttons button {
+  padding: 6px 9px;
+
+  border: none;
+
+  border-radius: 5px;
+
+  font-size: 10px;
+
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.reject-button {
+  background: #fee2e2;
+
+  color: #b91c1c;
+}
+
+.approve-button {
+  background: #dcfce7;
+
+  color: #166534;
+}
+
+.action-buttons button:hover {
+  opacity: 0.8;
+}
+
+.action-buttons button:disabled {
+  opacity: 0.5;
+
+  cursor: not-allowed;
+}
+
+.done-text {
+  font-size: 10px;
+
+  color: #999;
+}
+
+
+/* ==========================================================
+   PAGINATION
+========================================================== */
+
+.pagination {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  padding: 10px 14px;
+
+  border-top: 1px solid #eef0f2;
+}
+
+.page-info {
+  font-size: 11px;
+
+  color: #777;
+}
+
+.page-buttons {
+  display: flex;
+
+  gap: 4px;
+}
+
+.page-buttons button {
+  min-width: 28px;
+  height: 28px;
+
+  border: 1px solid #ddd;
+
+  background: white;
+
+  border-radius: 5px;
+
+  cursor: pointer;
+}
+
+.page-buttons button:hover {
+  background: #f5f5f5;
+}
+
+.page-buttons button:disabled {
+  opacity: 0.4;
+
+  cursor: not-allowed;
+}
+
+.page-number.active {
+  background: #111827;
+
+  color: white;
+
+  border-color: #111827;
+}
+
+
+/* ==========================================================
+   SLIP MODAL
+========================================================== */
+
+.slip-modal {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 9999;
+
+  display: flex;
+
+  justify-content: center;
+
+  align-items: center;
+
+  padding: 20px;
+
+  background: rgba(0,0,0,0.75);
+}
+
+.slip-modal-content {
+  position: relative;
+
+  width: min(600px, 90vw);
+
+  max-height: 90vh;
+
+  padding: 15px;
+
+  background: white;
+
+  border-radius: 10px;
+
+  overflow: auto;
+}
+
+.slip-large {
+  width: 100%;
+
+  max-height: 82vh;
+
+  object-fit: contain;
+
+  display: block;
+}
+
+.modal-close {
+  position: absolute;
+
+  right: 8px;
+
+  top: 8px;
+
+  width: 32px;
+
+  height: 32px;
+
+  border: none;
+
+  border-radius: 50%;
+
+  background: rgba(0,0,0,0.7);
+
+  color: white;
+
+  font-size: 21px;
+
+  cursor: pointer;
+}
+
+
+/* ==========================================================
+   RESPONSIVE
+========================================================== */
+
+@media (max-width: 900px) {
+
+  .stats-grid {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+
+  .filter-card {
+    flex-direction: column;
+  }
+
+  .filter-box {
+    width: 100%;
+  }
+
+}
+/* //click round tour  */
+
+/* Clickable Round Styling in Table */
+.clickable-round {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.clickable-round:hover {
+  background-color: #f1f5f9;
+}
+
+.round-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #2563eb;
+  font-weight: 600;
+  border-bottom: 1px dashed #2563eb;
+}
+
+.clickable-round:hover .round-tag {
+  color: #1d4ed8;
+}
+
+/* Modal Styling */
+.round-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(3px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.round-modal-card {
+  background: #ffffff;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 780px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
+}
+
+.round-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.modal-subtitle {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.modal-title {
+  margin: 2px 0 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.modal-close-btn:hover {
+  color: #0f172a;
+}
+
+.round-modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.round-summary-bar {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 14px 18px;
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+  gap: 16px;
+}
+
+.summary-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: #334155;
+}
+
+.highlight-count {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.btn-export-pdf {
+  background: #059669;
+  color: #ffffff;
+  border: none;
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.btn-export-pdf:hover {
+  background: #047857;
+}
+
+.btn-export-pdf:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.confirmed-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.confirmed-table th {
+  background: #f1f5f9;
+  padding: 10px 12px;
+  text-align: left;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.confirmed-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.empty-round-state {
+  text-align: center;
+  padding: 36px;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.round-modal-footer {
+  padding: 14px 24px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-secondary {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  padding: 8px 18px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: #f1f5f9;
+}
