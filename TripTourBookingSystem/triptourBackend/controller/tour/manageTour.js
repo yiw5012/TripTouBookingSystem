@@ -481,28 +481,26 @@ if (condition_mode === "default") {
       // ==========================================================
 
       const imageFiles = req.files?.tour_images || [];
-      const videoFiles = req.files?.video || [];
-      const pdfFiles = req.files?.pdf_file || [];
+const videoFiles = req.files?.video || [];
+const pdfFiles = req.files?.pdf_file || [];
 
-      // ถ้าไม่มี video ใหม่ ให้ใช้ของเดิม
-      const videoUrl =
-        videoFiles.length > 0
-          ? videoFiles[0].path
-          : existingTour.video || null;
+const removeExistingVideo =
+  req.body?.remove_existing_video === "true";
 
-      // ถ้าไม่มี PDF ใหม่ ให้ใช้ของเดิม
-      const pdfUrl =
-        pdfFiles.length > 0
-          ? pdfFiles[0].path
-          : existingTour.pdf_file;
+const removeExistingPdf =
+  req.body?.remove_existing_pdf === "true";
 
-      // PDF ห้ามว่าง เพราะ database กำหนด NOT NULL
-      if (!pdfUrl) {
-        return res.status(400).json({
-          success: false,
-          message: "ไม่พบไฟล์ PDF ของทัวร์",
-        });
-      }
+const videoUrl = videoFiles.length > 0
+  ? videoFiles[0].path
+  : removeExistingVideo
+    ? null
+    : existingTour.video || null;
+
+const pdfUrl = pdfFiles.length > 0
+  ? pdfFiles[0].path
+  : removeExistingPdf
+    ? null
+    : existingTour.pdf_file || null;
 
       // ==========================================================
       // 8. เริ่ม Transaction

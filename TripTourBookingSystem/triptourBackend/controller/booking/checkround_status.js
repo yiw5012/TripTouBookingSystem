@@ -29,13 +29,16 @@ export async function checkAndUpdateRoundStatus(dbConnection, roundId) {
   const roundCount = Number(roundRows[0].count);
   let currentStatus = roundRows[0].status;
 
-  if (totalPaid >= roundCount && currentStatus !== 'closed') {
-    await dbConnection.query(
-      `UPDATE tour_round SET status = 'closed' WHERE round_id = ?`,
-      [roundId],
-    );
-    currentStatus = 'closed';
-  }
+  if (totalPaid >= roundCount && currentStatus === "open") {
+  await dbConnection.query(
+    `UPDATE tour_round
+     SET status = 'closed'
+     WHERE round_id = ?`,
+    [roundId]
+  );
+
+  currentStatus = "closed";
+}
 
   return {
     round_id: Number(roundId),

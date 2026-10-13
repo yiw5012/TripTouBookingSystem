@@ -117,27 +117,86 @@ async function saveBookingRooms(connection, bookingId, rawRooms = []) {
   return values;
 }
 
-// 1. สร้างรายการจองใหม่ (บันทึกลงตาราง booking)
+// 1. สร้างรายการจองใหม่
 router.post('/create-order', async (req, res) => {
-  let connection;
+  let connection = null;
+  let transactionStarted = false;
 
   try {
     const requestBody = req.body || {};
     const member_id = requestBody.member_id ?? requestBody.booking?.member_id;
     const round_id = requestBody.round_id ?? requestBody.booking?.round_id;
     const total_price = requestBody.total_price ?? requestBody.booking?.total_price;
+
     const rooms = Array.isArray(requestBody.rooms)
       ? requestBody.rooms
       : Array.isArray(requestBody.booking?.rooms)
         ? requestBody.booking.rooms
         : [];
 
-    console.log("Received create-order request:", { member_id, round_id, total_price, rooms });
+    console.log('Received create-order request:', {
+      member_id,
+      round_id,
+      total_price,
+      rooms,
+    });
 
-    if (!member_id || !round_id || !total_price) {
+    if (
+      !member_id ||
+      !round_id ||
+      total_price === undefined ||
+      total_price === null ||
+      total_price === '' ||
+      !Number.isFinite(Number(total_price)) ||
+      Number(total_price) <= 0
+    ) {
       return res.status(400).json({
         success: false,
-        message: 'member_id, round_id, and total_price are required',
+        message: 'member_id, round_id, and valid total_price are required',
+      });
+    }
+
+    connection = await conn.getConnection();
+    await connection.beginTransaction();
+
+    const [roundRows] = await connection.query(
+      `SELECT count, status FROM tour_round WHERE round_id = ? FOR UPDATE`,
+      [round_id],
+    );
+
+    if (!roundRows || roundRows.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({
+        success: false,
+        message: 'Round not found',
+      });
+    }
+
+    const roundCapacity = Number(roundRows[0].count || 0);
+    const occupiedSeats = await getOccupiedSeatCount(connection, round_id);
+    const remainingSeats = Math.max(roundCapacity - occupiedSeats, 0);
+
+    if (roundRows[0].status === 'closed') {
+      await connection.rollback();
+      return res.status(409).json({
+        success: false,
+        message: 'ไม่สามารถจองได้เนื่องจากที่นั่งเต็มแล้ว',
+      });
+    }
+
+    if (remainingSeats === 1) {
+      await connection.rollback();
+      return res.status(409).json({
+        success: false,
+        message: 'รอบทัวร์เหลือที่นั่งเพียง 1 คน กรุณาทำรายการใหม่อีกครั้ง',
+      });
+    }
+
+    if (occupiedSeats >= roundCapacity) {
+      await connection.rollback();
+      return res.status(409).json({
+        success: false,
+        message: 'ไม่สามารถจองได้เนื่องจากที่นั่งเต็มแล้ว',
       });
     }
 
@@ -189,21 +248,66 @@ router.post('/create-order', async (req, res) => {
     const EXPIRE_MINUTES = 3;
     const expireAt = new Date(now.getTime() + EXPIRE_MINUTES * 60 * 1000);
 
+    // เริ่ม Transaction
+    connection = await conn.getConnection();
+    await connection.beginTransaction();
+    transactionStarted = true;
+
+    // ตรวจรอบและล็อกแถว เพื่อไม่ให้สร้างรายการจอง
+    // ในขณะที่รอบกำลังถูกจบทัวร์หรือปิดรับจอง
+    const [roundRows] = await connection.query(
+      `SELECT round_id, status
+       FROM tour_round
+       WHERE round_id = ?
+       FOR UPDATE`,
+      [round_id]
+    );
+
+    if (roundRows.length === 0) {
+      await connection.rollback();
+      transactionStarted = false;
+
+      return res.status(404).json({
+        success: false,
+        message: 'ไม่พบรอบทัวร์',
+      });
+    }
+
+    if (roundRows[0].status !== 'open') {
+      await connection.rollback();
+      transactionStarted = false;
+
+      return res.status(409).json({
+        success: false,
+        message: 'รอบทัวร์นี้ปิดรับจองหรือจบทัวร์แล้ว',
+      });
+    }
+
+    // สร้าง Booking ภายใน Transaction เดียวกัน
     const [result] = await connection.query(
-      `INSERT INTO booking (member_id, round_id, booking_date, total_price, status, payment_status, slip_image, payment_date)
+      `INSERT INTO booking
+        (member_id, round_id, booking_date, total_price,
+         status, payment_status, slip_image, payment_date)
        VALUES (?, ?, ?, ?, 'pending', 'pending', NULL, NULL)`,
       [member_id, round_id, now, total_price],
     );
 
     const bookingId = result.insertId;
 
-    if (Array.isArray(rooms) && rooms.length > 0) {
+    // สำคัญ: บันทึกห้องพักด้วย connection เดียวกัน
+    // และต้องทำก่อน commit
+    if (rooms.length > 0) {
       await saveBookingRooms(connection, bookingId, rooms);
     }
 
-    await connection.commit();
+    // สร้าง QR ก่อน commit เพื่อให้ข้อผิดพลาดในขั้นตอนนี้
+    // ไม่ทำให้เกิด Booking ที่บันทึกไปแล้วแต่ส่ง QR กลับไม่ได้
+    const qrPayload = generatePayload(PROMPTPAY_ID, {
+      amount: Number(total_price),
+    });
 
-    const qrPayload = generatePayload(PROMPTPAY_ID, { amount: Number(total_price) || 0 });
+    await connection.commit();
+    transactionStarted = false;
 
     return res.status(200).json({
       success: true,
@@ -219,11 +323,25 @@ router.post('/create-order', async (req, res) => {
       },
     });
   } catch (error) {
-    if (connection) await connection.rollback();
+    if (connection && transactionStarted) {
+      try {
+        await connection.rollback();
+      } catch (rollbackError) {
+        console.error('Create booking rollback error:', rollbackError);
+      }
+    }
+
     console.error('Create booking error:', error);
-    return res.status(500).json({ success: false, message: 'Internal server error' });
+
+    return res.status(500).json({
+      success: false,
+      message: 'ไม่สามารถสร้างรายการจองได้',
+      error: error.message,
+    });
   } finally {
-    if (connection) connection.release();
+    if (connection) {
+      connection.release();
+    }
   }
 });
 
@@ -287,14 +405,15 @@ router.get('/status/:bookingId', async (req, res) => {
   }
 });
 
+// 3. แนบสลิปชำระเงิน
 router.post('/confirm-payment', upload.single('slip_image'), async (req, res) => {
-  let connection;
-  try {
+  let connection = null;
+  let transactionStarted = false;
 
+  try {
     const booking_id = req.body?.booking_id ?? req.body?.bookingId;
     const uploadedFile = req.file;
-    
-  
+
     if (!booking_id || !uploadedFile) {
       return res.status(400).json({
         success: false,
@@ -302,7 +421,8 @@ router.post('/confirm-payment', upload.single('slip_image'), async (req, res) =>
       });
     }
 
-    const slip_image = uploadedFile.path ;
+    const slip_image = uploadedFile.path;
+
     if (!slip_image) {
       return res.status(400).json({
         success: false,
@@ -310,20 +430,102 @@ router.post('/confirm-payment', upload.single('slip_image'), async (req, res) =>
       });
     }
 
-    // 1. ดึง Connection ออกมาจาก Pool เพื่อเริ่ม Transaction
     connection = await conn.getConnection();
     await connection.beginTransaction();
 
-    const [bookingRows] = await connection.query(
-      `SELECT b.booking_id, b.round_id, b.payment_status,
-              1 + COUNT(p.passenger_id) AS passenger_count
-       FROM booking b
-       LEFT JOIN passenger p ON p.booking_id = b.booking_id
-       WHERE b.booking_id = ?
-       GROUP BY b.booking_id, b.round_id, b.payment_status
+    // 2. ดึงข้อมูลรายการจอง พร้อมสั่ง ล็อก Row (FOR UPDATE)
+   const [rows] = await connection.query(
+  `SELECT b.booking_id, b.round_id, b.payment_status, 
+          (1 + COUNT(p.passenger_id)) AS passenger_count
+   FROM booking b
+   LEFT JOIN passenger p ON b.booking_id = p.booking_id
+   WHERE b.booking_id = ?
+   GROUP BY b.booking_id, b.round_id, b.payment_status
+   FOR UPDATE`,
+  [booking_id],
+);
+   
+
+    const booking = rows[0];
+
+    if (
+      booking.payment_status === 'expired' ||
+      booking.payment_status === 'cancelled' ||
+      ['cancelled', 'reject', 'finish'].includes(booking.status)
+    ) {
+      await connection.rollback();
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (bookingRoundRows.length === 0) {
+      await connection.rollback();
+      transactionStarted = false;
+
+      return res.status(404).json({
+        success: false,
+        message: 'ไม่พบรายการจอง',
+      });
+    }
+
+    // 2. ล็อกแถวรอบทัวร์ก่อน เพื่อให้ลำดับการล็อก
+    // สอดคล้องกับ Route จบทัวร์
+    const [roundRows] = await connection.query(
+      `SELECT status
+       FROM tour_round
+       WHERE round_id = ?
        FOR UPDATE`,
-      [booking_id],
+      [bookingRoundRows[0].round_id]
     );
+
+    if (roundRows.length === 0) {
+      await connection.rollback();
+      transactionStarted = false;
+
+      return res.status(404).json({
+        success: false,
+        message: 'ไม่พบรอบทัวร์',
+      });
+    }
+
+    // ห้ามส่งสลิปหลังจบทัวร์
+    if (roundRows[0].status === 'success') {
+      await connection.rollback();
+      transactionStarted = false;
+
+      return res.status(409).json({
+        success: false,
+        message: 'รอบทัวร์จบแล้ว ไม่สามารถส่งสลิปชำระเงินได้',
+      });
+    }
+
+    // 3. ล็อก Booking และนับจำนวนผู้เดินทาง
+    const [rows] = await connection.query(
+      `SELECT
+         b.booking_id,
+         b.round_id,
+         b.status,
+         b.payment_status,
+         (
+           SELECT COUNT(*) + 1
+           FROM passenger p
+           WHERE p.booking_id = b.booking_id
+         ) AS passenger_count
+       FROM booking b
+       WHERE b.booking_id = ?
+       FOR UPDATE`,
+      [booking_id]
+    );
+
+    if (rows.length === 0) {
+      await connection.rollback();
+      transactionStarted = false;
+
+      return res.status(404).json({
+        success: false,
+        message: 'ไม่พบรายการจอง',
+      });
+    }
+>>>>>>> be569df48eb10bdb6ce1209eaa31a313dcf901f8
 
     const booking = bookingRows[0];
 
@@ -332,14 +534,51 @@ router.post('/confirm-payment', upload.single('slip_image'), async (req, res) =>
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
 
-    if (booking.payment_status === 'expired') {
+    if (
+      booking.payment_status === 'expired' ||
+      booking.payment_status === 'cancelled' ||
+      ['cancelled', 'reject', 'finish'].includes(booking.status)
+    ) {
       await connection.rollback();
-      return res.status(400).json({ success: false, message: 'Booking has expired' });
+      transactionStarted = false;
+
+      return res.status(400).json({
+        success: false,
+        message: 'รายการจองนี้หมดอายุหรือถูกยกเลิกแล้ว',
+      });
     }
 
     if (booking.payment_status === 'paid') {
       await connection.rollback();
-      return res.status(400).json({ success: false, message: 'Booking is already paid' });
+      transactionStarted = false;
+
+      return res.status(400).json({
+        success: false,
+        message: 'รายการจองนี้ส่งสลิปแล้วหรือชำระเงินแล้ว',
+      });
+    }
+
+<<<<<<< HEAD
+    const [roundRows] = await connection.query(
+      `SELECT count, status FROM tour_round WHERE round_id = ? FOR UPDATE`,
+      [booking.round_id],
+    );
+
+    if (!roundRows || roundRows.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ success: false, message: 'Tour round not found' });
+    }
+
+    const roundCount = Number(roundRows[0].count || 0);
+    const occupiedWithoutCurrent = await getOccupiedSeatCount(connection, booking.round_id, booking_id);
+    const currentSeatCount = Number(booking.passenger_count || 1);
+
+    if (roundRows[0].status === 'closed' || occupiedWithoutCurrent + currentSeatCount > roundCount) {
+      await connection.rollback();
+      return res.status(409).json({
+        success: false,
+        message: 'ที่นั่งเต็มแล้ว ไม่สามารถยืนยันการชำระเงินได้',
+      });
     }
 
     const [roundRows] = await connection.query(
@@ -364,21 +603,39 @@ router.post('/confirm-payment', upload.single('slip_image'), async (req, res) =>
       });
     }
 
+=======
+    // 4. บันทึกสลิป
+    // ใช้ paid ตามระบบปัจจุบัน ซึ่งหมายถึงส่งสลิปรอแอดมินตรวจสอบ
+>>>>>>> be569df48eb10bdb6ce1209eaa31a313dcf901f8
     await connection.query(
-      `UPDATE booking 
-       SET slip_image = ?, payment_status = 'paid', payment_date = NOW() 
+      `UPDATE booking
+       SET slip_image = ?,
+           payment_status = 'paid',
+           payment_date = NOW()
        WHERE booking_id = ?`,
-      [slip_image, booking_id],
+      [slip_image, booking_id]
     );
 
-    const roundSummary = await checkAndUpdateRoundStatus(connection, booking.round_id);
+    // 5. ตรวจจำนวนที่นั่งและปรับสถานะรอบ หากเต็ม
+    const roundSummary = await checkAndUpdateRoundStatus(
+      connection,
+      booking.round_id
+    );
+
     await connection.commit();
+<<<<<<< HEAD
     console.log('roundtourSummary : ', roundSummary);
+=======
+    transactionStarted = false;
+
+    console.log('roundtourSummary:', roundSummary);
+
+>>>>>>> be569df48eb10bdb6ce1209eaa31a313dcf901f8
     return res.status(200).json({
       success: true,
       message: 'Payment slip submitted successfully',
       data: {
-        booking_id,
+        booking_id: booking.booking_id,
         slip_image,
         payment_status: 'paid',
         passenger_count: Number(booking.passenger_count),
@@ -386,8 +643,25 @@ router.post('/confirm-payment', upload.single('slip_image'), async (req, res) =>
       },
     });
   } catch (error) {
+    if (connection && transactionStarted) {
+      try {
+        await connection.rollback();
+      } catch (rollbackError) {
+        console.error('Confirm payment rollback error:', rollbackError);
+      }
+    }
+
     console.error('Confirm payment error:', error);
-    return res.status(500).json({ success: false, message: 'Internal server error' });
+
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message,
+    });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
   }
 });
 
@@ -490,7 +764,7 @@ router.get('/admin/confirmed-members/:roundId', async (req, res) => {
       INNER JOIN member m
         ON m.member_id = b.member_id
       WHERE b.round_id = ?
-        AND b.status = 'confirmed'
+        AND b.status IN ('confirmed', 'finish')
         AND b.payment_status = 'paid'
       ORDER BY b.booking_date ASC, b.booking_id ASC
       `,
