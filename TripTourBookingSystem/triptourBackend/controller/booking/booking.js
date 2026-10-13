@@ -448,15 +448,6 @@ router.post('/confirm-payment', upload.single('slip_image'), async (req, res) =>
 
     const booking = rows[0];
 
-    if (
-      booking.payment_status === 'expired' ||
-      booking.payment_status === 'cancelled' ||
-      ['cancelled', 'reject', 'finish'].includes(booking.status)
-    ) {
-      await connection.rollback();
-      return res.status(404).json({ success: false, message: 'Booking not found' });
-    }
-
     if (bookingRoundRows.length === 0) {
       await connection.rollback();
       transactionStarted = false;
@@ -525,7 +516,6 @@ router.post('/confirm-payment', upload.single('slip_image'), async (req, res) =>
         message: 'ไม่พบรายการจอง',
       });
     }
->>>>>>> be569df48eb10bdb6ce1209eaa31a313dcf901f8
 
     const booking = bookingRows[0];
 
@@ -558,7 +548,6 @@ router.post('/confirm-payment', upload.single('slip_image'), async (req, res) =>
       });
     }
 
-<<<<<<< HEAD
     const [roundRows] = await connection.query(
       `SELECT count, status FROM tour_round WHERE round_id = ? FOR UPDATE`,
       [booking.round_id],
@@ -581,32 +570,6 @@ router.post('/confirm-payment', upload.single('slip_image'), async (req, res) =>
       });
     }
 
-    const [roundRows] = await connection.query(
-      `SELECT count, status FROM tour_round WHERE round_id = ? FOR UPDATE`,
-      [booking.round_id],
-    );
-
-    if (!roundRows || roundRows.length === 0) {
-      await connection.rollback();
-      return res.status(404).json({ success: false, message: 'Tour round not found' });
-    }
-
-    const roundCount = Number(roundRows[0].count || 0);
-    const occupiedWithoutCurrent = await getOccupiedSeatCount(connection, booking.round_id, booking_id);
-    const currentSeatCount = Number(booking.passenger_count || 1);
-
-    if (roundRows[0].status === 'closed' || occupiedWithoutCurrent + currentSeatCount > roundCount) {
-      await connection.rollback();
-      return res.status(409).json({
-        success: false,
-        message: 'ที่นั่งเต็มแล้ว ไม่สามารถยืนยันการชำระเงินได้',
-      });
-    }
-
-=======
-    // 4. บันทึกสลิป
-    // ใช้ paid ตามระบบปัจจุบัน ซึ่งหมายถึงส่งสลิปรอแอดมินตรวจสอบ
->>>>>>> be569df48eb10bdb6ce1209eaa31a313dcf901f8
     await connection.query(
       `UPDATE booking
        SET slip_image = ?,
@@ -623,14 +586,10 @@ router.post('/confirm-payment', upload.single('slip_image'), async (req, res) =>
     );
 
     await connection.commit();
-<<<<<<< HEAD
-    console.log('roundtourSummary : ', roundSummary);
-=======
     transactionStarted = false;
 
     console.log('roundtourSummary:', roundSummary);
 
->>>>>>> be569df48eb10bdb6ce1209eaa31a313dcf901f8
     return res.status(200).json({
       success: true,
       message: 'Payment slip submitted successfully',
