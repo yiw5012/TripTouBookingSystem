@@ -98,6 +98,42 @@ async function getGuideInfo(connection, guideId) {
 }
 
 // ==========================================================
+// HELPER : หา Firebase UID ของสมาชิกและ Guide ในรอบนี้
+// ==========================================================
+async function getRoundFirebaseUids(connection, roundId) {
+  const [memberRows] = await connection.query(
+    `SELECT DISTINCT m.google_id AS firebase_uid
+     FROM booking b
+     INNER JOIN member m ON m.member_id = b.member_id
+     WHERE b.round_id = ?
+       AND m.google_id IS NOT NULL
+       AND TRIM(m.google_id) <> ''`,
+    [roundId]
+  );
+
+  const [guideRows] = await connection.query(
+    `SELECT g.email
+     FROM tour_round tr
+     LEFT JOIN guide g ON g.guide_id = tr.guide_id
+     WHERE tr.round_id = ?
+     LIMIT 1`,
+    [roundId]
+  );
+
+  const uids = memberRows
+    .map((row) => row.firebase_uid)
+    .filter((uid) => typeof uid === "string" && uid.trim() !== "");
+
+  const guideUid = await getFirebaseUidByEmail(guideRows[0]?.email);
+
+  if (guideUid) {
+    uids.push(guideUid);
+  }
+
+  return [...new Set(uids)];
+}
+
+// ==========================================================
 // HELPER : สร้างข้อมูลห้อง Chat
 // ==========================================================
 
@@ -197,7 +233,7 @@ async function createRoundChatRoom({
 // กรณี DELETE Firebase สำเร็จ แต่ MySQL มีปัญหา
 // ==========================================================
 
-async function getRoundFirebaseBackup(roundId) {
+async function getRoundFirebaseBackup(roundId, additionalUids = []) {
   const roomId = getRoomId(roundId);
 
   const roomRef = db.ref(`rooms/${roomId}`);
@@ -221,8 +257,15 @@ async function getRoundFirebaseBackup(roundId) {
   const roomData = roomSnapshot.val();
   const members = roomData?.members || {};
 
-  const memberUids = Object.keys(members);
+  // รวมสมาชิกใน Firebase Room กับ UID ที่ค้นจาก MySQL
+  const memberUids = [
+    ...new Set([
+      ...Object.keys(members),
+      ...additionalUids.filter(Boolean),
+    ]),
+  ];
 
+  // สำรอง user_rooms ก่อนลบ เพื่อให้ Route ลบรอบเดิม Restore กลับได้
   for (const uid of memberUids) {
     const userRoomSnapshot = await db
       .ref(`user_rooms/${uid}/${roomId}`)
@@ -244,10 +287,10 @@ async function getRoundFirebaseBackup(roundId) {
 // HELPER : ลบ Firebase Room
 // ==========================================================
 
-async function deleteRoundChatRoom(roundId) {
+async function deleteRoundChatRoom(roundId, additionalUids = []) {
   const roomId = getRoomId(roundId);
 
-  const backup = await getRoundFirebaseBackup(roundId);
+  const backup = await getRoundFirebaseBackup(roundId, additionalUids);
 
   const updates = {
     [`rooms/${roomId}`]: null,
@@ -258,8 +301,11 @@ async function deleteRoundChatRoom(roundId) {
     updates[`user_rooms/${uid}/${roomId}`] = null;
   }
 
+  // ลบหลาย Path พร้อมกัน
+  // เรียกซ้ำได้ หาก Path เหล่านั้นถูกลบไปแล้ว
   await db.ref().update(updates);
 
+  // คืนค่าเดิมไว้ให้ Route DELETE ที่มีระบบ Restore อยู่แล้ว
   return backup.restoreUpdates;
 }
 
@@ -486,12 +532,12 @@ router.get("/tour/:tourId", async (req, res) => {
 
 router.post("/", async (req, res) => {
   let connection = null;
-
   let insertedRoundId = null;
   let firebaseCreated = false;
 
   try {
     const {
+      round_code,
       tour_id,
       departure,
       destination,
@@ -508,9 +554,25 @@ router.post("/", async (req, res) => {
       status,
     } = req.body || {};
 
+    const normalizedRoundCode = String(round_code ?? "").trim().toUpperCase();
+
     // ======================================================
     // VALIDATE
     // ======================================================
+
+    if (!normalizedRoundCode) {
+  return res.status(400).json({
+    success: false,
+    message: "กรุณาระบุรหัสรอบทัวร์",
+  });
+}
+
+if (normalizedRoundCode.length > 50) {
+  return res.status(400).json({
+    success: false,
+    message: "รหัสรอบทัวร์ต้องมีความยาวไม่เกิน 50 ตัวอักษร",
+  });
+}
 
     if (!tour_id || Number.isNaN(Number(tour_id))) {
       return res.status(400).json({
@@ -618,6 +680,25 @@ const normalizedStatus =
 
     await connection.beginTransaction();
 
+    const [duplicateCodeRows] = await connection.query(
+  `
+  SELECT round_id
+  FROM tour_round
+  WHERE round_code = ?
+  LIMIT 1
+  `,
+  [normalizedRoundCode]
+);
+
+if (duplicateCodeRows.length > 0) {
+  await connection.rollback();
+
+  return res.status(409).json({
+    success: false,
+    message: "รหัสรอบทัวร์นี้มีอยู่แล้ว กรุณาใช้รหัสอื่น",
+  });
+}
+
     // ======================================================
     // ตรวจ Tour
     // ======================================================
@@ -679,45 +760,47 @@ const savedFlightTime = isFlightIncluded
     // ======================================================
 
     const [result] = await connection.query(
-      `
-      INSERT INTO tour_round
-      (
-        tour_id,
-        departure,
-        destination,
-        start_date,
-        end_date,
-        airline,
-        flight,
-        flight_time,
-        price_single,
-        price_double,
-        price_triple,
-        count,
-        status,
-        guide_id
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `,
-      [
-        Number(tour_id),
-        departure.trim(),
-        destination.trim(),
-        start_date,
-        end_date,
-        savedAirline,
-        savedFlight,
-        savedFlightTime,
-        Number(price_single),
-        Number(price_double),
-        Number(price_triple),
-        Number(count),
-        normalizedStatus,
-        normalizedGuideId,
-      ]
-    );
+  `
+  INSERT INTO tour_round
+  (
+    round_code,
+    tour_id,
+    departure,
+    destination,
+    start_date,
+    end_date,
+    airline,
+    flight,
+    flight_time,
+    price_single,
+    price_double,
+    price_triple,
+    count,
+    status,
+    guide_id
+  )
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `,
+  [
+    normalizedRoundCode,
+    Number(tour_id),
+    departure.trim(),
+    destination.trim(),
+    start_date,
+    end_date,
+    savedAirline,
+    savedFlight,
+    savedFlightTime,
+    Number(price_single),
+    Number(price_double),
+    Number(price_triple),
+    Number(count),
+    normalizedStatus,
+    normalizedGuideId,
+  ]
+);
 
-    insertedRoundId = result.insertId;
+insertedRoundId = result.insertId;
 
     // ======================================================
     // CREATE FIREBASE ROOM
@@ -746,6 +829,7 @@ const savedFlightTime = isFlightIncluded
 
       data: {
         round_id: insertedRoundId,
+        round_code: normalizedRoundCode,
 
         chat_room_id: firebaseRoom.roomId,
 
@@ -789,6 +873,15 @@ const savedFlightTime = isFlightIncluded
         );
       }
     }
+    if (
+  error?.code === "ER_DUP_ENTRY" &&
+  String(error?.message ?? "").includes("uq_tour_round_round_code")
+) {
+  return res.status(409).json({
+    success: false,
+    message: "รหัสรอบทัวร์นี้มีอยู่แล้ว กรุณาใช้รหัสอื่น",
+  });
+}
 
     return res.status(500).json({
       success: false,
@@ -822,6 +915,7 @@ router.put("/:roundId", async (req, res) => {
 
   try {
     const {
+      round_code,
       tour_id,
       departure,
       destination,
@@ -837,10 +931,24 @@ router.put("/:roundId", async (req, res) => {
       guide_id,
       status,
     } = req.body || {};
-
+const normalizedRoundCode = String(round_code ?? "").trim().toUpperCase();
     // ======================================================
     // VALIDATE
     // ======================================================
+
+    if (!normalizedRoundCode) {
+  return res.status(400).json({
+    success: false,
+    message: "กรุณาระบุรหัสรอบทัวร์",
+  });
+}
+
+if (normalizedRoundCode.length > 50) {
+  return res.status(400).json({
+    success: false,
+    message: "รหัสรอบทัวร์ต้องมีความยาวไม่เกิน 50 ตัวอักษร",
+  });
+}
 
     if (!tour_id || Number.isNaN(Number(tour_id))) {
       return res.status(400).json({
@@ -948,6 +1056,35 @@ const normalizedStatus =
 
     const existingRound = existingRows[0];
 
+if (existingRound.status === "success") {
+  await connection.rollback();
+
+  return res.status(409).json({
+    success: false,
+    message: "รอบทัวร์นี้จบแล้ว ไม่สามารถแก้ไขข้อมูลได้",
+  });
+}
+
+    const [duplicateCodeRows] = await connection.query(
+  `
+  SELECT round_id
+  FROM tour_round
+  WHERE round_code = ?
+    AND round_id <> ?
+  LIMIT 1
+  `,
+  [normalizedRoundCode, roundId]
+);
+
+if (duplicateCodeRows.length > 0) {
+  await connection.rollback();
+
+  return res.status(409).json({
+    success: false,
+    message: "รหัสรอบทัวร์นี้มีอยู่แล้ว กรุณาใช้รหัสอื่น",
+  });
+}
+
     // ======================================================
     // ตรวจ Tour ใหม่
     // ======================================================
@@ -1006,45 +1143,45 @@ const isFlightIncluded =
     // ======================================================
 
     await connection.query(
-      `
-      UPDATE tour_round
-
-      SET
-        tour_id = ?,
-        departure = ?,
-        destination = ?,
-        start_date = ?,
-        end_date = ?,
-        airline = ?,
-        flight = ?,
-        flight_time = ?,
-        price_single = ?,
-        price_double = ?,
-        price_triple = ?,
-        count = ?,
-        status = ?,
-        guide_id = ?
-
-      WHERE round_id = ?
-      `,
-      [
-        Number(tour_id),
-        departure.trim(),
-        destination.trim(),
-        start_date,
-        end_date,
-        isFlightIncluded ? emptyToNull(airline) : null,
-        isFlightIncluded ? emptyToNull(flight) : null,
-        isFlightIncluded ? emptyToNull(flight_time) : null,
-        Number(price_single),
-        Number(price_double),
-        Number(price_triple),
-        Number(count),
-        normalizedStatus,
-        normalizedGuideId,
-        roundId,
-      ]
-    );
+  `
+  UPDATE tour_round
+  SET
+    round_code = ?,
+    tour_id = ?,
+    departure = ?,
+    destination = ?,
+    start_date = ?,
+    end_date = ?,
+    airline = ?,
+    flight = ?,
+    flight_time = ?,
+    price_single = ?,
+    price_double = ?,
+    price_triple = ?,
+    count = ?,
+    status = ?,
+    guide_id = ?
+  WHERE round_id = ?
+  `,
+  [
+    normalizedRoundCode,
+    Number(tour_id),
+    departure.trim(),
+    destination.trim(),
+    start_date,
+    end_date,
+    isFlightIncluded ? emptyToNull(airline) : null,
+    isFlightIncluded ? emptyToNull(flight) : null,
+    isFlightIncluded ? emptyToNull(flight_time) : null,
+    Number(price_single),
+    Number(price_double),
+    Number(price_triple),
+    Number(count),
+    normalizedStatus,
+    normalizedGuideId,
+    roundId,
+  ]
+);
 
     // ======================================================
     // SYNC FIREBASE
@@ -1072,6 +1209,7 @@ const isFlightIncluded =
 
       data: {
         round_id: roundId,
+        round_code: normalizedRoundCode,
 
         chat_room_id: firebaseRoom.roomId,
 
@@ -1095,6 +1233,15 @@ const isFlightIncluded =
         await connection.rollback();
       } catch {}
     }
+    if (
+  error?.code === "ER_DUP_ENTRY" &&
+  String(error?.message ?? "").includes("uq_tour_round_round_code")
+) {
+  return res.status(409).json({
+    success: false,
+    message: "รหัสรอบทัวร์นี้มีอยู่แล้ว กรุณาใช้รหัสอื่น",
+  });
+}
 
     console.error(
       "PUT /manage-round/:roundId error:",
@@ -1110,6 +1257,165 @@ const isFlightIncluded =
     if (connection) {
       connection.release();
     }
+  }
+});
+
+// ==========================================================
+// POST /manage-round/:roundId/finish
+// จบทัวร์ เปลี่ยนสถานะ Booking และลบ Firebase Chat
+// ไม่ต้องเพิ่มคอลัมน์ติดตามการลบ Chat
+// ==========================================================
+router.post("/:roundId/finish", async (req, res) => {
+  const roundId = Number(req.params.roundId);
+
+  if (!roundId || Number.isNaN(roundId)) {
+    return res.status(400).json({
+      success: false,
+      message: "round_id ไม่ถูกต้อง",
+    });
+  }
+
+  let connection = null;
+  let finishedBookings = 0;
+
+  try {
+    connection = await conn.getConnection();
+    await connection.beginTransaction();
+
+    // 1. ล็อกแถวรอบทัวร์ ป้องกันการจบทัวร์ซ้ำพร้อมกัน
+    const [roundRows] = await connection.query(
+      `SELECT round_id, status
+       FROM tour_round
+       WHERE round_id = ?
+       FOR UPDATE`,
+      [roundId]
+    );
+
+    if (roundRows.length === 0) {
+      await connection.rollback();
+
+      return res.status(404).json({
+        success: false,
+        message: "ไม่พบรอบทัวร์",
+      });
+    }
+
+    const currentStatus = roundRows[0].status;
+
+    // ถ้าเป็นการจบทัวร์ครั้งแรก ให้ตรวจสอบรายการที่รออนุมัติสลิปก่อน
+    // ถ้าเป็นการลองลบห้องซ้ำ ไม่ต้องตรวจซ้ำ เพราะ MySQL จบทัวร์ไปแล้ว
+    if (currentStatus !== "success") {
+      const [pendingRows] = await connection.query(
+        `SELECT COUNT(*) AS total
+         FROM booking
+         WHERE round_id = ?
+           AND status = 'pending'
+           AND payment_status = 'paid'`,
+        [roundId]
+      );
+
+      const pendingCount = Number(pendingRows[0]?.total || 0);
+
+      if (pendingCount > 0) {
+        await connection.rollback();
+
+        return res.status(409).json({
+          success: false,
+          message:
+            `ยังจบทัวร์ไม่ได้ มีรายการส่งสลิปที่รอแอดมินตรวจสอบ ${pendingCount} รายการ กรุณาอนุมัติหรือปฏิเสธรายการเหล่านี้ก่อน`,
+          pending_payment_reviews: pendingCount,
+        });
+      }
+
+      // 2. ตั้งสถานะรอบทัวร์เป็นจบทัวร์แล้ว
+      await connection.query(
+        `UPDATE tour_round
+         SET status = 'success'
+         WHERE round_id = ?`,
+        [roundId]
+      );
+
+      // 3. เปลี่ยนเฉพาะ Booking ที่ชำระเงินแล้วและแอดมินอนุมัติแล้ว
+      await connection.query(
+        `UPDATE booking
+         SET status = 'finish'
+         WHERE round_id = ?
+           AND payment_status = 'paid'
+           AND status = 'confirmed'`,
+        [roundId]
+      );
+    }
+
+    // นับจำนวน Booking ที่จบทัวร์แล้ว รวมถึงกรณีที่เรียก Route ซ้ำ
+    const [finishedRows] = await connection.query(
+      `SELECT COUNT(*) AS total
+       FROM booking
+       WHERE round_id = ?
+         AND payment_status = 'paid'
+         AND status = 'finish'`,
+      [roundId]
+    );
+
+    finishedBookings = Number(finishedRows[0]?.total || 0);
+
+    // 4. ยืนยันการบันทึก MySQL ก่อนทำงานกับ Firebase
+    await connection.commit();
+  } catch (error) {
+    if (connection) {
+      try {
+        await connection.rollback();
+      } catch {}
+    }
+
+    console.error("Finish round MySQL error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "ไม่สามารถบันทึกสถานะจบทัวร์ได้",
+      error: error.message,
+    });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
+
+  // 5. ลบ Firebase หลังจากบันทึก MySQL สำเร็จแล้ว
+  // ถ้าขั้นตอนนี้ล้มเหลว จะไม่ย้อน MySQL กลับ
+  try {
+    const participantUids = await getRoundFirebaseUids(conn, roundId);
+
+    await deleteRoundChatRoom(roundId, participantUids);
+
+    return res.status(200).json({
+      success: true,
+      message: "จบทัวร์และลบห้องแชทเรียบร้อยแล้ว",
+      data: {
+        round_id: roundId,
+        status: "success",
+        finished_bookings: finishedBookings,
+        chat_room_id: getRoomId(roundId),
+        chat_deleted: true,
+      },
+    });
+  } catch (error) {
+    console.error("Finish round Firebase cleanup error:", error);
+
+    // MySQL จบทัวร์ไปแล้ว แต่ Firebase อาจยังลบไม่สำเร็จ
+    // ส่ง tour_finished=true ให้ Angular ทราบว่าต้องไม่ย้อนสถานะ
+    return res.status(503).json({
+      success: false,
+      tour_finished: true,
+      message:
+        "บันทึกจบทัวร์แล้ว แต่ลบห้องแชทไม่สำเร็จ กรุณากดลองลบห้องแชทอีกครั้ง",
+      data: {
+        round_id: roundId,
+        status: "success",
+        finished_bookings: finishedBookings,
+        chat_room_id: getRoomId(roundId),
+        can_retry: true,
+      },
+    });
   }
 });
 
@@ -1144,19 +1450,12 @@ router.delete("/:roundId", async (req, res) => {
     // ======================================================
 
     const [roundRows] = await connection.query(
-      `
-      SELECT
-        round_id,
-        tour_id,
-        status
-      FROM tour_round
-
-      WHERE round_id = ?
-
-      LIMIT 1
-      `,
-      [roundId]
-    );
+  `SELECT round_id, tour_id, status
+   FROM tour_round
+   WHERE round_id = ?
+   LIMIT 1`,
+  [roundId]
+);
 
     if (roundRows.length === 0) {
       await connection.rollback();
@@ -1166,6 +1465,15 @@ router.delete("/:roundId", async (req, res) => {
         message: "ไม่พบรอบทัวร์",
       });
     }
+
+    if (roundRows[0].status === "success") {
+  await connection.rollback();
+
+  return res.status(409).json({
+    success: false,
+    message: "รอบทัวร์นี้จบแล้ว ไม่สามารถลบรอบเพื่อป้องกันการสูญหายของประวัติได้",
+  });
+}
 
 // ======================================================
 // ตรวจ Booking
@@ -1201,10 +1509,17 @@ if (bookingCount > 0) {
     // ลบ Firebase ก่อน
     // ======================================================
 
-    firebaseBackup =
-      await deleteRoundChatRoom(roundId);
+const participantUids = await getRoundFirebaseUids(
+  connection,
+  roundId
+);
 
-    firebaseDeleted = true;
+firebaseBackup = await deleteRoundChatRoom(
+  roundId,
+  participantUids
+);
+
+firebaseDeleted = true;
 
     // ======================================================
     // ลบ MySQL

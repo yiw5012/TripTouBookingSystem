@@ -1,1434 +1,489 @@
-<div
-  style="
-    max-width: 1000px;
-    margin: 20px auto;
-    font-family: sans-serif;
-    background-color: #fcfcfc;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  "
->
+<div class="add-tour-page">
+  <header class="page-header">
+    <div class="page-heading-copy">
+      <div class="breadcrumb-line">
+        <span>จัดการทัวร์</span>
+        <span class="breadcrumb-divider">/</span>
+        <span class="breadcrumb-current">เพิ่มทัวร์ใหม่</span>
+      </div>
+      <h1>เพิ่มทัวร์ใหม่</h1>
+      <p class="page-description">
+        กรอกรายละเอียดโปรแกรมทัวร์ อัปโหลดสื่อประกอบ และจัดลำดับการเดินทางในแต่ละวัน
+      </p>
+    </div>
 
-  <!-- ====================================================== -->
-  <!-- HEADER -->
-  <!-- ====================================================== -->
-
-  <div
-    style="
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 25px;
-    "
-  >
-
-    <h2 style="color: #333; margin: 0;">
-      เพิ่มข้อมูลทัวร์ใหม่
-    </h2>
-
-    <span
-      *ngIf="isSubmitting"
-      style="
-        background: #fff3cd;
-        color: #856404;
-        padding: 8px 14px;
-        border-radius: 20px;
-        font-size: 14px;
-        font-weight: bold;
-      "
-    >
+    <div class="saving-indicator" *ngIf="isSubmitting" role="status" aria-live="polite">
+      <span class="loading-spinner" aria-hidden="true"></span>
       กำลังบันทึกข้อมูล...
-    </span>
+    </div>
+  </header>
 
+  <div class="form-notice">
+    <span class="notice-icon" aria-hidden="true">i</span>
+    <p>กรุณากรอกข้อมูลที่มีเครื่องหมาย <strong>*</strong> ให้ครบ และแนบไฟล์ PDF ของโปรแกรมทัวร์ก่อนบันทึก</p>
   </div>
 
-
-  <!-- ====================================================== -->
-  <!-- FORM -->
-  <!-- ====================================================== -->
-
-  <form
-    [formGroup]="tourForm"
-    (ngSubmit)="onSubmit()"
-  >
-
-
-    <!-- ==================================================== -->
+  <form class="tour-form" [formGroup]="tourForm" (ngSubmit)="onSubmit()" novalidate>
     <!-- ข้อมูลทั่วไป -->
-    <!-- ==================================================== -->
-
-    <div
-      style="
-        background-color: white;
-        border: 1px solid #ddd;
-        padding: 20px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-      "
-    >
-
-      <h3
-        style="
-          margin-top: 0;
-          color: #007bff;
-          border-bottom: 2px solid #007bff;
-          padding-bottom: 10px;
-        "
-      >
-        ข้อมูลทั่วไป
-      </h3>
-
-      <!-- รหัสโปรแกรมทัวร์ -->
-<div style="margin-bottom: 15px;">
-  <label>
-    <b>รหัสโปรแกรมทัวร์: *</b>
-  </label>
-
-  <br>
-
-  <input
-    type="text"
-    formControlName="tour_code"
-    placeholder="เช่น JP001 หรือ TR-JAPAN-001"
-    maxlength="50"
-    style="
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      box-sizing: border-box;
-    "
-  >
-
-  <div
-    *ngIf="
-      tourForm.get('tour_code')?.touched &&
-      tourForm.get('tour_code')?.invalid
-    "
-    style="color: #dc3545; font-size: 13px; margin-top: 5px;"
-  >
-    กรุณากรอกรหัสโปรแกรมทัวร์ ไม่เกิน 50 ตัวอักษร
-  </div>
-</div>
-
-
-      <!-- ชื่อทัวร์ -->
-
-      <div style="margin-bottom: 15px;">
-
-        <label>
-          <b>ชื่อทัวร์: *</b>
-        </label>
-
-        <br>
-
-        <input
-          type="text"
-          formControlName="tour_name"
-          placeholder="เช่น ทัวร์ญี่ปุ่น โตเกียว ฟูจิ 5 วัน 3 คืน"
-          style="
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-sizing: border-box;
-          "
-        >
-
-        <div
-          *ngIf="
-            tourForm.get('tour_name')?.touched &&
-            tourForm.get('tour_name')?.invalid
-          "
-          style="
-            color: #dc3545;
-            font-size: 13px;
-            margin-top: 5px;
-          "
-        >
-          กรุณากรอกชื่อทัวร์
+    <section class="form-card" aria-labelledby="general-section-title">
+      <div class="section-heading">
+        <div class="section-icon section-icon-green" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+            <path d="m4.5 7.7 7.5 4.4 7.5-4.4M12 12.1V21" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+          </svg>
         </div>
-
+        <div>
+          <h2 id="general-section-title">ข้อมูลทั่วไป</h2>
+          <p>รายละเอียดหลักสำหรับโปรแกรมทัวร์นี้</p>
+        </div>
       </div>
 
-
-      <!-- ประเทศ + ประเภท -->
-
-      <div
-        style="
-          display: flex;
-          gap: 15px;
-          margin-bottom: 15px;
-        "
-      >
-
-        <div style="flex: 1;">
-
-          <label>
-            <b>ประเทศ (country_id): *</b>
-          </label>
-
-          <br>
-
-          <select
-  formControlName="country_id"
-  style="
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    box-sizing: border-box;
-    background: white;
-  "
->
-  <option [ngValue]="null">
-    {{
-      isLoadingCountries
-        ? 'กำลังโหลดรายชื่อประเทศ...'
-        : '-- กรุณาเลือกประเทศ --'
-    }}
-  </option>
-
-  <option
-    *ngFor="let country of countries"
-    [ngValue]="country.country_id"
-  >
-    {{ country.country_name_th }}
-    <ng-container *ngIf="country.country_name_en">
-      ({{ country.country_name_en }})
-    </ng-container>
-  </option>
-</select>
-
-<div
-  *ngIf="
-    tourForm.get('country_id')?.touched &&
-    tourForm.get('country_id')?.invalid
-  "
-  style="color: #dc3545; font-size: 13px; margin-top: 5px;"
->
-  กรุณาเลือกประเทศ
-</div>
-
-<div
-  *ngIf="countryError"
-  style="color: #dc3545; font-size: 13px; margin-top: 5px;"
->
-  {{ countryError }}
-</div>
-
-        </div>
-
-
-        <div style="flex: 1;">
-
-          <label>
-            <b>ประเภททัวร์: *</b>
-          </label>
-
-          <br>
-
-          <select
-            formControlName="type"
-            style="
-              width: 100%;
-              padding: 10px;
-              border: 1px solid #ccc;
-              border-radius: 5px;
-              box-sizing: border-box;
-              background: white;
-            "
-          >
-
-            <option value="">
-              -- กรุณาเลือกประเภท --
-            </option>
-
-            <option value="ในประเทศ">
-              ในประเทศ
-            </option>
-
-            <option value="นอกประเทศ">
-              นอกประเทศ
-            </option>
-
-          </select>
-
-        </div>
-
-      </div>
-
-
-      <!-- จำนวนวัน + ราคา -->
-
-      <div
-        style="
-          display: flex;
-          gap: 15px;
-          margin-bottom: 15px;
-        "
-      >
-
-        <div style="flex: 1;">
-
-          <label>
-            <b>ระยะเวลา (วัน): *</b>
-          </label>
-
-          <br>
-
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="tour_code">รหัสโปรแกรมทัวร์ <span class="required-mark">*</span></label>
           <input
-            type="number"
-            formControlName="duration_day"
-            min="1"
-            style="
-              width: 100%;
-              padding: 10px;
-              border: 1px solid #ccc;
-              border-radius: 5px;
-              box-sizing: border-box;
-            "
-          >
-
-        </div>
-
-
-        <div style="flex: 1;">
-
-          <label>
-            <b>ราคาเริ่มต้น (บาท): *</b>
-          </label>
-
-          <br>
-
-          <input
-            type="number"
-            formControlName="price"
-            min="0"
-            step="0.01"
-            style="
-              width: 100%;
-              padding: 10px;
-              border: 1px solid #ccc;
-              border-radius: 5px;
-              box-sizing: border-box;
-            "
-          >
-
-        </div>
-
-      </div>
-
-
-      <!-- รวมตั๋ว + สถานะ -->
-
-      <div
-        style="
-          display: flex;
-          gap: 15px;
-          margin-bottom: 15px;
-        "
-      >
-
-        <div style="flex: 1;">
-
-          <label>
-            <b>รวมตั๋วเครื่องบิน: *</b>
-          </label>
-
-          <br>
-
-          <select
-            formControlName="include_flight"
-            style="
-              width: 100%;
-              padding: 10px;
-              border: 1px solid #ccc;
-              border-radius: 5px;
-              box-sizing: border-box;
-              background: white;
-            "
-          >
-
-            <option value="">
-              -- กรุณาเลือก --
-            </option>
-
-            <option value="รวม">
-              รวมตั๋วเครื่องบิน
-            </option>
-
-            <option value="ไม่รวม">
-              ไม่รวมตั๋วเครื่องบิน
-            </option>
-
-          </select>
-
-        </div>
-
-
-        <div style="flex: 1;">
-
-          <label>
-            <b>สถานะทัวร์: *</b>
-          </label>
-
-          <br>
-
-          <select
-            formControlName="status"
-            style="
-              width: 100%;
-              padding: 10px;
-              border: 1px solid #ccc;
-              border-radius: 5px;
-              box-sizing: border-box;
-              background: white;
-            "
-          >
-
-            <option value="open">
-              เปิดให้บริการ
-            </option>
-
-            <option value="closed">
-              ปิดชั่วคราว
-            </option>
-
-          </select>
-
-        </div>
-
-      </div>
-
-
-      <!-- โปรโมชั่น -->
-
-      <div style="margin-bottom: 15px;">
-
-        <label>
-          <b>โปรโมชั่น:</b>
-        </label>
-
-        <br>
-
-        <input
-          type="text"
-          formControlName="promotion"
-          placeholder="เช่น ลด 2,000 บาท"
-          style="
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-sizing: border-box;
-          "
-        >
-
-      </div>
-
-
-      <!-- เงื่อนไข -->
-
-      <!-- เงื่อนไขทัวร์ -->
-<div style="margin-bottom: 15px;">
-  <label>
-    <b>เงื่อนไขเพิ่มเติม:</b>
-  </label>
-
-  <div
-    style="
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-      margin: 12px 0;
-    "
-  >
-    <label style="cursor: pointer;">
-      <input
-        type="radio"
-        formControlName="condition_mode"
-        value="default"
-      >
-      ใช้เงื่อนไขมาตรฐาน
-    </label>
-
-    <label style="cursor: pointer;">
-      <input
-        type="radio"
-        formControlName="condition_mode"
-        value="custom"
-      >
-      เขียนเงื่อนไขเอง
-    </label>
-  </div>
-
-  <!-- แสดงข้อความมาตรฐาน -->
-  <div
-    *ngIf="tourForm.get('condition_mode')?.value === 'default'"
-    style="
-      padding: 12px;
-      background: #f3f6f9;
-      border: 1px solid #d5dfe8;
-      border-radius: 6px;
-      white-space: pre-line;
-      color: #444;
-    "
-  >
-    <b>เงื่อนไขที่จะใช้:</b>
-
-    <p style="margin-bottom: 0;">
-      {{ defaultConditionDetail }}
-    </p>
-  </div>
-
-  <!-- เปิดให้กรอกเมื่อเลือกเขียนเอง -->
-  <textarea
-    *ngIf="tourForm.get('condition_mode')?.value === 'custom'"
-    formControlName="condition_detail"
-    rows="4"
-    placeholder="พิมพ์เงื่อนไขเพิ่มเติมสำหรับโปรแกรมนี้..."
-    style="
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      box-sizing: border-box;
-      resize: vertical;
-    "
-  ></textarea>
-</div>
-
-    </div>
-
-
-    <!-- ==================================================== -->
-    <!-- รูปภาพ -->
-    <!-- ==================================================== -->
-
-    <div
-      style="
-        background-color: white;
-        border: 1px solid #28a745;
-        padding: 20px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-      "
-    >
-
-      <h3
-        style="
-          margin-top: 0;
-          color: #28a745;
-          border-bottom: 2px solid #28a745;
-          padding-bottom: 10px;
-        "
-      >
-        รูปภาพทัวร์
-      </h3>
-
-
-      <p
-        style="
-          color: #666;
-          margin-top: 0;
-        "
-      >
-        เลือกได้สูงสุด 20 รูป
-        รองรับ JPG, JPEG, PNG และ WEBP
-      </p>
-
-
-      <!-- File Input -->
-
-      <input
-        #imageInput
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        multiple
-        (change)="onImagesSelected($event)"
-        style="
-          display: block;
-          width: 100%;
-          padding: 12px;
-          border: 1px dashed #28a745;
-          border-radius: 6px;
-          background: #f8fff9;
-          box-sizing: border-box;
-        "
-      >
-
-      <!-- =================================================== -->
-<!-- เลือกรูปจาก Cloudinary -->
-<!-- =================================================== -->
-
-<div style="margin: 16px 0;">
-
-  <button
-    type="button"
-    (click)="toggleCloudImagePicker()"
-    style="
-      padding: 10px 16px;
-      border: 1px solid #0d6efd;
-      border-radius: 6px;
-      background: #0d6efd;
-      color: white;
-      cursor: pointer;
-    "
-  >
-    {{
-      showCloudImagePicker
-        ? 'ปิดคลังรูปภาพ'
-        : 'เลือกรูปจาก Cloudinary'
-    }}
-  </button>
-
-  <div
-    *ngIf="showCloudImagePicker"
-    style="
-      margin-top: 14px;
-      padding: 14px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-    "
-  >
-
-    <h4>
-      คลังรูปภาพ Cloudinary
-    </h4>
-
-    <p>
-      เลือกได้หลายรูป และกดโหลดรูปเพิ่มเติมเพื่อดูรูปภาพหน้าถัดไป
-    </p>
-
-    <div
-      *ngIf="cloudImagesError"
-      style="color: #dc3545; margin: 10px 0;"
-    >
-      {{ cloudImagesError }}
-    </div>
-
-    <div
-      *ngIf="isLoadingCloudImages"
-      style="margin: 10px 0;"
-    >
-      กำลังโหลดรูปภาพ...
-    </div>
-
-    <div
-      *ngIf="cloudImages.length > 0"
-      style="
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-        gap: 12px;
-        max-height: 450px;
-        overflow-y: auto;
-      "
-    >
-
-      <button
-        type="button"
-        *ngFor="let image of cloudImages"
-        (click)="toggleCloudImage(image)"
-        [style.border]="
-          isCloudImageSelected(image.public_id)
-            ? '3px solid #198754'
-            : '1px solid #ddd'
-        "
-        style="
-          padding: 8px;
-          border-radius: 8px;
-          background: white;
-          text-align: left;
-          cursor: pointer;
-          min-width: 0;
-        "
-      >
-
-        <img
-          [src]="image.secure_url"
-          alt="Cloudinary image"
-          loading="lazy"
-          style="
-            display: block;
-            width: 100%;
-            height: 115px;
-            object-fit: cover;
-            border-radius: 5px;
-          "
-        />
-
-        <div
-          style="
-            margin-top: 8px;
-            font-size: 12px;
-            overflow-wrap: anywhere;
-          "
-        >
-          {{ image.public_id }}
-        </div>
-
-        <div
-          style="
-            margin-top: 6px;
-            font-size: 12px;
-            color: #198754;
-          "
-        >
-          {{
-            isCloudImageSelected(image.public_id)
-              ? '✓ เลือกแล้ว'
-              : 'กดเพื่อเลือก'
-          }}
-        </div>
-
-      </button>
-
-    </div>
-
-    <div
-      *ngIf="
-        !isLoadingCloudImages &&
-        cloudImages.length === 0 &&
-        !cloudImagesError
-      "
-    >
-      ยังไม่พบรูปภาพในโฟลเดอร์นี้
-    </div>
-
-    <button
-      *ngIf="cloudImagesNextCursor"
-      type="button"
-      (click)="loadMoreCloudImages()"
-      [disabled]="isLoadingCloudImages"
-      style="
-        margin-top: 14px;
-        padding: 8px 14px;
-        border: 1px solid #198754;
-        border-radius: 5px;
-        background: white;
-        color: #198754;
-        cursor: pointer;
-      "
-    >
-      {{
-        isLoadingCloudImages
-          ? 'กำลังโหลด...'
-          : 'โหลดรูปเพิ่มเติม'
-      }}
-    </button>
-
-  </div>
-
-</div>
-
-<!-- =================================================== -->
-<!-- รูปจาก Cloudinary ที่เลือกแล้ว -->
-<!-- =================================================== -->
-
-<div
-  *ngIf="selectedCloudImages.length > 0"
-  style="margin: 20px 0;"
->
-
-  <h4>
-    รูปจาก Cloudinary ที่เลือก
-    ({{ selectedCloudImages.length }} รูป)
-  </h4>
-
-  <div
-    style="
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 12px;
-    "
-  >
-
-    <div
-      *ngFor="let image of selectedCloudImages"
-      style="
-        padding: 8px;
-        border: 1px solid #198754;
-        border-radius: 8px;
-      "
-    >
-
-      <img
-        [src]="image.secure_url"
-        alt="Selected tour image"
-        style="
-          width: 100%;
-          height: 120px;
-          object-fit: cover;
-          border-radius: 5px;
-        "
-      />
-
-      <div
-        style="
-          margin-top: 6px;
-          font-size: 12px;
-          overflow-wrap: anywhere;
-        "
-      >
-        {{ image.public_id }}
-      </div>
-
-      <button
-        type="button"
-        (click)="removeCloudImage(image.public_id)"
-        style="
-          width: 100%;
-          margin-top: 8px;
-          padding: 6px;
-          border: 1px solid #dc3545;
-          border-radius: 5px;
-          background: white;
-          color: #dc3545;
-          cursor: pointer;
-        "
-      >
-        นำรูปนี้ออก
-      </button>
-
-    </div>
-
-  </div>
-
-</div>
-
-
-      <!-- จำนวนรูป -->
-
-      <div
-        *ngIf="selectedImages.length > 0"
-        style="
-          margin-top: 15px;
-          margin-bottom: 10px;
-          font-weight: bold;
-          color: #28a745;
-        "
-      >
-        เลือกรูปแล้ว
-        {{ selectedImages.length }}
-        / 20 รูป
-      </div>
-
-
-      <!-- รายการรูป -->
-
-      <div
-        *ngIf="selectedImages.length > 0"
-        style="
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-          gap: 10px;
-          margin-top: 10px;
-        "
-      >
-
-        <div
-          *ngFor="
-            let image of selectedImages;
-            let i = index
-          "
-          style="
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            background: #fafafa;
-          "
-        >
-
-          <div
-            style="
-              overflow: hidden;
-              flex: 1;
-            "
-          >
-
-            <div
-              style="
-                font-weight: bold;
-                color: #333;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-              "
-              [title]="image.name"
-            >
-              {{ i + 1 }}. {{ image.name }}
-            </div>
-
-          </div>
-
-
-          <button
-            type="button"
-            (click)="removeSelectedImage(i)"
-            style="
-              background: #dc3545;
-              color: white;
-              border: none;
-              padding: 5px 10px;
-              border-radius: 4px;
-              cursor: pointer;
-              flex-shrink: 0;
-            "
-          >
-            ลบ
-          </button>
-
-        </div>
-
-      </div>
-
-    </div>
-
-
-    <!-- ==================================================== -->
-    <!-- VIDEO -->
-    <!-- ==================================================== -->
-
-    <div
-      style="
-        background-color: white;
-        border: 1px solid #6f42c1;
-        padding: 20px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-      "
-    >
-
-      <h3
-        style="
-          margin-top: 0;
-          color: #6f42c1;
-          border-bottom: 2px solid #6f42c1;
-          padding-bottom: 10px;
-        "
-      >
-        วิดีโอโปรโมท
-      </h3>
-
-
-      <p
-        style="
-          color: #666;
-          margin-top: 0;
-        "
-      >
-        เลือกวิดีโอโปรโมท 1 ไฟล์
-        รองรับ MP4, MOV, AVI, MKV และ WEBM
-      </p>
-
-
-      <input
-        type="file"
-        accept="video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,video/webm"
-        (change)="onVideoSelected($event)"
-        style="
-          display: block;
-          width: 100%;
-          padding: 12px;
-          border: 1px dashed #6f42c1;
-          border-radius: 6px;
-          background: #fbf9ff;
-          box-sizing: border-box;
-        "
-      >
-
-
-      <!-- Selected Video -->
-
-      <div
-        *ngIf="selectedVideo"
-        style="
-          margin-top: 15px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 15px;
-          padding: 12px;
-          border: 1px solid #ddd;
-          border-radius: 6px;
-          background: #fafafa;
-        "
-      >
-
-        <div style="flex: 1;">
-
-          <b>
-            วิดีโอที่เลือก:
-          </b>
-
-          <div
-            style="
-              color: #555;
-              margin-top: 5px;
-              word-break: break-all;
-            "
-          >
-            {{ selectedVideo.name }}
-          </div>
-
-        </div>
-
-
-        <button
-          type="button"
-          (click)="removeSelectedVideo()"
-          style="
-            background: #dc3545;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-          "
-        >
-          ลบวิดีโอ
-        </button>
-
-      </div>
-
-    </div>
-
-
-    <!-- ==================================================== -->
-    <!-- PDF -->
-    <!-- ==================================================== -->
-
-    <div
-      style="
-        background-color: white;
-        border: 1px solid #dc3545;
-        padding: 20px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-      "
-    >
-
-      <h3
-        style="
-          margin-top: 0;
-          color: #dc3545;
-          border-bottom: 2px solid #dc3545;
-          padding-bottom: 10px;
-        "
-      >
-        ไฟล์ PDF โปรแกรมทัวร์ *
-      </h3>
-
-
-      <p
-        style="
-          color: #666;
-          margin-top: 0;
-        "
-      >
-        กรุณาเลือกไฟล์ PDF ของโปรแกรมทัวร์
-      </p>
-
-
-      <input
-        type="file"
-        accept=".pdf,application/pdf"
-        (change)="onPdfSelected($event)"
-        style="
-          display: block;
-          width: 100%;
-          padding: 12px;
-          border: 1px dashed #dc3545;
-          border-radius: 6px;
-          background: #fff8f8;
-          box-sizing: border-box;
-        "
-      >
-
-
-      <!-- Selected PDF -->
-
-      <div
-        *ngIf="selectedPdf"
-        style="
-          margin-top: 15px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 15px;
-          padding: 12px;
-          border: 1px solid #ddd;
-          border-radius: 6px;
-          background: #fafafa;
-        "
-      >
-
-        <div style="flex: 1;">
-
-          <b>
-            PDF ที่เลือก:
-          </b>
-
-          <div
-            style="
-              color: #555;
-              margin-top: 5px;
-              word-break: break-all;
-            "
-          >
-            {{ selectedPdf.name }}
-          </div>
-
-        </div>
-
-
-        <button
-          type="button"
-          (click)="removeSelectedPdf()"
-          style="
-            background: #dc3545;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-          "
-        >
-          ลบ PDF
-        </button>
-
-      </div>
-
-    </div>
-
-
-    <!-- ==================================================== -->
-    <!-- รายละเอียดการเดินทาง -->
-    <!-- ==================================================== -->
-
-    <div
-      formArrayName="tour_details"
-      style="margin-bottom: 20px;"
-    >
-
-      <h3
-        style="
-          color: #17a2b8;
-          border-bottom: 2px solid #17a2b8;
-          padding-bottom: 10px;
-        "
-      >
-        รายละเอียดการเดินทาง
-      </h3>
-
-
-      <div
-        *ngFor="
-          let detail of tourDetails.controls;
-          let i = index
-        "
-        [formGroupName]="i"
-        style="
-          background-color: white;
-          border: 1px solid #17a2b8;
-          padding: 20px;
-          border-radius: 8px;
-          margin-bottom: 20px;
-          position: relative;
-        "
-      >
-
-        <!-- วันที่ -->
-
-        <div
-          style="
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-          "
-        >
-
-          <h4
-            style="
-              margin: 0;
-              color: #17a2b8;
-              background: #e0f7fa;
-              padding: 5px 15px;
-              border-radius: 20px;
-            "
-          >
-            วันที่ {{ i + 1 }}
-          </h4>
-
-
-          <button
-            type="button"
-            (click)="removeDay(i)"
-            *ngIf="tourDetails.length > 1"
-            style="
-              background: #dc3545;
-              color: white;
-              border: none;
-              padding: 6px 12px;
-              border-radius: 4px;
-              cursor: pointer;
-              font-weight: bold;
-            "
-          >
-            ลบวันที่ {{ i + 1 }}
-          </button>
-
-        </div>
-
-
-        <!-- สถานที่ + การเดินทาง -->
-
-        <div
-          style="
-            display: flex;
-            gap: 15px;
-            margin-bottom: 10px;
-          "
-        >
-
-          <div style="flex: 1;">
-
-            <label>
-              <b>สถานที่:</b>
-            </label>
-
-            <br>
-
-            <input
-              type="text"
-              formControlName="location"
-              placeholder="เช่น วัดอาซากุสะ"
-              style="
-                width: 100%;
-                padding: 10px;
-                border: 1px solid #ccc;
-                border-radius: 5px;
-                box-sizing: border-box;
-              "
-            >
-
-          </div>
-
-
-          <div style="flex: 1;">
-
-            <label>
-              <b>การเดินทาง:</b>
-            </label>
-
-            <br>
-
-            <input
-              type="text"
-              formControlName="travel"
-              placeholder="เช่น รถบัส, เครื่องบิน"
-              style="
-                width: 100%;
-                padding: 10px;
-                border: 1px solid #ccc;
-                border-radius: 5px;
-                box-sizing: border-box;
-              "
-            >
-
-          </div>
-
-        </div>
-
-
-        <!-- รายละเอียดกิจกรรม -->
-
-        <div style="margin-bottom: 10px;">
-
-          <label>
-            <b>รายละเอียดกิจกรรม:</b>
-          </label>
-
-          <br>
-
-          <textarea
-            formControlName="day_detail"
-            rows="4"
-            placeholder="รายละเอียดกิจกรรมของวันที่นี้..."
-            style="
-              width: 100%;
-              padding: 10px;
-              border: 1px solid #ccc;
-              border-radius: 5px;
-              box-sizing: border-box;
-              resize: vertical;
-            "
-          ></textarea>
-
-        </div>
-
-
-        <!-- โรงแรม + อาหาร -->
-
-        <div
-          style="
-            display: flex;
-            gap: 15px;
-            margin-bottom: 10px;
-          "
-        >
-
-          <div style="flex: 1;">
-
-            <label>
-              <b>โรงแรม:</b>
-            </label>
-
-            <br>
-
-            <input
-              type="text"
-              formControlName="hotel"
-              placeholder="เช่น Tokyo Hotel"
-              style="
-                width: 100%;
-                padding: 10px;
-                border: 1px solid #ccc;
-                border-radius: 5px;
-                box-sizing: border-box;
-              "
-            >
-
-          </div>
-
-
-          <div style="flex: 1;">
-
-            <label>
-              <b>มื้ออาหาร:</b>
-            </label>
-
-            <br>
-
-            <input
-              type="text"
-              formControlName="meal_detail"
-              placeholder="เช่น เช้า, กลางวัน, เย็น"
-              style="
-                width: 100%;
-                padding: 10px;
-                border: 1px solid #ccc;
-                border-radius: 5px;
-                box-sizing: border-box;
-              "
-            >
-
-          </div>
-
-        </div>
-
-
-        <!-- ร้านอาหาร -->
-
-        <div style="margin-bottom: 5px;">
-
-          <label>
-            <b>ร้านอาหาร:</b>
-          </label>
-
-          <br>
-
-          <input
+            id="tour_code"
             type="text"
-            formControlName="restaurant_detail"
-            placeholder="ชื่อร้านอาหาร หรือรายละเอียดร้านอาหาร"
-            style="
-              width: 100%;
-              padding: 10px;
-              border: 1px solid #ccc;
-              border-radius: 5px;
-              box-sizing: border-box;
-            "
-          >
-
+            formControlName="tour_code"
+            maxlength="50"
+            placeholder="เช่น JP001 หรือ TR-JAPAN-001"
+            autocomplete="off"
+            [class.input-invalid]="tourForm.get('tour_code')?.touched && tourForm.get('tour_code')?.invalid"
+          />
+          <small class="field-hint">ใช้รหัสที่ไม่ซ้ำกัน ความยาวไม่เกิน 50 ตัวอักษร</small>
+          <small class="field-error" *ngIf="tourForm.get('tour_code')?.touched && tourForm.get('tour_code')?.invalid">
+            กรุณากรอกรหัสโปรแกรมทัวร์ ไม่เกิน 50 ตัวอักษร
+          </small>
         </div>
 
+        <div class="form-field">
+          <label for="tour_name">ชื่อทัวร์ <span class="required-mark">*</span></label>
+          <input
+            id="tour_name"
+            type="text"
+            formControlName="tour_name"
+            placeholder="เช่น ทัวร์ญี่ปุ่น โตเกียว ฟูจิ 5 วัน 3 คืน"
+            [class.input-invalid]="tourForm.get('tour_name')?.touched && tourForm.get('tour_name')?.invalid"
+          />
+          <small class="field-error" *ngIf="tourForm.get('tour_name')?.touched && tourForm.get('tour_name')?.invalid">
+            กรุณากรอกชื่อทัวร์
+          </small>
+        </div>
+
+        <div class="form-field">
+          <label for="country_id">ประเทศปลายทาง <span class="required-mark">*</span></label>
+          <select
+            id="country_id"
+            formControlName="country_id"
+            [class.input-invalid]="tourForm.get('country_id')?.touched && tourForm.get('country_id')?.invalid"
+          >
+            <option [ngValue]="null">
+              {{ isLoadingCountries ? 'กำลังโหลดรายชื่อประเทศ...' : '-- กรุณาเลือกประเทศ --' }}
+            </option>
+            <option *ngFor="let country of countries" [ngValue]="country.country_id">
+              {{ country.country_name_th }}<ng-container *ngIf="country.country_name_en"> ({{ country.country_name_en }})</ng-container>
+            </option>
+          </select>
+          <small class="field-error" *ngIf="tourForm.get('country_id')?.touched && tourForm.get('country_id')?.invalid">
+            กรุณาเลือกประเทศ
+          </small>
+          <small class="field-error" *ngIf="countryError">{{ countryError }}</small>
+        </div>
+
+        <div class="form-field">
+          <label for="tour_type">ประเภททัวร์ <span class="required-mark">*</span></label>
+          <select id="tour_type" formControlName="type">
+            <option value="ในประเทศ">ในประเทศ</option>
+            <option value="นอกประเทศ">นอกประเทศ</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label for="duration_day">ระยะเวลา (วัน) <span class="required-mark">*</span></label>
+          <div class="input-with-suffix">
+            <input id="duration_day" type="number" formControlName="duration_day" min="1" step="1" />
+            <span>วัน</span>
+          </div>
+          <small class="field-error" *ngIf="tourForm.get('duration_day')?.touched && tourForm.get('duration_day')?.invalid">
+            ระยะเวลาต้องไม่น้อยกว่า 1 วัน
+          </small>
+        </div>
+
+        <div class="form-field">
+          <label for="price">ราคาเริ่มต้น <span class="required-mark">*</span></label>
+          <div class="input-with-suffix">
+            <input id="price" type="number" formControlName="price" min="0" step="0.01" />
+            <span>บาท</span>
+          </div>
+          <small class="field-error" *ngIf="tourForm.get('price')?.touched && tourForm.get('price')?.invalid">
+            กรุณาระบุราคาเป็น 0 หรือมากกว่า
+          </small>
+        </div>
+
+        <div class="form-field">
+          <label for="include_flight">ตั๋วเครื่องบิน</label>
+          <select id="include_flight" formControlName="include_flight">
+            <option value="รวม">รวมตั๋วเครื่องบิน</option>
+            <option value="ไม่รวม">ไม่รวมตั๋วเครื่องบิน</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label for="status">สถานะทัวร์</label>
+          <select id="status" formControlName="status">
+            <option value="open">เปิดให้บริการ</option>
+            <option value="closed">ปิดชั่วคราว</option>
+          </select>
+          <small class="field-hint">เลือกสถานะการแสดงผลของโปรแกรมทัวร์</small>
+        </div>
+
+        <div class="form-field form-field-full">
+          <label for="promotion">โปรโมชั่น</label>
+          <input id="promotion" type="text" formControlName="promotion" placeholder="เช่น ลด 2,000 บาท หรือ ฟรีประกันการเดินทาง" />
+          <small class="field-hint">เว้นว่างได้ หากไม่มีโปรโมชั่น</small>
+        </div>
       </div>
 
-    </div>
+      <div class="condition-block">
+        <div class="field-label-row">
+          <label>เงื่อนไขเพิ่มเติม</label>
+          <span class="optional-label">ไม่บังคับ</span>
+        </div>
 
+        <div class="condition-options">
+          <label class="choice-card" [class.choice-card-active]="tourForm.get('condition_mode')?.value === 'default'">
+            <input type="radio" formControlName="condition_mode" value="default" />
+            <span class="custom-radio" aria-hidden="true"></span>
+            <span class="choice-copy">
+              <strong>ใช้เงื่อนไขมาตรฐาน</strong>
+              <small>ใช้ข้อความเงื่อนไขมาตรฐานของระบบ</small>
+            </span>
+          </label>
+          <label class="choice-card" [class.choice-card-active]="tourForm.get('condition_mode')?.value === 'custom'">
+            <input type="radio" formControlName="condition_mode" value="custom" />
+            <span class="custom-radio" aria-hidden="true"></span>
+            <span class="choice-copy">
+              <strong>กำหนดเงื่อนไขเอง</strong>
+              <small>เขียนเงื่อนไขเฉพาะสำหรับทัวร์นี้</small>
+            </span>
+          </label>
+        </div>
 
-    <!-- ==================================================== -->
-    <!-- BUTTONS -->
-    <!-- ==================================================== -->
+        <div class="default-condition" *ngIf="tourForm.get('condition_mode')?.value === 'default'">
+          <strong>เงื่อนไขที่จะใช้</strong>
+          <p>{{ defaultConditionDetail }}</p>
+        </div>
 
-    <div
-      style="
-        display: flex;
-        gap: 15px;
-        margin-top: 30px;
-      "
-    >
+        <div class="form-field form-field-full custom-condition-field" *ngIf="tourForm.get('condition_mode')?.value === 'custom'">
+          <label for="condition_detail">รายละเอียดเงื่อนไข</label>
+          <textarea id="condition_detail" formControlName="condition_detail" rows="4" placeholder="พิมพ์เงื่อนไขเพิ่มเติมสำหรับโปรแกรมนี้..."></textarea>
+        </div>
+      </div>
+    </section>
 
-      <!-- เพิ่มวัน -->
+    <!-- รูปภาพทัวร์ -->
+    <section class="form-card" aria-labelledby="images-section-title">
+      <div class="section-heading">
+        <div class="section-icon section-icon-green" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="4" width="18" height="16" rx="2.5" stroke="currentColor" stroke-width="1.7" />
+            <circle cx="8.5" cy="9" r="1.5" stroke="currentColor" stroke-width="1.7" />
+            <path d="m4 17 5-4 3 2 3.5-4 4.5 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </div>
+        <div>
+          <h2 id="images-section-title">รูปภาพทัวร์</h2>
+          <p>เพิ่มรูปจากอุปกรณ์ของคุณ หรือเลือกจากคลัง Cloudinary</p>
+        </div>
+      </div>
 
-      <button
-        type="button"
-        (click)="addDay()"
-        [disabled]="isSubmitting"
-        style="
-          background-color: #17a2b8;
-          color: white;
-          padding: 12px 20px;
-          border: none;
-          border-radius: 5px;
-          cursor: pointer;
-          font-size: 16px;
-          font-weight: bold;
-        "
-      >
-        + เพิ่มรายละเอียดวันถัดไป
+      <div class="upload-panel">
+        <div class="upload-panel-heading">
+          <div>
+            <h3>อัปโหลดรูปภาพจากอุปกรณ์</h3>
+            <p>เลือกได้สูงสุด 20 รูป รองรับ JPG, JPEG, PNG และ WEBP</p>
+          </div>
+          <span class="upload-count">{{ selectedImages.length }} / 20 รูป</span>
+        </div>
+
+        <label class="file-dropzone image-dropzone">
+          <input
+            class="file-input-overlay"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            (change)="onImagesSelected($event)"
+            aria-label="เลือกไฟล์รูปภาพทัวร์"
+          />
+          <span class="dropzone-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M5 14.5v3A2.5 2.5 0 0 0 7.5 20h9a2.5 2.5 0 0 0 2.5-2.5v-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
+          </span>
+          <strong>คลิกเพื่อเลือกไฟล์รูปภาพ</strong>
+          <span>หรือเลือกไฟล์จากหน้าต่างอุปกรณ์ของคุณ</span>
+        </label>
+
+        <div class="selected-files" *ngIf="selectedImages.length > 0">
+          <div class="selected-files-heading">
+            <strong>รูปภาพที่เลือกจากอุปกรณ์</strong>
+            <span>{{ selectedImages.length }} ไฟล์</span>
+          </div>
+          <div class="file-chip-list">
+            <div class="file-chip" *ngFor="let image of selectedImages; let i = index">
+              <span class="file-type-icon image-file-icon" aria-hidden="true">IMG</span>
+              <span class="file-chip-name" [title]="image.name">{{ image.name }}</span>
+              <button class="icon-button remove-button" type="button" (click)="removeSelectedImage(i)" [attr.aria-label]="'นำรูป ' + image.name + ' ออก'" title="นำรูปออก">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cloudinary-panel">
+        <div class="cloudinary-panel-heading">
+          <div class="cloudinary-heading-mark" aria-hidden="true">C</div>
+          <div>
+            <h3>คลังรูปภาพ Cloudinary</h3>
+            <p>เลือกใช้รูปที่มีอยู่ในคลังภาพ โดยไม่ต้องอัปโหลดไฟล์ซ้ำ</p>
+          </div>
+          <button class="button button-secondary cloudinary-toggle" type="button" (click)="toggleCloudImagePicker()">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
+            {{ showCloudImagePicker ? 'ปิดคลังรูปภาพ' : 'เลือกรูปจากคลัง' }}
+          </button>
+        </div>
+
+        <div class="cloudinary-picker" *ngIf="showCloudImagePicker">
+          <div class="picker-toolbar">
+            <div>
+              <h4>เลือกรูปที่ต้องการใช้</h4>
+              <p>คลิกบนรูปเพื่อเลือกหรือยกเลิกการเลือก</p>
+            </div>
+            <span class="upload-count">เลือกแล้ว {{ selectedCloudImages.length }} รูป</span>
+          </div>
+
+          <div class="inline-alert inline-alert-error" *ngIf="cloudImagesError" role="alert">
+            {{ cloudImagesError }}
+          </div>
+
+          <div class="loading-message" *ngIf="isLoadingCloudImages" role="status">
+            <span class="loading-spinner" aria-hidden="true"></span>
+            กำลังโหลดรูปภาพจาก Cloudinary...
+          </div>
+
+          <div class="cloud-image-grid" *ngIf="cloudImages.length > 0">
+            <button
+              class="cloud-image-option"
+              type="button"
+              *ngFor="let image of cloudImages"
+              (click)="toggleCloudImage(image)"
+              [class.is-selected]="isCloudImageSelected(image.public_id)"
+              [title]="image.name"
+              [attr.aria-pressed]="isCloudImageSelected(image.public_id)"
+            >
+              <span class="cloud-image-preview">
+                <img [src]="image.secure_url" [alt]="image.name || 'รูปภาพจาก Cloudinary'" loading="lazy" />
+                <span class="selected-image-check" *ngIf="isCloudImageSelected(image.public_id)" aria-label="เลือกแล้ว">✓</span>
+              </span>
+              <span class="cloud-image-name">{{ image.name || image.public_id }}</span>
+            </button>
+          </div>
+
+          <div class="empty-state" *ngIf="!isLoadingCloudImages && cloudImages.length === 0 && !cloudImagesError">
+            <span class="empty-state-icon" aria-hidden="true">▧</span>
+            <strong>ยังไม่มีรูปภาพให้แสดง</strong>
+            <p>ลองโหลดใหม่อีกครั้งในภายหลัง</p>
+          </div>
+
+          <div class="picker-footer" *ngIf="cloudImagesNextCursor">
+            <button class="button button-secondary" type="button" (click)="loadMoreCloudImages()" [disabled]="isLoadingCloudImages">
+              {{ isLoadingCloudImages ? 'กำลังโหลด...' : 'โหลดรูปภาพเพิ่มเติม' }}
+            </button>
+          </div>
+        </div>
+
+        <div class="selected-cloud-images" *ngIf="selectedCloudImages.length > 0">
+          <div class="selected-files-heading">
+            <strong>รูปจาก Cloudinary ที่เลือกไว้</strong>
+            <span>{{ selectedCloudImages.length }} รูป</span>
+          </div>
+          <div class="cloud-selected-grid">
+            <div class="cloud-selected-item" *ngFor="let image of selectedCloudImages">
+              <img [src]="image.secure_url" [alt]="image.name || 'รูปภาพที่เลือก'" loading="lazy" />
+              <div class="cloud-selected-details">
+                <span [title]="image.name">{{ image.name || image.public_id }}</span>
+                <button class="text-button text-button-danger" type="button" (click)="removeCloudImage(image.public_id)">นำออก</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- วิดีโอและ PDF -->
+    <section class="form-card" aria-labelledby="documents-section-title">
+      <div class="section-heading">
+        <div class="section-icon section-icon-purple" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M14 3H6.5A2.5 2.5 0 0 0 4 5.5v13A2.5 2.5 0 0 0 6.5 21h11a2.5 2.5 0 0 0 2.5-2.5V9l-6-6Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+            <path d="M14 3v6h6M8 14h8M8 17h6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </div>
+        <div>
+          <h2 id="documents-section-title">สื่อและเอกสารประกอบ</h2>
+          <p>เพิ่มวิดีโอโปรโมทและไฟล์ PDF ของโปรแกรมทัวร์</p>
+        </div>
+      </div>
+
+      <div class="media-grid">
+        <div class="upload-panel media-upload-panel">
+          <div class="upload-panel-heading">
+            <div>
+              <h3>วิดีโอโปรโมท</h3>
+              <p>เลือกวิดีโอได้ 1 ไฟล์ รองรับ MP4, MOV, AVI, MKV และ WEBM</p>
+            </div>
+            <span class="optional-label">ไม่บังคับ</span>
+          </div>
+
+          <label class="file-dropzone compact-dropzone video-dropzone">
+            <input
+              class="file-input-overlay"
+              type="file"
+              accept="video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,video/webm"
+              (change)="onVideoSelected($event)"
+              aria-label="เลือกไฟล์วิดีโอโปรโมท"
+            />
+            <span class="dropzone-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2.5" stroke="currentColor" stroke-width="1.7"/><path d="m10 9 5 3-5 3V9Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+            </span>
+            <strong>{{ selectedVideo ? 'เลือกวิดีโอไฟล์อื่น' : 'คลิกเพื่อเลือกวิดีโอ' }}</strong>
+            <span>เลือกไฟล์จากอุปกรณ์ของคุณ</span>
+          </label>
+
+          <div class="selected-media-file" *ngIf="selectedVideo">
+            <span class="file-type-icon video-file-icon" aria-hidden="true">VID</span>
+            <div class="selected-media-copy">
+              <strong>วิดีโอที่เลือก</strong>
+              <span [title]="selectedVideo.name">{{ selectedVideo.name }}</span>
+            </div>
+            <button class="button button-quiet-danger" type="button" (click)="removeSelectedVideo()">นำออก</button>
+          </div>
+        </div>
+
+        <div class="upload-panel media-upload-panel pdf-upload-panel">
+          <div class="upload-panel-heading">
+            <div>
+              <h3>ไฟล์โปรแกรมทัวร์ (PDF)</h3>
+              <p>แนบเอกสารรายละเอียดโปรแกรมทัวร์ในรูปแบบ PDF</p>
+            </div>
+            <span class="optional-label">ไม่บังคับ</span>
+          </div>
+
+          <label class="file-dropzone compact-dropzone pdf-dropzone">
+            <input
+              class="file-input-overlay"
+              type="file"
+              accept="application/pdf,.pdf"
+              (change)="onPdfSelected($event)"
+              aria-label="เลือกไฟล์ PDF ของโปรแกรมทัวร์"
+            />
+            <span class="dropzone-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M14 3H6.5A2.5 2.5 0 0 0 4 5.5v13A2.5 2.5 0 0 0 6.5 21h11a2.5 2.5 0 0 0 2.5-2.5V9l-6-6Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 3v6h6M8 14h8M8 17h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <strong>{{ selectedPdf ? 'เลือกไฟล์ PDF อื่น' : 'คลิกเพื่อเลือกไฟล์ PDF' }}</strong>
+            <span>รองรับไฟล์นามสกุล .pdf เท่านั้น</span>
+          </label>
+
+          <input type="hidden" formControlName="pdf_file" />
+
+          <div class="selected-media-file" *ngIf="selectedPdf">
+            <span class="file-type-icon pdf-file-icon" aria-hidden="true">PDF</span>
+            <div class="selected-media-copy">
+              <strong>เอกสารที่เลือก</strong>
+              <span [title]="selectedPdf.name">{{ selectedPdf.name }}</span>
+            </div>
+            <button class="button button-quiet-danger" type="button" (click)="removeSelectedPdf()">นำออก</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- รายละเอียดรายวัน -->
+    <section class="form-card itinerary-card" aria-labelledby="itinerary-section-title">
+      <div class="section-heading section-heading-with-action">
+        <div class="section-heading-main">
+          <div class="section-icon section-icon-blue" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="16" height="16" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 3v4M16 3v4M4 10h16M8 14h3M8 17h6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          </div>
+          <div>
+            <h2 id="itinerary-section-title">รายละเอียดการเดินทางรายวัน</h2>
+            <p>เพิ่มสถานที่ การเดินทาง โรงแรม และรายละเอียดกิจกรรมในแต่ละวัน</p>
+          </div>
+        </div>
+        <button class="button button-primary add-day-button" type="button" (click)="addDay()">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          เพิ่มวัน
+        </button>
+      </div>
+
+      <div class="itinerary-list" formArrayName="tour_details">
+        <article class="day-card" *ngFor="let detail of tourDetails.controls; let i = index" [formGroupName]="i">
+          <input type="hidden" formControlName="day_number" />
+          <div class="day-card-header">
+            <div class="day-title-wrap">
+              <span class="day-number">{{ i + 1 }}</span>
+              <div>
+                <h3>วันที่ {{ i + 1 }}</h3>
+                <p>ข้อมูลกิจกรรมและบริการในวันนี้</p>
+              </div>
+            </div>
+            <button class="button button-quiet-danger" type="button" *ngIf="tourDetails.length > 1" (click)="removeDay(i)">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m-9 0 1 13h10l1-13M10 11v5M14 11v5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              ลบวันนี้
+            </button>
+          </div>
+
+          <div class="form-grid day-form-grid">
+            <div class="form-field">
+              <label [attr.for]="'location-' + i">สถานที่ / เส้นทาง</label>
+              <input [id]="'location-' + i" type="text" formControlName="location" placeholder="เช่น สนามบิน โตเกียว และภูเขาไฟฟูจิ" />
+            </div>
+            <div class="form-field">
+              <label [attr.for]="'travel-' + i">การเดินทาง</label>
+              <input [id]="'travel-' + i" type="text" formControlName="travel" placeholder="เช่น รถโค้ชปรับอากาศ" />
+            </div>
+            <div class="form-field">
+              <label [attr.for]="'hotel-' + i">ที่พัก</label>
+              <input [id]="'hotel-' + i" type="text" formControlName="hotel" placeholder="ชื่อโรงแรมหรือประเภทที่พัก" />
+            </div>
+            <div class="form-field">
+              <label [attr.for]="'meal_detail-' + i">รายละเอียดอาหาร</label>
+              <input [id]="'meal_detail-' + i" type="text" formControlName="meal_detail" placeholder="เช่น เช้า / กลางวัน / เย็น" />
+            </div>
+            <div class="form-field form-field-full">
+              <label [attr.for]="'restaurant_detail-' + i">ร้านอาหาร / รายละเอียดมื้ออาหาร</label>
+              <input [id]="'restaurant_detail-' + i" type="text" formControlName="restaurant_detail" placeholder="ชื่อร้านอาหารหรือรายละเอียดเพิ่มเติม" />
+            </div>
+            <div class="form-field form-field-full">
+              <label [attr.for]="'day_detail-' + i">โปรแกรมและกิจกรรมของวัน</label>
+              <textarea [id]="'day_detail-' + i" formControlName="day_detail" rows="4" placeholder="อธิบายกิจกรรม จุดแวะเที่ยว และรายละเอียดสำคัญของวันนี้..."></textarea>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ปุ่มบันทึก -->
+    <footer class="form-actions">
+      <p class="form-actions-note"><span class="required-mark">*</span> กรุณาตรวจสอบข้อมูลก่อนบันทึก</p>
+      <button class="button button-primary submit-button" type="submit" [disabled]="isSubmitting">
+        <span class="loading-spinner loading-spinner-white" *ngIf="isSubmitting" aria-hidden="true"></span>
+        <svg viewBox="0 0 24 24" fill="none" *ngIf="!isSubmitting" aria-hidden="true"><path d="M5 3h12l4 4v14H3V3h2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M7 3v6h10V3M7 21v-7h10v7" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        {{ isSubmitting ? 'กำลังบันทึก...' : 'บันทึกข้อมูลทัวร์' }}
       </button>
-
-
-      <!-- Submit -->
-
-      <button
-        type="submit"
-        [disabled]="isSubmitting || tourForm.invalid || !selectedPdf"
-        style="
-          background-color: #28a745;
-          color: white;
-          padding: 12px 20px;
-          border: none;
-          border-radius: 5px;
-          cursor: pointer;
-          flex-grow: 1;
-          font-size: 16px;
-          font-weight: bold;
-        "
-      >
-
-        <span *ngIf="!isSubmitting">
-          บันทึกข้อมูลทัวร์
-        </span>
-
-        <span *ngIf="isSubmitting">
-          กำลังบันทึก...
-        </span>
-
-      </button>
-
-    </div>
-
-
+    </footer>
   </form>
-
 </div>

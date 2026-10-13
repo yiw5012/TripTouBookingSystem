@@ -30,20 +30,22 @@ export async function checkAndUpdateRoundStatus(dbConnection, roundId) {
   const roundCount = roundRows[0].count;
   let currentStatus = roundRows[0].status;
 
-  //ถ้ายอดผู้เดินทาง >= count ให้ปรับสถานะรอบเป็น 'close'
-  if (totalPaid >= roundCount && currentStatus !== 'closed') {
-    await dbConnection.query(
-      `UPDATE tour_round SET status = 'closed' WHERE round_id = ?`,
-      [roundId],
-    );
-    currentStatus = 'close';
-  }
+  if (totalPaid >= roundCount && currentStatus === "open") {
+  await dbConnection.query(
+    `UPDATE tour_round
+     SET status = 'closed'
+     WHERE round_id = ?`,
+    [roundId]
+  );
+
+  currentStatus = "closed";
+}
 
   return {
-    round_id: Number(roundId),
-    total_paid: totalPaid,
-    round_capacity: roundCount,
-    status: currentStatus,
-    is_closed: currentStatus === 'close',
-  };
+  round_id: Number(roundId),
+  total_paid: totalPaid,
+  round_capacity: roundCount,
+  status: currentStatus,
+  is_closed: currentStatus !== "open",
+};
 }
