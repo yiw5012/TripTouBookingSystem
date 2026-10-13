@@ -49,6 +49,7 @@ class _ChatPageState extends State<ChatPage> {
     final isGuide = widget.userRole == 'guide';
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F7F3),
       appBar: AppBar(
         title: Row(
           children: [
@@ -57,13 +58,15 @@ class _ChatPageState extends State<ChatPage> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: isGuide ? Colors.deepOrange : Colors.blue.shade700,
+                color: isGuide
+                    ? const Color(0xFF1FAE5B)
+                    : const Color(0xFF17A85B),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                isGuide ? "🧭 GUIDE" : "👤 USER",
+                isGuide ? "🧭GUIDE" : "👤USER",
                 style: const TextStyle(
-                  fontSize: 10,
+                  fontSize: 8,
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
@@ -71,7 +74,10 @@ class _ChatPageState extends State<ChatPage> {
             ),
           ],
         ),
-        backgroundColor: isGuide ? Colors.amber.shade300 : Colors.greenAccent,
+        centerTitle: false,
+        backgroundColor: const Color(0xFF1FAE5B),
+        foregroundColor: Colors.white,
+        elevation: 0,
       ),
       // ดึงเฉพาะห้องที่ Admin กำหนดสิทธิ์ให้ UID นี้ใน user_rooms
       body: StreamBuilder<DatabaseEvent>(
@@ -119,36 +125,59 @@ class _ChatPageState extends State<ChatPage> {
                     roomSnapshot.data!.snapshot.value as Map,
                   );
 
-                  return ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: isGuide ? Colors.orange : Colors.green,
-                      child: Icon(
-                        isGuide ? Icons.map : Icons.chat,
-                        color: Colors.white,
-                      ),
+                  return Container(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
                     ),
-                    title: Text(
-                      room['roomName'] ?? 'ไม่มีชื่อห้อง',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: const Color(0xFFE7EAE6)),
                     ),
-                    subtitle: Text(
-                      room['lastMessage'] ?? 'ยังไม่มีข้อความ',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ChatRoomPage(
-                            roomId: roomId,
-                            roomName: room['roomName'] ?? 'ห้องแชต',
-                            myRole: widget.userRole,
-                          ),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        radius: 22,
+                        backgroundColor: isGuide
+                            ? const Color(0xFF1FAE5B).withOpacity(0.12)
+                            : const Color(0xFF17A85B).withOpacity(0.12),
+                        child: Icon(
+                          isGuide
+                              ? Icons.map_outlined
+                              : Icons.chat_bubble_outline_rounded,
+                          color: const Color(0xFF1FAE5B),
                         ),
-                      );
-                    },
+                      ),
+                      title: Text(
+                        room['roomName'] ?? 'ไม่มีชื่อห้อง',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF1B1B1B),
+                        ),
+                      ),
+                      subtitle: Text(
+                        room['lastMessage'] ?? 'ยังไม่มีข้อความ',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.black54),
+                      ),
+                      trailing: const Icon(
+                        Icons.chevron_right_rounded,
+                        color: Colors.black45,
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ChatRoomPage(
+                              roomId: roomId,
+                              roomName: room['roomName'] ?? 'ห้องแชต',
+                              myRole: widget.userRole,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   );
                 },
               );
@@ -212,37 +241,40 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     final isGuideUser = widget.myRole == 'guide';
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F7F3),
       appBar: AppBar(
-        backgroundColor: isGuideUser
-            ? Colors.amber.shade300
-            : Colors.greenAccent,
+        backgroundColor: const Color(0xFF1FAE5B),
+        foregroundColor: Colors.white,
+        elevation: 0,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 1. ชื่อห้องแชต
             Text(
               widget.roomName,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 2),
-
-            // 2. ป้ายแสดงบทบาท (Badge)
           ],
         ),
         actions: [
-          // 3. ปุ่มดูรายชื่อลูกทัวร์/สมาชิก แยกมาไว้ที่ actions
           if (isGuideUser)
             TextButton.icon(
               onPressed: () {
-                // TODO: เปิด BottomSheet หรือ Dialog แสดงรายชื่อสมาชิก
                 _showMembersList(context);
               },
-              icon: const Icon(Icons.group, color: Colors.black87, size: 18),
+              icon: const Icon(
+                Icons.group_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
               label: const Text(
                 "ลูกทัวร์",
-                style: TextStyle(color: Colors.black87, fontSize: 12),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
         ],
@@ -302,18 +334,18 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                         decoration: BoxDecoration(
                           color: isMe
                               ? (isGuideSender
-                                    ? Colors.amber.shade200
-                                    : Colors.greenAccent.shade200)
+                                    ? const Color(0xFF1FAE5B).withOpacity(0.18)
+                                    : const Color(0xFF17A85B).withOpacity(0.18))
                               : (isGuideSender
-                                    ? Colors.orange.shade100
-                                    : Colors.grey.shade300),
-                          border: isGuideSender
-                              ? Border.all(
-                                  color: Colors.orange.shade400,
-                                  width: 1.5,
-                                )
-                              : null,
-                          borderRadius: BorderRadius.circular(12),
+                                    ? const Color(0xFF1FAE5B).withOpacity(0.08)
+                                    : Colors.white),
+                          border: Border.all(
+                            color: isGuideSender
+                                ? const Color(0xFF1FAE5B).withOpacity(0.3)
+                                : Colors.transparent,
+                            width: 1,
+                          ),
+                          borderRadius: BorderRadius.circular(14),
                         ),
                         child: Column(
                           crossAxisAlignment: isMe
@@ -325,9 +357,9 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                               children: [
                                 if (isGuideSender) ...[
                                   const Icon(
-                                    Icons.explore,
+                                    Icons.explore_rounded,
                                     size: 12,
-                                    color: Colors.deepOrange,
+                                    color: Color(0xFF1FAE5B),
                                   ),
                                   const SizedBox(width: 3),
                                   const Text(
@@ -335,7 +367,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.deepOrange,
+                                      color: Color(0xFF1FAE5B),
                                     ),
                                   ),
                                 ],
@@ -365,7 +397,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
             ),
           ),
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             color: Colors.white,
             child: Row(
               children: [
@@ -376,8 +408,22 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                       hintText: isGuideUser
                           ? 'พิมพ์ตอบลูกทัวร์...'
                           : 'พิมพ์ข้อความ...',
+                      filled: true,
+                      fillColor: const Color(0xFFF8FBF9),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(25),
+                        borderSide: const BorderSide(color: Color(0xFFE7EAE6)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(25),
+                        borderSide: const BorderSide(color: Color(0xFFE7EAE6)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(25),
+                        borderSide: const BorderSide(
+                          color: Color(0xFF1FAE5B),
+                          width: 1.5,
+                        ),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -386,12 +432,16 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                     ),
                   ),
                 ),
-                IconButton(
-                  icon: Icon(
-                    Icons.send,
-                    color: isGuideUser ? Colors.orange : Colors.green,
+                const SizedBox(width: 8),
+                Container(
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF1FAE5B),
+                    shape: BoxShape.circle,
                   ),
-                  onPressed: _sendMessage,
+                  child: IconButton(
+                    icon: const Icon(Icons.send_rounded, color: Colors.white),
+                    onPressed: _sendMessage,
+                  ),
                 ),
               ],
             ),
@@ -441,19 +491,32 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                       // ส่วนหัวเรื่อง + ปุ่มพิมพ์รวมทั้งหมด
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Text(
-                            "สมาชิกในทริป (${entries.length} คน)",
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                          Expanded(
+                            child: Text(
+                              "สมาชิกในทริป (${entries.length} คน)",
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1B1B1B),
+                              ),
                             ),
                           ),
-                          // ปุ่มพิมพ์ทั้งหมด (วางไว้ข้างหัวข้อ)
+                          const SizedBox(width: 12),
                           ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blueAccent,
+                              backgroundColor: const Color(0xFF1FAE5B),
                               foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              minimumSize: const Size(0, 0),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
                             ),
                             icon: isPrintingAll
                                 ? const SizedBox(
@@ -466,7 +529,11 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                                   )
                                 : const Icon(Icons.print_rounded, size: 18),
                             label: Text(
-                              isPrintingAll ? "กำลังเตรียม..." : "พิมพ์ทั้งหมด",
+                              isPrintingAll ? "กำลังเตรียม..." : "พิมพ์ PDF",
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                              ),
                             ),
                             onPressed: isPrintingAll
                                 ? null
@@ -474,7 +541,6 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                                     setStateModal(() => isPrintingAll = true);
 
                                     try {
-                                      // ดึงข้อมูลสมาชิกทุกคน พร้อมระบุบทบาท (Role)
                                       final futures = entries.map((e) async {
                                         final detail =
                                             await Serverapi.getMemberDetail(

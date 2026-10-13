@@ -19,8 +19,8 @@ class PendingBookingManager {
   }) {
     this.bookingId = bookingId;
     this.memberId = memberId;
-    this.expireTime = DateTime.now().add(Duration(minutes: minutes));
-    this.isPending = true;
+    expireTime = DateTime.now().add(Duration(minutes: minutes));
+    isPending = true;
   }
 
   // เช็กว่ายังมีรายการค้างและยังไม่หมดอายุหรือไม่

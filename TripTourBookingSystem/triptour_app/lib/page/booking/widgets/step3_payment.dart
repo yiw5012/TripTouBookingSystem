@@ -391,9 +391,10 @@ class _Step3PaymentState extends State<Step3Payment> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) {
+        final dialogNavigator = Navigator.of(dialogContext);
         Future.delayed(const Duration(seconds: 3), () {
-          if (mounted && Navigator.of(dialogContext).canPop()) {
-            Navigator.of(dialogContext).pop();
+          if (mounted && dialogNavigator.canPop()) {
+            dialogNavigator.pop();
             Get.offAll(() => const Homepage());
           }
         });
@@ -587,7 +588,7 @@ class _Step3PaymentState extends State<Step3Payment> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -671,7 +672,7 @@ class _Step3PaymentState extends State<Step3Payment> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: _statusColor(_paymentStatus).withOpacity(0.12),
+                  color: _statusColor(_paymentStatus).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -792,7 +793,7 @@ class _Step3PaymentState extends State<Step3Payment> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                     ),
                   ],

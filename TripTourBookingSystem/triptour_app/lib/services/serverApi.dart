@@ -1,9 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
-const String _defaultBaseUrl = 'http://192.168.1.146:4000';
+const String _defaultBaseUrl = 'http://192.168.1.8:4000';
 
 String normalizeBaseUrl(String? value) {
   final raw = (value ?? '').trim();
@@ -35,14 +34,14 @@ class Serverapi {
   );
 
   static Future<Map<String, dynamic>> checkuser(
-    String google_id,
+    String googleId,
     String email,
   ) async {
     try {
       final res = await http.post(
         Uri.parse("$_baseUrl/checkuser"),
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"google_id": google_id, "email": email}),
+        body: jsonEncode({"google_id": googleId, "email": email}),
       );
 
       final body = jsonDecode(res.body);
@@ -60,18 +59,18 @@ class Serverapi {
   }
 
   static Future<Map<String, dynamic>> registerUser(
-    String google_id,
+    String googleId,
     String email,
-    String first_name,
-    String last_name,
+    String firstName,
+    String lastName,
     String phone,
-    String number_id,
+    String numberId,
     String birthday,
     String address,
     String gender,
     String medicine,
-    String congenital_disease,
-    String allergic_list,
+    String congenitalDisease,
+    String allergicList,
     String other, {
     String? imageProfileUrl,
     String? passportUrl,
@@ -84,18 +83,18 @@ class Serverapi {
         Uri.parse("$_baseUrl/register"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
-          "google_id": google_id,
+          "google_id": googleId,
           "email": email,
-          "first_name": first_name,
-          "last_name": last_name,
+          "first_name": firstName,
+          "last_name": lastName,
           "phone": phone,
-          "number_id": number_id,
+          "number_id": numberId,
           "birthday": birthday,
           "address": address,
           "gender": gender,
           "medicine": medicine,
-          "congenital_disease": congenital_disease,
-          "allergic_list": allergic_list,
+          "congenital_disease": congenitalDisease,
+          "allergic_list": allergicList,
           "other": other,
           "image_profile": imageProfileUrl,
           "image_passport": passportUrl,
@@ -207,64 +206,55 @@ class Serverapi {
   }
 
   static Future<Map<String, dynamic>> getSearchContinents() async {
-  try {
-    final res = await http.get(
-      Uri.parse("$_baseUrl/add-tour/search-options/continents"),
-      headers: {"Content-Type": "application/json"},
-    );
+    try {
+      final res = await http.get(
+        Uri.parse("$_baseUrl/add-tour/search-options/continents"),
+        headers: {"Content-Type": "application/json"},
+      );
 
-    final data = jsonDecode(res.body);
+      final data = jsonDecode(res.body);
 
-    print("Search continents: $data");
+      print("Search continents: $data");
 
-    return {
-      'statusCode': res.statusCode,
-      'body': data,
-    };
-  } catch (e) {
-    print("Get search continents error: $e");
+      return {'statusCode': res.statusCode, 'body': data};
+    } catch (e) {
+      print("Get search continents error: $e");
 
-    return {
-      'statusCode': 500,
-      'body': {
-        'success': false,
-        'message': 'ไม่สามารถโหลดรายชื่อทวีปได้',
-      },
-    };
+      return {
+        'statusCode': 500,
+        'body': {'success': false, 'message': 'ไม่สามารถโหลดรายชื่อทวีปได้'},
+      };
+    }
   }
-}
 
-static Future<Map<String, dynamic>> getSearchLocations() async {
-  try {
-    final res = await http.get(
-      Uri.parse("$_baseUrl/add-tour/search-options/locations"),
-      headers: {"Content-Type": "application/json"},
-    );
+  static Future<Map<String, dynamic>> getSearchLocations() async {
+    try {
+      final res = await http.get(
+        Uri.parse("$_baseUrl/add-tour/search-options/locations"),
+        headers: {"Content-Type": "application/json"},
+      );
 
-    final data = jsonDecode(res.body);
+      final data = jsonDecode(res.body);
 
-    return {
-      'statusCode': res.statusCode,
-      'body': data,
-    };
-  } catch (e) {
-    print("Get search locations error: $e");
+      return {'statusCode': res.statusCode, 'body': data};
+    } catch (e) {
+      print("Get search locations error: $e");
 
-    return {
-      'statusCode': 500,
-      'body': {
-        'success': false,
-        'message': 'ไม่สามารถโหลดรายการต้นทางและปลายทางได้',
-      },
-    };
+      return {
+        'statusCode': 500,
+        'body': {
+          'success': false,
+          'message': 'ไม่สามารถโหลดรายการต้นทางและปลายทางได้',
+        },
+      };
+    }
   }
-}
 
   static Future<Map<String, dynamic>?> uploadImage(
     File? selectedImage,
-    File? selectedImage_passport,
+    File? selectedimagePassport,
   ) async {
-    if (selectedImage == null && selectedImage_passport == null) {
+    if (selectedImage == null && selectedimagePassport == null) {
       print("No image selected for upload. ");
       return null;
     }
@@ -278,11 +268,11 @@ static Future<Map<String, dynamic>> getSearchLocations() async {
         await http.MultipartFile.fromPath('image', selectedImage.path),
       );
     }
-    if (selectedImage_passport != null) {
+    if (selectedimagePassport != null) {
       request.files.add(
         await http.MultipartFile.fromPath(
           'passport',
-          selectedImage_passport.path,
+          selectedimagePassport.path,
         ),
       );
     }
@@ -354,13 +344,9 @@ static Future<Map<String, dynamic>> getSearchLocations() async {
           "countryId": countryId,
           "airlines": airlines ?? [],
 
-          "startDate": startDate == null
-              ? null
-              : startDate.toIso8601String().split('T').first,
+          "startDate": startDate?.toIso8601String().split('T').first,
 
-          "endDate": endDate == null
-              ? null
-              : endDate.toIso8601String().split('T').first,
+          "endDate": endDate?.toIso8601String().split('T').first,
 
           "sortBy": sortBy,
           "departure": departure,

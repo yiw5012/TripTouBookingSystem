@@ -143,7 +143,7 @@ class BookingDetailPage extends StatelessWidget {
                             color: _getStatusColor(
                               bStatus,
                               pStatus,
-                            ).withOpacity(0.1),
+                            ).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(

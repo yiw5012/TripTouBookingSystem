@@ -36,15 +36,18 @@ class MemberDetailPage extends StatelessWidget {
         final passportImg = data['image_passport'];
 
         return Scaffold(
+          backgroundColor: const Color(0xFFF5F7F3),
           appBar: AppBar(
             title: const Text("ข้อมูลลูกทัวร์"),
-            backgroundColor: Colors.amber.shade300,
+            centerTitle: true,
+            backgroundColor: const Color(0xFF1FAE5B),
+            foregroundColor: Colors.white,
+            elevation: 0,
             actions: [
               IconButton(
-                icon: const Icon(Icons.picture_as_pdf),
-                tooltip: "บันทึกเป็น PDF / ปริ้นท์",
+                icon: const Icon(Icons.picture_as_pdf_rounded),
+                tooltip: "ส่งออก PDF",
                 onPressed: () {
-                  // เรียกใช้งาน data ได้ทันทีไม่ต้องผ่านตัวแปรแปรสภาพ
                   PdfService.generateAndPrintMemberPdf(data);
                 },
               ),
@@ -55,139 +58,251 @@ class MemberDetailPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 1. รูปโปรไฟล์ + ชื่อ
-                Center(
-                  child: Column(
-                    children: [
-                      CircleAvatar(
-                        radius: 50,
-                        backgroundColor: Colors.grey.shade300,
-                        backgroundImage:
-                            (profileImg != null &&
-                                profileImg.toString().isNotEmpty)
-                            ? NetworkImage(profileImg)
-                            : null,
-                        child:
-                            (profileImg == null ||
-                                profileImg.toString().isEmpty)
-                            ? const Icon(
-                                Icons.person,
-                                size: 50,
-                                color: Colors.white,
-                              )
-                            : null,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        fullName.isEmpty ? "ไม่ระบุชื่อ" : fullName,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF1FAE5B), Color(0xFF17A85B)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(22),
+                  ),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        CircleAvatar(
+                          radius: 52,
+                          backgroundColor: Colors.white.withOpacity(0.18),
+                          backgroundImage:
+                              (profileImg != null &&
+                                  profileImg.toString().isNotEmpty)
+                              ? NetworkImage(profileImg)
+                              : null,
+                          child:
+                              (profileImg == null ||
+                                  profileImg.toString().isEmpty)
+                              ? const Icon(
+                                  Icons.person_rounded,
+                                  size: 48,
+                                  color: Colors.white,
+                                )
+                              : null,
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Chip(
-                        label: Text(
-                          data['role']?.toString().toUpperCase() ?? 'USER',
+                        const SizedBox(height: 12),
+                        Text(
+                          fullName.isEmpty ? "ไม่ระบุชื่อ" : fullName,
                           style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
                             color: Colors.white,
-                            fontSize: 12,
                           ),
                         ),
-                        backgroundColor: Colors.blue.shade700,
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            data['role']?.toString().toUpperCase() ?? 'USER',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      PdfService.generateAndPrintMemberPdf(data);
+                    },
+                    icon: const Icon(Icons.picture_as_pdf_rounded),
+                    label: const Text("ส่งออก PDF"),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF1FAE5B),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFE7EAE6)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "ข้อมูลการติดต่อ",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF1B1B1B),
+                          fontSize: 15,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInfoCard(
+                        Icons.email_outlined,
+                        "อีเมล",
+                        data['email'],
+                        color: const Color(0xFF1FAE5B),
+                      ),
+                      _buildInfoCard(
+                        Icons.phone_outlined,
+                        "เบอร์โทรศัพท์",
+                        data['phone'],
+                        color: const Color(0xFF1FAE5B),
+                      ),
+                      _buildInfoCard(
+                        Icons.wc_outlined,
+                        "เพศ / วันเกิด",
+                        "${data['gender'] ?? '-'} (${data['birthday'] ?? '-'})",
+                        color: const Color(0xFF1FAE5B),
+                      ),
+                      _buildInfoCard(
+                        Icons.home_outlined,
+                        "ที่อยู่",
+                        data['address'],
+                        color: const Color(0xFF1FAE5B),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
 
-                // 2. ข้อมูลการติดต่อส่วนตัว
-                const Text(
-                  "ข้อมูลการติดต่อ",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey,
+                const SizedBox(height: 18),
+
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFE7EAE6)),
                   ),
-                ),
-                const SizedBox(height: 8),
-                _buildInfoCard(Icons.email, "อีเมล", data['email']),
-                _buildInfoCard(Icons.phone, "เบอร์โทรศัพท์", data['phone']),
-                _buildInfoCard(
-                  Icons.wc,
-                  "เพศ / วันเกิด",
-                  "${data['gender'] ?? '-'} (${data['birthday'] ?? '-'})",
-                ),
-                _buildInfoCard(Icons.home, "ที่อยู่", data['address']),
-
-                const Divider(height: 30),
-
-                // 3. ข้อมูลสุขภาพ & ข้อควรระวัง
-                const Text(
-                  "ข้อมูลสุขภาพ & โรคประจำตัว",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                _buildInfoCard(
-                  Icons.medical_information,
-                  "โรคประจำตัว",
-                  data['congenital_disease'],
-                ),
-                _buildInfoCard(
-                  Icons.medication,
-                  "ยาที่ต้องพกพา",
-                  data['medicine'],
-                ),
-                _buildInfoCard(
-                  Icons.warning_amber_rounded,
-                  "ประวัติการแพ้",
-                  data['allergic_list'],
-                  iconColor: Colors.red,
-                ),
-                _buildInfoCard(Icons.note, "เพิ่มเติม", data['others']),
-
-                const Divider(height: 30),
-
-                // 4. เอกสารประจำตัว & รูปพาสปอร์ต
-                const Text(
-                  "เอกสารประจำตัว",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                _buildInfoCard(
-                  Icons.badge,
-                  "เลขบัตรประชาชน / พาสปอร์ต",
-                  data['number_id'],
-                ),
-
-                if (passportImg != null &&
-                    passportImg.toString().isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  const Text(
-                    "รูปหน้าพาสปอร์ต:",
-                    style: TextStyle(fontSize: 13, color: Colors.black87),
-                  ),
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.network(
-                      passportImg,
-                      width: double.infinity,
-                      height: 200,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        height: 100,
-                        color: Colors.grey.shade200,
-                        child: const Center(child: Text("โหลดรูปไม่สำเร็จ")),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "ข้อมูลสุขภาพ & โรคประจำตัว",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF1B1B1B),
+                          fontSize: 15,
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 12),
+                      _buildInfoCard(
+                        Icons.medical_information_outlined,
+                        "โรคประจำตัว",
+                        data['congenital_disease'],
+                        color: const Color(0xFF1FAE5B),
+                      ),
+                      _buildInfoCard(
+                        Icons.medication_outlined,
+                        "ยาที่ต้องพกพา",
+                        data['medicine'],
+                        color: const Color(0xFF1FAE5B),
+                      ),
+                      _buildInfoCard(
+                        Icons.warning_amber_rounded,
+                        "ประวัติการแพ้",
+                        data['allergic_list'],
+                        iconColor: Colors.red,
+                        color: const Color(0xFF1FAE5B),
+                      ),
+                      _buildInfoCard(
+                        Icons.note_alt_outlined,
+                        "เพิ่มเติม",
+                        data['others'],
+                        color: const Color(0xFF1FAE5B),
+                      ),
+                    ],
                   ),
-                ],
+                ),
+
+                const SizedBox(height: 18),
+
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFE7EAE6)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "เอกสารประจำตัว",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF1B1B1B),
+                          fontSize: 15,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInfoCard(
+                        Icons.badge_outlined,
+                        "เลขบัตรประชาชน / พาสปอร์ต",
+                        data['number_id'],
+                        color: const Color(0xFF1FAE5B),
+                      ),
+                      if (passportImg != null &&
+                          passportImg.toString().isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        const Text(
+                          "รูปหน้าพาสปอร์ต:",
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.black87,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(
+                            passportImg,
+                            width: double.infinity,
+                            height: 200,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(
+                                  height: 100,
+                                  color: Colors.grey.shade200,
+                                  child: const Center(
+                                    child: Text("โหลดรูปไม่สำเร็จ"),
+                                  ),
+                                ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -201,26 +316,56 @@ class MemberDetailPage extends StatelessWidget {
     String title,
     String? value, {
     Color? iconColor,
+    Color? color,
   }) {
     final displayValue = (value == null || value.trim().isEmpty) ? "-" : value;
-    return Card(
-      elevation: 0,
-      color: Colors.grey.shade100,
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: ListTile(
-        leading: Icon(icon, color: iconColor ?? Colors.blueGrey),
-        title: Text(
-          title,
-          style: const TextStyle(fontSize: 12, color: Colors.grey),
-        ),
-        subtitle: Text(
-          displayValue,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: Colors.black87,
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FBF9),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE7EAE6)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: (color ?? const Color(0xFF1FAE5B)).withOpacity(0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: color ?? const Color(0xFF1FAE5B),
+              size: 20,
+            ),
           ),
-        ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  displayValue,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

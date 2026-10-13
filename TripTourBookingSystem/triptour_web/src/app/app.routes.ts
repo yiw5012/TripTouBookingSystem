@@ -9,18 +9,22 @@ import { EditTour } from './component/edit-tour/edit-tour';
 import { ManageRound } from './component/manage-round/manage-round';
 import { BookingApproval } from './booking-approval/booking-approval';
 import { MemberListComponent } from './component/manage-round/member-list/member-list.component';
+import { AdminLoginComponent } from './admin-login/admin-login.component';
+import { adminGuard } from './admin-auth.guard';
+
 export const routes: Routes = [
-  { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-  { path: 'dashboard', component: DashboardComponent },
-  { path: 'add-tour', component: Addtour },
-  { path: 'add-guide', component: AddGuide },
-  { path: 'members', component: MemberComponent },
-  { path: 'members/:googleId', component: MemberComponent },
-  { path: 'chat', component: ChatComponent },
-  { path: 'manage-tour', component: ManageTour },
-  { path: 'edit-tour/:tourId', component: EditTour },
-  { path: 'manage-round/:tourId', component: ManageRound },
-  { path: 'booking-approval', component: BookingApproval },
-  {path: 'memberlist-roundtour/:roundId', component: MemberListComponent},
-  { path: '**', redirectTo: 'dashboard' },
+  { path: '', redirectTo: 'login', pathMatch: 'full' },
+  { path: 'login', component: AdminLoginComponent },
+  { path: 'dashboard', component: DashboardComponent, canActivate: [adminGuard] },
+  { path: 'add-tour', component: Addtour, canActivate: [adminGuard] },
+  { path: 'add-guide', component: AddGuide, canActivate: [adminGuard] },
+  { path: 'members', component: MemberComponent, canActivate: [adminGuard] },
+  { path: 'members/:googleId', component: MemberComponent, canActivate: [adminGuard] },
+  { path: 'chat', component: ChatComponent, canActivate: [adminGuard] },
+  { path: 'manage-tour', component: ManageTour, canActivate: [adminGuard] },
+  { path: 'edit-tour/:tourId', component: EditTour, canActivate: [adminGuard] },
+  { path: 'manage-round/:tourId', component: ManageRound, canActivate: [adminGuard] },
+  { path: 'booking-approval', component: BookingApproval, canActivate: [adminGuard] },
+  { path: 'memberlist-roundtour/:roundId', component: MemberListComponent, canActivate: [adminGuard] },
+  { path: '**', redirectTo: 'login' },
 ];

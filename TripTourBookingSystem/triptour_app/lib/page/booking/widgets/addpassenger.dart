@@ -194,7 +194,7 @@ class _AddPassengerPageState extends State<AddPassengerPage> {
                       Expanded(
                         child: DropdownButtonFormField<String>(
                           isExpanded: true,
-                          value: gender,
+                          initialValue: gender,
                           decoration: InputDecoration(
                             labelText: "เพศ",
                             prefixIcon: const Icon(Icons.wc, size: 20),
@@ -411,7 +411,7 @@ class _AddPassengerPageState extends State<AddPassengerPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
