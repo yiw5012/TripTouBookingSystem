@@ -70,16 +70,21 @@ class _LoginPageState extends State<LoginPage> {
                   final userCredential = await signInWithGoogle();
                   if (userCredential != null) {
                     String? googleId = userCredential.user?.uid;
+                    final googleEmail =
+                        userCredential.user?.email?.trim() ?? '';
 
                     if (googleId != null) {
-                      print(emailctl.text);
                       final profile = await Serverapi.checkuser(
                         googleId,
-                        emailctl.text,
+                        googleEmail,
                       );
+                      final statusCode = profile['statusCode'] as int? ?? 500;
+                      final body = profile['body'];
+                      final status = body is Map<String, dynamic>
+                          ? body['status']?.toString()
+                          : null;
 
-                      if (profile == null) {
-                        // 📌 สั่ง Sign Out ออกจากแอปทันทีเนื่องจากบัญชีติด inactive (Backend ตอบ 403)
+                      if (statusCode == 403 || status == 'inactive') {
                         await FirebaseAuth.instance.signOut();
                         await GoogleSignIn().signOut();
 
@@ -89,6 +94,24 @@ class _LoginPageState extends State<LoginPage> {
                             content: Text(
                               'บัญชีนี้ถูกปิดใช้งาน กรุณาติดต่อผู้ดูแลระบบ',
                             ),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+
+                      if (statusCode != 200) {
+                        await FirebaseAuth.instance.signOut();
+                        await GoogleSignIn().signOut();
+
+                        if (!context.mounted) return;
+                        final message = body is Map<String, dynamic>
+                            ? body['message']?.toString() ??
+                                  'เข้าสู่ระบบไม่สำเร็จ'
+                            : 'เข้าสู่ระบบไม่สำเร็จ';
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(message),
                             backgroundColor: Colors.red,
                           ),
                         );

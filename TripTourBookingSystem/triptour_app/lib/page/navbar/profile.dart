@@ -1,7 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:triptour_app/page/homepage.dart';
 import 'package:triptour_app/services/serverApi.dart';
@@ -16,7 +15,6 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   Map<String, dynamic>? memberData;
-  String _memberId = '';
 
   bool isLoading = true;
   String? errorMessage;
@@ -32,15 +30,12 @@ class _ProfilePageState extends State<ProfilePage> {
       await FirebaseAuth.instance.signOut();
       await GoogleSignIn().signOut();
       if (!mounted) return;
-      setState(() {
-        _memberId = '';
-      });
 
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('ออกจากระบบเรียบร้อย')));
     } catch (e) {
-      print("Error signing out: $e");
+      debugPrint('Error signing out: $e');
     }
   }
 
@@ -77,7 +72,6 @@ class _ProfilePageState extends State<ProfilePage> {
       if (result != null) {
         setState(() {
           memberData = result;
-          _memberId = memberData?['member_id']?.toString() ?? '';
           isLoading = false;
         });
       } else {
@@ -98,7 +92,7 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  Future<void> InactiveAccount() async {
+  Future<void> inactiveAccount() async {
     // แสดง Dialog ยืนยันการลบบัญชี
     final confirm = await showDialog<bool>(
       context: context,
@@ -124,6 +118,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
 
     if (confirm != true) return;
+    if (!mounted) return;
 
     final User? user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -576,7 +571,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     const SizedBox(height: 20),
                     Center(
                       child: TextButton(
-                        onPressed: InactiveAccount,
+                        onPressed: inactiveAccount,
                         child: const Text(
                           'ลบบัญชีผู้ใช้',
                           style: TextStyle(color: Colors.red),

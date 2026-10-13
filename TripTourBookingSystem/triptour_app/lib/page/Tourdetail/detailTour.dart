@@ -318,12 +318,12 @@ class _DetailTourState extends State<DetailTour>
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(
-          top: BorderSide(color: Colors.grey.shade200),
-          bottom: BorderSide(color: Colors.grey.shade300),
+          top: BorderSide(color: const Color(0xFFE7EAE6)),
+          bottom: BorderSide(color: const Color(0xFFE7EAE6)),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 5,
             offset: const Offset(0, 2),
           ),
@@ -334,9 +334,9 @@ class _DetailTourState extends State<DetailTour>
         onTap: (index) {
           scrollToSection(index);
         },
-        labelColor: Colors.orange,
+        labelColor: const Color(0xFF1FAE5B),
         unselectedLabelColor: Colors.grey.shade600,
-        indicatorColor: Colors.orange,
+        indicatorColor: const Color(0xFF1FAE5B),
         indicatorWeight: 3,
         labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
         unselectedLabelStyle: const TextStyle(fontSize: 12),
@@ -366,9 +366,12 @@ class _DetailTourState extends State<DetailTour>
       appBar: AppBar(
         title: const Text(
           'รายละเอียดทัวร์',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.w800),
         ),
         centerTitle: true,
+        backgroundColor: const Color(0xFF1FAE5B),
+        foregroundColor: Colors.white,
+        elevation: 0,
       ),
 
       // ======================================================

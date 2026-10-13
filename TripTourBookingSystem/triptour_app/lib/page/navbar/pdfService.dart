@@ -3,114 +3,222 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 class PdfService {
+  static String _safeText(dynamic value) {
+    if (value == null) return '-';
+    final text = value.toString().trim();
+    return text.isEmpty ? '-' : text;
+  }
+
   static Future<void> generateAndPrintMemberPdf(
     Map<String, dynamic> data,
   ) async {
     final pdf = pw.Document();
-
-    // โหลดฟอนต์ภาษาไทยรองรับการแสดงผล
     final font = await PdfGoogleFonts.sarabunRegular();
     final fontBold = await PdfGoogleFonts.sarabunBold();
 
-    final fullName = "${data['first_name'] ?? ''} ${data['last_name'] ?? ''}"
-        .trim();
+    final firstName = _safeText(data['first_name']);
+    final lastName = _safeText(data['last_name']);
+    final fullName = (firstName == '-' && lastName == '-')
+        ? 'ไม่ระบุชื่อ'
+        : '${firstName == '-' ? '' : firstName} ${lastName == '-' ? '' : lastName}'
+              .trim();
+
+    final displayName = fullName.isEmpty ? 'ไม่ระบุชื่อ' : fullName;
+    final sectionTitle = pw.TextStyle(
+      font: fontBold,
+      fontSize: 16,
+      color: PdfColors.green900,
+    );
 
     pdf.addPage(
-      pw.Page(
+      pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(24),
         build: (pw.Context context) {
-          return pw.Padding(
-            padding: const pw.EdgeInsets.all(24),
-            child: pw.Column(
-              mainAxisSize: pw.MainAxisSize.min,
-              children: [
-                // หัวข้อเอกสาร
-                pw.Center(
-                  child: pw.Text(
-                    "รายงานข้อมูลลูกทัวร์",
-                    style: pw.TextStyle(font: fontBold, fontSize: 22),
+          return [
+            pw.Container(
+              width: double.infinity,
+              padding: const pw.EdgeInsets.all(18),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.green900,
+                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(14)),
+              ),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    'รายงานข้อมูลลูกทัวร์',
+                    style: pw.TextStyle(
+                      font: fontBold,
+                      fontSize: 22,
+                      color: PdfColors.white,
+                    ),
                   ),
-                ),
-                pw.SizedBox(height: 20),
-                pw.Divider(),
-
-                // ข้อมูลส่วนตัว
-                pw.Text(
-                  "ข้อมูลส่วนตัว",
-                  style: pw.TextStyle(font: fontBold, fontSize: 16),
-                ),
-                pw.SizedBox(height: 8),
-                pw.Text(
-                  "ชื่อ-นามสกุล: ${fullName.isEmpty ? '-' : fullName}",
-                  style: pw.TextStyle(font: font),
-                ),
-                pw.Text(
-                  "อีเมล: ${data['email'] ?? '-'}",
-                  style: pw.TextStyle(font: font),
-                ),
-                pw.Text(
-                  "เบอร์โทรศัพท์: ${data['phone'] ?? '-'}",
-                  style: pw.TextStyle(font: font),
-                ),
-                pw.Text(
-                  "เพศ: ${data['gender'] ?? '-'} | วันเกิด: ${data['birthday'] ?? '-'}",
-                  style: pw.TextStyle(font: font),
-                ),
-                pw.Text(
-                  "ที่อยู่: ${data['address'] ?? '-'}",
-                  style: pw.TextStyle(font: font),
-                ),
-
-                pw.SizedBox(height: 16),
-                pw.Divider(),
-
-                // ข้อมูลสุขภาพ
-                pw.Text(
-                  "ข้อมูลสุขภาพ & ข้อควรระวัง",
-                  style: pw.TextStyle(font: fontBold, fontSize: 16),
-                ),
-                pw.SizedBox(height: 8),
-                pw.Text(
-                  "โรคประจำตัว: ${data['congenital_disease'] ?? '-'}",
-                  style: pw.TextStyle(font: font),
-                ),
-                pw.Text(
-                  "ยาที่ต้องพกพา: ${data['medicine'] ?? '-'}",
-                  style: pw.TextStyle(font: font),
-                ),
-                pw.Text(
-                  "ประวัติการแพ้: ${data['allergic_list'] ?? '-'}",
-                  style: pw.TextStyle(font: font),
-                ),
-                pw.Text(
-                  "เพิ่มเติม: ${data['others'] ?? '-'}",
-                  style: pw.TextStyle(font: font),
-                ),
-
-                pw.SizedBox(height: 16),
-                pw.Divider(),
-
-                // เอกสารประจำตัว
-                pw.Text(
-                  "เอกสารประจำตัว",
-                  style: pw.TextStyle(font: fontBold, fontSize: 16),
-                ),
-                pw.SizedBox(height: 8),
-                pw.Text(
-                  "เลขประจำตัว / พาสปอร์ต: ${data['number_id'] ?? '-'}",
-                  style: pw.TextStyle(font: font),
-                ),
-              ],
+                  pw.SizedBox(height: 8),
+                  pw.Text(
+                    displayName,
+                    style: pw.TextStyle(
+                      font: fontBold,
+                      fontSize: 18,
+                      color: PdfColors.white,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          );
+            pw.SizedBox(height: 18),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(14),
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(color: PdfColors.green200),
+                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(12)),
+              ),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text('ข้อมูลส่วนตัว', style: sectionTitle),
+                  pw.SizedBox(height: 10),
+                  _buildRow('ชื่อ-นามสกุล', displayName, font, fontBold),
+                  _buildRow('อีเมล', _safeText(data['email']), font, fontBold),
+                  _buildRow(
+                    'เบอร์โทรศัพท์',
+                    _safeText(data['phone']),
+                    font,
+                    fontBold,
+                  ),
+                  _buildRow('เพศ', _safeText(data['gender']), font, fontBold),
+                  _buildRow(
+                    'วันเกิด',
+                    _safeText(data['birthday']),
+                    font,
+                    fontBold,
+                  ),
+                  _buildRow(
+                    'ที่อยู่',
+                    _safeText(data['address']),
+                    font,
+                    fontBold,
+                  ),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 14),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(14),
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(color: PdfColors.green200),
+                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(12)),
+              ),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text('ข้อมูลสุขภาพ & ข้อควรระวัง', style: sectionTitle),
+                  pw.SizedBox(height: 10),
+                  _buildRow(
+                    'โรคประจำตัว',
+                    _safeText(data['congenital_disease']),
+                    font,
+                    fontBold,
+                  ),
+                  _buildRow(
+                    'ยาที่ต้องพกพา',
+                    _safeText(data['medicine']),
+                    font,
+                    fontBold,
+                  ),
+                  _buildRow(
+                    'ประวัติการแพ้',
+                    _safeText(data['allergic_list']),
+                    font,
+                    fontBold,
+                  ),
+                  _buildRow(
+                    'เพิ่มเติม',
+                    _safeText(data['others']),
+                    font,
+                    fontBold,
+                  ),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 14),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(14),
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(color: PdfColors.green200),
+                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(12)),
+              ),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text('เอกสารประจำตัว', style: sectionTitle),
+                  pw.SizedBox(height: 10),
+                  _buildRow(
+                    'เลขประจำตัว / พาสปอร์ต',
+                    _safeText(data['number_id']),
+                    font,
+                    fontBold,
+                  ),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 20),
+            pw.Align(
+              alignment: pw.Alignment.centerRight,
+              child: pw.Text(
+                'วันที่พิมพ์: ${DateTime.now().toLocal().toString().split(' ')[0]}',
+                style: pw.TextStyle(
+                  font: font,
+                  fontSize: 10,
+                  color: PdfColors.grey700,
+                ),
+              ),
+            ),
+          ];
         },
       ),
     );
 
-    // เปิดหน้า Preview สำหรับสั่งพิมพ์ หรือบันทึกเป็น PDF
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdf.save(),
       name: 'Member_${data['member_id'] ?? 'Detail'}.pdf',
+    );
+  }
+
+  static pw.Widget _buildRow(
+    String label,
+    String value,
+    pw.Font font,
+    pw.Font fontBold,
+  ) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 8),
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.SizedBox(
+            width: 120,
+            child: pw.Text(
+              '$label:',
+              style: pw.TextStyle(
+                font: fontBold,
+                fontSize: 11,
+                color: PdfColors.grey800,
+              ),
+            ),
+          ),
+          pw.Expanded(
+            child: pw.Text(
+              value,
+              style: pw.TextStyle(
+                font: font,
+                fontSize: 11,
+                color: PdfColors.black,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

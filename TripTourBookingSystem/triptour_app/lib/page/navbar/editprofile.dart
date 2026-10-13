@@ -123,8 +123,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
       for (var item in rawFavs) {
         if (item is Map) {
           final cId = int.tryParse(item['country_id']?.toString() ?? '');
-          final cNameEn = item['country_name_en']?.toString()?.trim() ?? '';
-          final cNameTh = item['country_name_th']?.toString()?.trim() ?? '';
+          final cNameEn = item['country_name_en']?.toString().trim() ?? '';
+          final cNameTh = item['country_name_th']?.toString().trim() ?? '';
           final displayName = cNameEn.isNotEmpty ? cNameEn : cNameTh;
 
           if (cId != null) {
@@ -643,7 +643,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             Padding(
               padding: const EdgeInsets.only(bottom: 14),
               child: DropdownButtonFormField<String>(
-                value: selectedGender,
+                initialValue: selectedGender,
                 decoration: const InputDecoration(
                   labelText: 'เพศ',
                   border: OutlineInputBorder(),

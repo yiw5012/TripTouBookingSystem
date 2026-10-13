@@ -1,8 +1,5 @@
 import admin from  "firebase-admin";
-import { createRequire } from "module";
 import 'dotenv/config';
-
-const require = createRequire(import.meta.url);
 
 function loadServiceAccount() {
     if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
@@ -14,7 +11,9 @@ function loadServiceAccount() {
         return JSON.parse(decoded);
     }
 
-    return require("./firebase-admin-key.json");
+    throw new Error(
+        'Missing Firebase admin credentials. Set FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_SERVICE_ACCOUNT_BASE64.'
+    );
 }
 
 const serviceAccount = loadServiceAccount();

@@ -541,7 +541,7 @@ class SearchFilterSection extends StatelessWidget {
         const SizedBox(height: 8),
 
         DropdownButtonFormField<String>(
-          value: selectedSort,
+          initialValue: selectedSort,
           decoration: InputDecoration(
             prefixIcon: const Icon(Icons.sort, color: Colors.orange),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

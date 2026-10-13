@@ -2,7 +2,7 @@ import http from 'http';
 import {app} from './app.js'; 
 import { Server } from 'socket.io';
 
-const port = process.env.PORT ;
+const port = process.env.PORT || 4000;
 const server = http.createServer(app);
 const allowedOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)

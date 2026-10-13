@@ -58,6 +58,25 @@ async function addMemberToRoundChat(memberUid, roundId) {
 
 const ROOM_TYPE_VALUES = ['single', 'double', 'triple', 'shared_double', 'shared_triple', 'child'];
 
+async function getOccupiedSeatCount(connection, roundId, excludeBookingId = null) {
+  const [rows] = await connection.query(
+    `SELECT COALESCE(SUM(seat_count), 0) AS occupied
+     FROM (
+       SELECT 1 + COUNT(p.passenger_id) AS seat_count
+       FROM booking b
+       LEFT JOIN passenger p ON p.booking_id = b.booking_id
+       WHERE b.round_id = ?
+         AND (? IS NULL OR b.booking_id <> ?)
+         AND LOWER(b.payment_status) NOT IN ('expired', 'cancelled', 'rejected')
+         AND LOWER(b.status) NOT IN ('cancelled', 'reject', 'expired')
+       GROUP BY b.booking_id
+     ) t`,
+    [roundId, excludeBookingId, excludeBookingId],
+  );
+
+  return Number(rows[0]?.occupied || 0);
+}
+
 function normalizeRoomSelections(rawRooms = []) {
   if (!Array.isArray(rawRooms)) return [];
 
@@ -137,6 +156,94 @@ router.post('/create-order', async (req, res) => {
       });
     }
 
+    connection = await conn.getConnection();
+    await connection.beginTransaction();
+
+    const [roundRows] = await connection.query(
+      `SELECT count, status FROM tour_round WHERE round_id = ? FOR UPDATE`,
+      [round_id],
+    );
+
+    if (!roundRows || roundRows.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({
+        success: false,
+        message: 'Round not found',
+      });
+    }
+
+    const roundCapacity = Number(roundRows[0].count || 0);
+    const occupiedSeats = await getOccupiedSeatCount(connection, round_id);
+    const remainingSeats = Math.max(roundCapacity - occupiedSeats, 0);
+
+    if (roundRows[0].status === 'closed') {
+      await connection.rollback();
+      return res.status(409).json({
+        success: false,
+        message: 'ไม่สามารถจองได้เนื่องจากที่นั่งเต็มแล้ว',
+      });
+    }
+
+    if (remainingSeats === 1) {
+      await connection.rollback();
+      return res.status(409).json({
+        success: false,
+        message: 'รอบทัวร์เหลือที่นั่งเพียง 1 คน กรุณาทำรายการใหม่อีกครั้ง',
+      });
+    }
+
+    if (occupiedSeats >= roundCapacity) {
+      await connection.rollback();
+      return res.status(409).json({
+        success: false,
+        message: 'ไม่สามารถจองได้เนื่องจากที่นั่งเต็มแล้ว',
+      });
+    }
+
+    connection = await conn.getConnection();
+    await connection.beginTransaction();
+
+    const [roundRows] = await connection.query(
+      `SELECT count, status FROM tour_round WHERE round_id = ? FOR UPDATE`,
+      [round_id],
+    );
+
+    if (!roundRows || roundRows.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({
+        success: false,
+        message: 'Round not found',
+      });
+    }
+
+    const roundCapacity = Number(roundRows[0].count || 0);
+    const occupiedSeats = await getOccupiedSeatCount(connection, round_id);
+    const remainingSeats = Math.max(roundCapacity - occupiedSeats, 0);
+
+    if (roundRows[0].status === 'closed') {
+      await connection.rollback();
+      return res.status(409).json({
+        success: false,
+        message: 'ไม่สามารถจองได้เนื่องจากที่นั่งเต็มแล้ว',
+      });
+    }
+
+    if (remainingSeats === 1) {
+      await connection.rollback();
+      return res.status(409).json({
+        success: false,
+        message: 'รอบทัวร์เหลือที่นั่งเพียง 1 คน กรุณาทำรายการใหม่อีกครั้ง',
+      });
+    }
+
+    if (occupiedSeats >= roundCapacity) {
+      await connection.rollback();
+      return res.status(409).json({
+        success: false,
+        message: 'ไม่สามารถจองได้เนื่องจากที่นั่งเต็มแล้ว',
+      });
+    }
+
     const now = new Date();
     const EXPIRE_MINUTES = 3;
     const expireAt = new Date(now.getTime() + EXPIRE_MINUTES * 60 * 1000);
@@ -182,7 +289,7 @@ router.post('/create-order', async (req, res) => {
         (member_id, round_id, booking_date, total_price,
          status, payment_status, slip_image, payment_date)
        VALUES (?, ?, ?, ?, 'pending', 'pending', NULL, NULL)`,
-      [member_id, round_id, now, total_price]
+      [member_id, round_id, now, total_price],
     );
 
     const bookingId = result.insertId;
@@ -325,15 +432,21 @@ router.post('/confirm-payment', upload.single('slip_image'), async (req, res) =>
 
     connection = await conn.getConnection();
     await connection.beginTransaction();
-    transactionStarted = true;
 
-    // 1. หา round_id จาก Booking ก่อน
-    const [bookingRoundRows] = await connection.query(
-      `SELECT round_id
-       FROM booking
-       WHERE booking_id = ?`,
-      [booking_id]
-    );
+    // 2. ดึงข้อมูลรายการจอง พร้อมสั่ง ล็อก Row (FOR UPDATE)
+   const [rows] = await connection.query(
+  `SELECT b.booking_id, b.round_id, b.payment_status, 
+          (1 + COUNT(p.passenger_id)) AS passenger_count
+   FROM booking b
+   LEFT JOIN passenger p ON b.booking_id = p.booking_id
+   WHERE b.booking_id = ?
+   GROUP BY b.booking_id, b.round_id, b.payment_status
+   FOR UPDATE`,
+  [booking_id],
+);
+   
+
+    const booking = rows[0];
 
     if (bookingRoundRows.length === 0) {
       await connection.rollback();
@@ -404,7 +517,12 @@ router.post('/confirm-payment', upload.single('slip_image'), async (req, res) =>
       });
     }
 
-    const booking = rows[0];
+    const booking = bookingRows[0];
+
+    if (!booking) {
+      await connection.rollback();
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
 
     if (
       booking.payment_status === 'expired' ||
@@ -430,8 +548,28 @@ router.post('/confirm-payment', upload.single('slip_image'), async (req, res) =>
       });
     }
 
-    // 4. บันทึกสลิป
-    // ใช้ paid ตามระบบปัจจุบัน ซึ่งหมายถึงส่งสลิปรอแอดมินตรวจสอบ
+    const [roundRows] = await connection.query(
+      `SELECT count, status FROM tour_round WHERE round_id = ? FOR UPDATE`,
+      [booking.round_id],
+    );
+
+    if (!roundRows || roundRows.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ success: false, message: 'Tour round not found' });
+    }
+
+    const roundCount = Number(roundRows[0].count || 0);
+    const occupiedWithoutCurrent = await getOccupiedSeatCount(connection, booking.round_id, booking_id);
+    const currentSeatCount = Number(booking.passenger_count || 1);
+
+    if (roundRows[0].status === 'closed' || occupiedWithoutCurrent + currentSeatCount > roundCount) {
+      await connection.rollback();
+      return res.status(409).json({
+        success: false,
+        message: 'ที่นั่งเต็มแล้ว ไม่สามารถยืนยันการชำระเงินได้',
+      });
+    }
+
     await connection.query(
       `UPDATE booking
        SET slip_image = ?,
@@ -818,7 +956,7 @@ router.post('/admin/verify-slip', async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'ปฏิเสธการชำระเงินเรียบร้อยแล้ว',
+      message: 'ปฏิเสธการชำระเงินเรียบร้อยแล้ว และที่นั่งถูกปล่อยคืนให้สามารถจองใหม่ได้',
       data: {
         booking_id: booking.booking_id,
         status: 'cancelled',

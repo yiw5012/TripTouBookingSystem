@@ -92,6 +92,14 @@ class _BookingTourPageState extends State<BookingTourPage> {
         (passengerCounts[5] * 1);
   }
 
+  int get adultTravelerCount {
+    return (passengerCounts[0] * 2) +
+        (passengerCounts[1] * 3) +
+        passengerCounts[2] +
+        passengerCounts[3] +
+        passengerCounts[4];
+  }
+
   List<Map<String, dynamic>> get roomSelections {
     final rooms = <Map<String, dynamic>>[];
     if (passengerCounts[0] > 0) {
@@ -188,6 +196,34 @@ class _BookingTourPageState extends State<BookingTourPage> {
       return sum + ((room['line_total'] as int?) ?? 0);
     });
   }
+
+  String get _currentStepTitle {
+    return switch (_currentStep) {
+      1 => 'เลือกแพ็กเกจและจำนวนผู้เดินทาง',
+      2 => 'ตรวจสอบรายชื่อผู้เดินทาง',
+      3 => 'ชำระเงินและอัปโหลดสลิป',
+      _ => 'ทำรายการจอง',
+    };
+  }
+
+  String get _currentStepSubtitle {
+    return switch (_currentStep) {
+      1 => 'เลือกประเภทห้องพักที่ต้องการ พร้อมเช็กที่นั่งคงเหลือก่อนยืนยัน',
+      2 => 'เพิ่มข้อมูลผู้ร่วมเดินทางและตรวจสอบข้อมูลผู้ติดต่อให้ครบถ้วน',
+      3 => 'สแกน QR เพื่อชำระเงิน แล้วแนบหลักฐานเพื่อส่งให้ระบบตรวจสอบ',
+      _ => '',
+    };
+  }
+
+  String get _primaryActionLabel {
+    return switch (_currentStep) {
+      1 => 'ยืนยันจำนวนผู้เดินทาง',
+      2 => 'ไปขั้นตอนชำระเงิน',
+      _ => 'ถัดไป',
+    };
+  }
+
+  double get _stepProgress => _currentStep / 3;
 
   // ยอดเงินที่ประหยัดได้เมื่อเลือกแชร์ห้องเทียบกับการพักเดี่ยว
   int get estimatedSavings {
@@ -312,22 +348,75 @@ class _BookingTourPageState extends State<BookingTourPage> {
     }
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('จองทริป'),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF111827),
+        elevation: 0,
+      ),
       backgroundColor: const Color(0xFFF9FAFB),
-      body: Padding(
-        padding: const EdgeInsets.all(10),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 30),
-              _buildStepIndicator(),
-              const SizedBox(height: 20),
-              _buildStepContent(),
-              const SizedBox(height: 20),
-              if (_currentStep < 3) _buildNavigationButtons(),
-            ],
-          ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildStepIndicator(),
+                    const SizedBox(height: 14),
+                    _buildBookingFlowHeader(),
+                    const SizedBox(height: 14),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 220),
+                      child: KeyedSubtree(
+                        key: ValueKey(_currentStep),
+                        child: _buildStepContent(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (_currentStep < 3) _buildNavigationButtons(),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildBookingFlowHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _currentStepTitle,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF111827),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _currentStepSubtitle,
+            style: const TextStyle(
+              fontSize: 13,
+              height: 1.4,
+              color: Color(0xFF4B5563),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -345,13 +434,27 @@ class _BookingTourPageState extends State<BookingTourPage> {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
         children: [
-          _buildStepCircle(1, '1', 'เลือกแพ็กเกจ'),
-          _buildStepLine(1),
-          _buildStepCircle(2, '2', 'ผู้เดินทาง'),
-          _buildStepLine(2),
-          _buildStepCircle(3, '3', 'ชำระเงิน'),
+          Row(
+            children: [
+              _buildStepCircle(1, '1', 'เลือกแพ็กเกจ'),
+              _buildStepLine(1),
+              _buildStepCircle(2, '2', 'ผู้เดินทาง'),
+              _buildStepLine(2),
+              _buildStepCircle(3, '3', 'ชำระเงิน'),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: _stepProgress,
+              minHeight: 6,
+              backgroundColor: const Color(0xFFE5E7EB),
+              valueColor: const AlwaysStoppedAnimation(Color(0xFF16A34A)),
+            ),
+          ),
         ],
       ),
     );
@@ -380,6 +483,22 @@ class _BookingTourPageState extends State<BookingTourPage> {
             final nextCounts = List<int>.from(passengerCounts);
             final nextValue = nextCounts[index] + delta;
             if (delta > 0 && nextValue >= 0) {
+              if (index == 5) {
+                final nextAdultCount =
+                    (nextCounts[0] * 2) +
+                    (nextCounts[1] * 3) +
+                    nextCounts[2] +
+                    nextCounts[3] +
+                    nextCounts[4];
+                if (nextAdultCount == 0) {
+                  _showSnackBar(
+                    'เด็กต้องเดินทางพร้อมผู้ใหญ่อย่างน้อย 1 คน',
+                    Colors.orange,
+                  );
+                  return;
+                }
+              }
+
               nextCounts[index] = nextValue;
 
               final nextTravelerCount =
@@ -393,6 +512,25 @@ class _BookingTourPageState extends State<BookingTourPage> {
               if (nextTravelerCount > availableSeats) {
                 _showSnackBar(
                   'ที่นั่งคงเหลือไม่พอ (เหลืออีกเพียง $availableSeats ที่)',
+                  Colors.orange,
+                );
+                return;
+              }
+            }
+
+            if (delta < 0 && index != 5) {
+              nextCounts[index] = nextValue;
+              final nextAdultCount =
+                  (nextCounts[0] * 2) +
+                  (nextCounts[1] * 3) +
+                  nextCounts[2] +
+                  nextCounts[3] +
+                  nextCounts[4];
+              final nextChildCount = nextCounts[5];
+
+              if (nextChildCount > 0 && nextAdultCount == 0) {
+                _showSnackBar(
+                  'เด็กไม่สามารถเดินทางคนเดียวได้ กรุณาคงจำนวนผู้ใหญ่ไว้อย่างน้อย 1 คน',
                   Colors.orange,
                 );
                 return;
@@ -463,40 +601,65 @@ class _BookingTourPageState extends State<BookingTourPage> {
   }
 
   Widget _buildNavigationButtons() {
-    return Row(
-      children: [
-        if (_currentStep > 1)
-          Expanded(
-            child: OutlinedButton(
-              onPressed: () => setState(() => _currentStep--),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                if (_currentStep > 1)
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => setState(() => _currentStep--),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: const Text('ย้อนกลับ'),
+                    ),
+                  ),
+                if (_currentStep > 1) const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      foregroundColor: Colors.white,
+                      backgroundColor: const Color(0xFF16A34A),
+                    ),
+                    onPressed: _handleNextStep,
+                    child: Text(
+                      _primaryActionLabel,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-              child: const Text('ย้อนกลับ'),
+              ],
             ),
-          ),
-        if (_currentStep > 1) const SizedBox(width: 12),
-        Expanded(
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              foregroundColor: Colors.white,
-              backgroundColor: Colors.green,
-            ),
-            onPressed: _handleNextStep,
-            child: const Text(
-              'ถัดไป',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-            ),
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -507,6 +670,10 @@ class _BookingTourPageState extends State<BookingTourPage> {
           'กรุณาเลือกจำนวนผู้เดินทางอย่างน้อย 1 รายการ',
           Colors.red,
         );
+        return;
+      }
+      if (passengerCounts[5] > 0 && adultTravelerCount == 0) {
+        _showSnackBar('เด็กต้องเดินทางพร้อมผู้ใหญ่อย่างน้อย 1 คน', Colors.red);
         return;
       }
       setState(() => _currentStep++);
@@ -555,7 +722,7 @@ class _BookingTourPageState extends State<BookingTourPage> {
             radius: 14,
             backgroundColor: isActive ? Colors.green : Colors.grey.shade300,
             child: Text(
-              label,
+              isActive && step < _currentStep ? '✓' : label,
               style: TextStyle(
                 color: isActive ? Colors.white : Colors.black54,
                 fontSize: 12,
