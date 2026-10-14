@@ -23,6 +23,9 @@ export class ManageRound implements OnInit {
   errorMessage = '';
   successMessage = '';
   finishingRoundId: number | null = null;
+  isDeleteConfirmOpen = false;
+  pendingDeleteRoundId: number | null = null;
+  pendingDeleteRoundCode = '';
 
   get isFlightIncluded(): boolean {
     return String(this.tour?.include_flight ?? '').trim() === 'รวม';
@@ -247,28 +250,61 @@ export class ManageRound implements OnInit {
     }
   }
 
-  async deleteRound(roundId: number): Promise<void> {
-    const round = this.rounds.find((item) => Number(item.round_id) === Number(roundId));
-    const roundCode = round?.round_code || roundId;
-    const confirmed = window.confirm(`ต้องการลบรอบทัวร์ ${roundCode} ใช่หรือไม่?`);
+  openDeleteConfirm(round: any): void {
+    const roundId = Number(round?.round_id);
 
-    if (!confirmed) return;
+    if (!roundId || Number.isNaN(roundId)) {
+      this.errorMessage = 'รหัสรอบทัวร์ไม่ถูกต้อง';
+      return;
+    }
+
+    this.pendingDeleteRoundId = roundId;
+    this.pendingDeleteRoundCode = String(round?.round_code ?? roundId);
+    this.isDeleteConfirmOpen = true;
+    this.successMessage = '';
+    this.errorMessage = '';
+  }
+
+  cancelDeleteRound(): void {
+    this.isDeleteConfirmOpen = false;
+    this.pendingDeleteRoundId = null;
+    this.pendingDeleteRoundCode = '';
+  }
+
+  async confirmDeleteRound(): Promise<void> {
+    if (this.pendingDeleteRoundId === null) {
+      this.cancelDeleteRound();
+      return;
+    }
+
+    const roundId = this.pendingDeleteRoundId;
+    const roundCode = this.pendingDeleteRoundCode || roundId;
+
+    this.cancelDeleteRound();
+    await this.deleteRound(roundId, roundCode);
+  }
+
+  async deleteRound(roundId: number, roundCode?: string | number): Promise<void> {
+    const targetCode = roundCode ?? roundId;
 
     try {
       const result = await this.api.deleteData(`manage-round/${roundId}`);
 
       if (result.statusCode === 200 && result.body?.success === true) {
         this.successMessage = result.body.message ?? 'ลบรอบทัวร์สำเร็จ';
+        window.alert(`${this.successMessage} (${targetCode})`);
         await this.loadData();
         this.cdr.detectChanges();
         return;
       }
 
       this.errorMessage = result.body?.message ?? 'ไม่สามารถลบรอบทัวร์ได้';
+      window.alert(this.errorMessage);
       this.cdr.detectChanges();
     } catch (error) {
       console.error('Delete Round Error:', error);
       this.errorMessage = 'เกิดข้อผิดพลาดในการลบรอบทัวร์';
+      window.alert(this.errorMessage);
       this.cdr.detectChanges();
     }
   }

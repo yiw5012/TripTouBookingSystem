@@ -26,8 +26,17 @@ class _HomepageState extends State<Homepage> {
   String _memberId = '';
 
   // แสดงเฉพาะทัวร์ที่มีโปรโมชั่น
+  bool _isVisibleTour(dynamic tour) {
+    final status = (tour['status'] ?? '').toString().trim().toLowerCase();
+    if (status == 'closed' || status == 'success' || status == 'finished') {
+      return false;
+    }
+    return true;
+  }
+
   List<dynamic> get promotionTours {
     final list = tours.where((tour) {
+      if (!_isVisibleTour(tour)) return false;
       final promotion = tour['promotion'];
       return promotion != null && promotion.toString().trim().isNotEmpty;
     }).toList();
@@ -42,7 +51,7 @@ class _HomepageState extends State<Homepage> {
   }
 
   List<dynamic> get recommendedTours {
-    final list = [...tours];
+    final list = tours.where(_isVisibleTour).toList();
 
     list.sort((a, b) {
       final aReview =
@@ -81,7 +90,7 @@ class _HomepageState extends State<Homepage> {
   Map<String, List<dynamic>> get toursByCountry {
     final grouped = <String, List<dynamic>>{};
 
-    for (final tour in tours) {
+    for (final tour in tours.where(_isVisibleTour)) {
       final countryName =
           (tour['country_name_th'] ??
                   tour['country_name_en'] ??
@@ -213,8 +222,12 @@ class _HomepageState extends State<Homepage> {
 
     if (!mounted) return;
 
+    final visibleTours = enrichedTours.where(_isVisibleTour).toList();
+
+    if (!mounted) return;
+
     setState(() {
-      tours = enrichedTours;
+      tours = visibleTours;
       isLoading = false;
     });
   }

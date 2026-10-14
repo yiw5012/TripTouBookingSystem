@@ -20,6 +20,9 @@ export class ManageTour implements OnInit {
 
   loading = false;
   errorMessage = '';
+  deleteConfirmOpen = false;
+  pendingDeleteTourId: number | null = null;
+  pendingDeleteTourName = '';
 
   // ==========================================================
   // INIT
@@ -135,6 +138,37 @@ export class ManageTour implements OnInit {
   // DELETE TOUR
   // ==========================================================
 
+  openDeleteTourDialog(tour: any): void {
+    const tourId = Number(tour?.tour_id);
+
+    if (!tourId || Number.isNaN(tourId)) {
+      this.errorMessage = 'รหัสทัวร์ไม่ถูกต้อง';
+      return;
+    }
+
+    this.pendingDeleteTourId = tourId;
+    this.pendingDeleteTourName = String(tour?.tour_name ?? `#${tourId}`);
+    this.deleteConfirmOpen = true;
+  }
+
+  cancelDeleteTour(): void {
+    this.deleteConfirmOpen = false;
+    this.pendingDeleteTourId = null;
+    this.pendingDeleteTourName = '';
+  }
+
+  async confirmDeleteTour(): Promise<void> {
+    if (this.pendingDeleteTourId === null) {
+      this.cancelDeleteTour();
+      return;
+    }
+
+    const tourId = this.pendingDeleteTourId;
+
+    this.cancelDeleteTour();
+    await this.deleteTour(tourId);
+  }
+
   async deleteTour(tourId: number): Promise<void> {
 
     console.log('DELETE TOUR ID =', tourId);
@@ -143,14 +177,6 @@ export class ManageTour implements OnInit {
 
       console.error('INVALID TOUR ID =', tourId);
 
-      return;
-    }
-
-    const confirmDelete = confirm(
-      'ต้องการลบทัวร์นี้หรือไม่?'
-    );
-
-    if (!confirmDelete) {
       return;
     }
 

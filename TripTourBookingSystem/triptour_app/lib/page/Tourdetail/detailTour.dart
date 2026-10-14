@@ -131,12 +131,20 @@ class _DetailTourState extends State<DetailTour>
               int.tryParse(loadedDetails.first['day_number'].toString()) ?? 1;
         }
 
+        final visibleRounds = (data['rounds'] ?? []).where((round) {
+          final status = (round['status'] ?? '')
+              .toString()
+              .trim()
+              .toLowerCase();
+          return status != 'success';
+        }).toList();
+
         setState(() {
           tour = data['tour'];
 
           images = data['images'] ?? [];
 
-          rounds = data['rounds'] ?? [];
+          rounds = visibleRounds;
 
           details = loadedDetails;
 

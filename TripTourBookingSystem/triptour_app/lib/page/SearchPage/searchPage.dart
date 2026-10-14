@@ -383,8 +383,15 @@ class _SearchPageState extends State<SearchPage> {
     if (!mounted) return;
 
     if (result['statusCode'] == 200 && result['body']['success'] == true) {
+      final visibleResults = (result['body']['data'] ?? []).where((tour) {
+        final status = (tour['status'] ?? '').toString().trim().toLowerCase();
+        return status != 'closed' &&
+            status != 'success' &&
+            status != 'finished';
+      }).toList();
+
       setState(() {
-        searchResults = result['body']['data'] ?? [];
+        searchResults = visibleResults;
         isSearchingTours = false;
       });
     } else {

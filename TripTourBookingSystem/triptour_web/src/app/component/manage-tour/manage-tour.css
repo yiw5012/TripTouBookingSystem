@@ -194,6 +194,17 @@
   background: #f7fefb;
 }
 
+.btn-danger {
+  border-color: var(--red);
+  background: var(--red);
+  color: #ffffff;
+}
+
+.btn-danger:hover:not(:disabled) {
+  border-color: #b91c1c;
+  background: #b91c1c;
+}
+
 
 /* ==========================================
    SUMMARY CARD
@@ -764,6 +775,65 @@
   background: #fef2f2;
 }
 
+
+/* ==========================================
+   DELETE CONFIRM MODAL
+========================================== */
+
+.delete-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.delete-modal {
+  width: min(420px, 100%);
+  padding: 24px 22px 20px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 20px 55px rgba(15, 23, 42, 0.22);
+  text-align: center;
+}
+
+.delete-modal-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  background: #fef2f2;
+  color: var(--red);
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.delete-modal h3 {
+  margin: 0;
+  font-size: 22px;
+  color: #111827;
+}
+
+.delete-modal p {
+  margin: 12px 0 0;
+  color: #4b5563;
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+.delete-modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 22px;
+}
 
 /* ==========================================
    TABLE FOOTER

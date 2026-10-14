@@ -214,6 +214,7 @@ export class AdminLoginComponent {
     if (!success) {
       this.isSubmitting = false;
       this.errorMessage = 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+      window.alert('เข้าสู่ระบบไม่สำเร็จ: อีเมลหรือรหัสผ่านไม่ถูกต้อง');
       return;
     }
 
