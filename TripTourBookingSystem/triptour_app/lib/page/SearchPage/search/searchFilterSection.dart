@@ -481,9 +481,22 @@ class SearchFilterSection extends StatelessWidget {
                   ),
                 ),
                 if (startDate != null && endDate != null)
-                  IconButton(
-                    onPressed: onClearDate,
-                    icon: const Icon(Icons.close, color: Colors.grey),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4),
+                    child: IconButton(
+                      onPressed: onClearDate,
+                      icon: const Icon(
+                        Icons.close,
+                        color: Colors.grey,
+                        size: 18,
+                      ),
+                      splashRadius: 18,
+                      constraints: const BoxConstraints(
+                        minWidth: 30,
+                        minHeight: 30,
+                      ),
+                      padding: EdgeInsets.zero,
+                    ),
                   ),
                 const Icon(Icons.keyboard_arrow_down),
               ],

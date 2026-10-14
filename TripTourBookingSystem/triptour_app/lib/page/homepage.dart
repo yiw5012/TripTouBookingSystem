@@ -8,6 +8,7 @@ import 'package:triptour_app/page/navbar/profile.dart';
 import 'package:triptour_app/page/SearchPage/searchPage.dart';
 import 'package:triptour_app/page/Tourdetail/detailTour.dart';
 import 'package:triptour_app/services/serverApi.dart';
+import 'package:triptour_app/services/severGetApi.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
@@ -26,11 +27,120 @@ class _HomepageState extends State<Homepage> {
 
   // แสดงเฉพาะทัวร์ที่มีโปรโมชั่น
   List<dynamic> get promotionTours {
-    return tours.where((tour) {
+    final list = tours.where((tour) {
       final promotion = tour['promotion'];
-
       return promotion != null && promotion.toString().trim().isNotEmpty;
     }).toList();
+
+    list.sort((a, b) {
+      final aId = int.tryParse((a['tour_id'] ?? '0').toString()) ?? 0;
+      final bId = int.tryParse((b['tour_id'] ?? '0').toString()) ?? 0;
+      return bId.compareTo(aId);
+    });
+
+    return list;
+  }
+
+  List<dynamic> get recommendedTours {
+    final list = [...tours];
+
+    list.sort((a, b) {
+      final aReview =
+          int.tryParse(
+            (a['review_count'] ?? a['reviews_count'] ?? a['reviewCount'] ?? 0)
+                .toString(),
+          ) ??
+          0;
+      final bReview =
+          int.tryParse(
+            (b['review_count'] ?? b['reviews_count'] ?? b['reviewCount'] ?? 0)
+                .toString(),
+          ) ??
+          0;
+
+      final compareReview = bReview.compareTo(aReview);
+      if (compareReview != 0) return compareReview;
+
+      final aRating =
+          double.tryParse(
+            (a['average_rating'] ?? a['rating'] ?? 0).toString(),
+          ) ??
+          0;
+      final bRating =
+          double.tryParse(
+            (b['average_rating'] ?? b['rating'] ?? 0).toString(),
+          ) ??
+          0;
+
+      return bRating.compareTo(aRating);
+    });
+
+    return list;
+  }
+
+  Map<String, List<dynamic>> get toursByCountry {
+    final grouped = <String, List<dynamic>>{};
+
+    for (final tour in tours) {
+      final countryName =
+          (tour['country_name_th'] ??
+                  tour['country_name_en'] ??
+                  tour['country'] ??
+                  tour['country_id'] ??
+                  'Other')
+              .toString();
+      final key = countryName.trim().isEmpty ? 'Other' : countryName;
+      grouped.putIfAbsent(key, () => <dynamic>[]).add(tour);
+    }
+
+    final sortedEntries = grouped.entries.toList()
+      ..sort((a, b) => a.key.toLowerCase().compareTo(b.key.toLowerCase()));
+
+    final result = <String, List<dynamic>>{};
+    for (final entry in sortedEntries) {
+      final sortedTours = [...entry.value];
+      sortedTours.sort((a, b) {
+        final aReview =
+            int.tryParse(
+              (a['review_count'] ?? a['reviews_count'] ?? a['reviewCount'] ?? 0)
+                  .toString(),
+            ) ??
+            0;
+        final bReview =
+            int.tryParse(
+              (b['review_count'] ?? b['reviews_count'] ?? b['reviewCount'] ?? 0)
+                  .toString(),
+            ) ??
+            0;
+        return bReview.compareTo(aReview);
+      });
+      result[entry.key] = sortedTours;
+    }
+
+    return result;
+  }
+
+  String formatRating(dynamic value) {
+    final rating = double.tryParse(value?.toString() ?? '') ?? 0.0;
+    return rating.toStringAsFixed(1);
+  }
+
+  String formatPrice(dynamic value) {
+    final raw = value?.toString().replaceAll(',', '').trim() ?? '';
+    if (raw.isEmpty || raw == '-') {
+      return '0';
+    }
+
+    final price = double.tryParse(raw);
+    if (price == null) {
+      return raw;
+    }
+
+    if (price % 1 == 0) {
+      return price.toInt().toString();
+    }
+
+    return price.toStringAsFixed(2);
   }
 
   @override
@@ -61,19 +171,52 @@ class _HomepageState extends State<Homepage> {
 
   Future<void> loadTours() async {
     final result = await Serverapi.getTours();
-    if (result['statusCode'] == 200) {
-      final body = result['body'];
-      if (body['success'] == true) {
-        setState(() {
-          tours = body['data'] ?? [];
-          isLoading = false;
-        });
-      } else {
-        setState(() => isLoading = false);
-      }
-    } else {
+    if (result['statusCode'] != 200) {
       setState(() => isLoading = false);
+      return;
     }
+
+    final body = result['body'];
+    if (body['success'] != true) {
+      setState(() => isLoading = false);
+      return;
+    }
+
+    final rawTours = List.from(body['data'] ?? []);
+    final enrichedTours = await Future.wait(
+      rawTours.map((tour) async {
+        final tourId = int.tryParse((tour['tour_id'] ?? '').toString());
+        if (tourId == null) {
+          return {...tour, 'review_count': 0, 'average_rating': 0.0};
+        }
+
+        try {
+          final reviewResult = await Severgetapi.getTourReview(tourId);
+          final reviewBody = reviewResult['body'] ?? {};
+          final reviewData = reviewBody['data'] ?? {};
+
+          return {
+            ...tour,
+            'review_count':
+                int.tryParse((reviewData['review_count'] ?? 0).toString()) ?? 0,
+            'average_rating':
+                double.tryParse(
+                  (reviewData['average_rating'] ?? 0.0).toString(),
+                ) ??
+                0.0,
+          };
+        } catch (_) {
+          return {...tour, 'review_count': 0, 'average_rating': 0.0};
+        }
+      }),
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      tours = enrichedTours;
+      isLoading = false;
+    });
   }
 
   void openSearch() {
@@ -214,11 +357,20 @@ class _HomepageState extends State<Homepage> {
                             ),
                           ),
                           if (isSearching)
-                            IconButton(
-                              onPressed: closeSearch,
-                              icon: const Icon(Icons.close),
+                            Padding(
+                              padding: const EdgeInsets.only(right: 4),
+                              child: IconButton(
+                                onPressed: closeSearch,
+                                icon: const Icon(Icons.close, size: 20),
+                                splashRadius: 18,
+                                constraints: const BoxConstraints(
+                                  minWidth: 32,
+                                  minHeight: 32,
+                                ),
+                                padding: EdgeInsets.zero,
+                              ),
                             ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 4),
                         ],
                       ),
                     ),
@@ -226,12 +378,26 @@ class _HomepageState extends State<Homepage> {
                 ),
               ),
               if (isSearching)
-                const Positioned(
+                Positioned(
                   top: 75,
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  child: SearchPage(),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final maxHeight = constraints.maxHeight > 0
+                          ? constraints.maxHeight
+                          : MediaQuery.of(context).size.height - 75;
+
+                      return ConstrainedBox(
+                        constraints: BoxConstraints(maxHeight: maxHeight),
+                        child: const Material(
+                          color: Colors.white,
+                          child: SearchPage(),
+                        ),
+                      );
+                    },
+                  ),
                 ),
             ],
           ],
@@ -292,30 +458,80 @@ class _HomepageState extends State<Homepage> {
                 children: const [
                   Icon(Icons.travel_explore, color: Colors.green, size: 35),
                   SizedBox(width: 8),
-                  Text(
-                    "Trip Tour",
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
+                  Expanded(
+                    child: Text(
+                      "Trip Tour",
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 25),
-              const Text(
-                "ประกาศข่าว",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Row(
+                children: const [
+                  Icon(
+                    Icons.local_offer_rounded,
+                    color: Colors.orange,
+                    size: 22,
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "ทัวร์ที่มีโปรโมชั่น",
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 10),
               buildPromotionSection(),
-              const SizedBox(height: 80), // เว้นพื้นที่สำหรับ Search Box
-              const Text(
-                "ทริปแนะนำ",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              const SizedBox(height: 28),
+              Row(
+                children: const [
+                  Icon(Icons.star_rounded, color: Colors.amber, size: 22),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "ทริปแนะนำ",
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
               buildTourSection(),
+              const SizedBox(height: 24),
+              Row(
+                children: const [
+                  Icon(Icons.map_rounded, color: Colors.teal, size: 22),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "ทัวร์แต่ละประเทศ",
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              buildCountryTourSection(),
               const SizedBox(height: 20),
             ],
           ),
@@ -327,7 +543,7 @@ class _HomepageState extends State<Homepage> {
   Widget buildPromotionSection() {
     if (isLoading) {
       return const SizedBox(
-        height: 160,
+        height: 180,
         child: Center(child: CircularProgressIndicator()),
       );
     }
@@ -339,113 +555,157 @@ class _HomepageState extends State<Homepage> {
         height: 150,
         width: double.infinity,
         decoration: BoxDecoration(
-          color: Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(12),
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade300),
         ),
-        child: const Center(child: Text('ยังไม่มีประกาศโปรโมชั่น')),
+        child: const Center(
+          child: Text(
+            'ยังไม่มีทัวร์ที่มีโปรโมชั่นในตอนนี้',
+            style: TextStyle(color: Colors.grey),
+          ),
+        ),
       );
     }
 
     return SizedBox(
-      height: 165,
+      height: 180,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: promotions.length,
         itemBuilder: (context, index) {
           final tour = promotions[index];
-
           final imageUrl = (tour['image'] ?? '').toString().trim();
-
           final promotion = tour['promotion'].toString().trim();
 
-          return Container(
-            width: 280,
-            margin: const EdgeInsets.only(right: 12),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  // ภาพปกทัวร์
-                  if (imageUrl.isNotEmpty)
-                    Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: Colors.grey.shade300,
-                          child: const Icon(
-                            Icons.image_not_supported,
-                            size: 40,
-                            color: Colors.grey,
-                          ),
-                        );
-                      },
-                    )
-                  else
-                    Container(
-                      color: Colors.grey.shade300,
-                      child: const Icon(
-                        Icons.image,
-                        size: 40,
-                        color: Colors.grey,
-                      ),
-                    ),
+          return GestureDetector(
+            onTap: () {
+              final tourId = parseTourId(tour['tour_id']);
+              if (tourId == null) return;
 
-                  // ไล่สีพื้นหลัง ช่วยให้ข้อความอ่านง่าย
-                  Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Colors.transparent, Colors.black87],
-                      ),
-                    ),
-                  ),
-
-                  // ข้อมูลโปรโมชั่นบนภาพปก
-                  Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Align(
-                      alignment: Alignment.bottomLeft,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            (tour['tour_name'] ?? 'ไม่มีชื่อทริป').toString(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            promotion,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${tour['price'] ?? '-'} บาท',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => DetailTour(tourId: tourId),
+                ),
+              );
+            },
+            child: Container(
+              width: 290,
+              margin: const EdgeInsets.only(right: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.12),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
                   ),
                 ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (imageUrl.isNotEmpty)
+                      Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey.shade300,
+                            child: const Icon(
+                              Icons.image_not_supported,
+                              size: 40,
+                              color: Colors.grey,
+                            ),
+                          );
+                        },
+                      )
+                    else
+                      Container(
+                        color: Colors.grey.shade300,
+                        child: const Icon(
+                          Icons.image,
+                          size: 40,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Colors.transparent, Colors.black87],
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 12,
+                      left: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.orange,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: const Text(
+                          'PROMO',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Align(
+                        alignment: Alignment.bottomLeft,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              (tour['tour_name'] ?? 'ไม่มีชื่อทริป').toString(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              promotion,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '${formatPrice(tour['price'] ?? '-')} บาท',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
@@ -459,28 +719,47 @@ class _HomepageState extends State<Homepage> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (tours.isEmpty) {
+    final recommended = recommendedTours;
+    if (recommended.isEmpty) {
       return const Center(child: Text("ยังไม่มีทริป"));
     }
 
     return SizedBox(
-      height: 220,
+      height: 238,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: tours.length,
+        itemCount: recommended.length,
         itemBuilder: (context, index) {
-          final tour = tours[index];
+          final tour = recommended[index];
           final imageUrl = (tour['image'] ?? '').toString().trim();
+          final reviewCount =
+              int.tryParse(
+                (tour['review_count'] ??
+                        tour['reviews_count'] ??
+                        tour['reviewCount'] ??
+                        0)
+                    .toString(),
+              ) ??
+              0;
 
           return Container(
             width: 180,
+            height: 238,
             margin: const EdgeInsets.only(right: 12),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(18),
+              color: Colors.white,
+              border: Border.all(color: Colors.grey.shade200),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: InkWell(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(18),
               onTap: () {
                 final tourId = parseTourId(tour['tour_id']);
                 if (tourId == null) {
@@ -506,23 +785,23 @@ class _HomepageState extends State<Homepage> {
                 children: [
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(12),
+                      top: Radius.circular(18),
                     ),
                     child: Container(
-                      height: 100,
+                      height: 116,
                       width: double.infinity,
-                      color: const Color(0xFFE0E0E0),
+                      color: const Color(0xFFEDEDED),
                       child: imageUrl.isNotEmpty
                           ? Image.network(
                               imageUrl,
                               fit: BoxFit.cover,
                               width: double.infinity,
-                              height: 100,
+                              height: 118,
                               errorBuilder: (context, error, stackTrace) {
                                 return const Center(
                                   child: Icon(
                                     Icons.image_not_supported,
-                                    size: 40,
+                                    size: 38,
                                     color: Colors.grey,
                                   ),
                                 );
@@ -531,42 +810,100 @@ class _HomepageState extends State<Homepage> {
                           : const Center(
                               child: Icon(
                                 Icons.image,
-                                size: 40,
+                                size: 38,
                                 color: Colors.grey,
                               ),
                             ),
                     ),
                   ),
-
-                  Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          tour['tour_name'] ?? 'ไม่มีชื่อทริป',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-
-                        const SizedBox(height: 5),
-
-                        Text(
-                          "${tour['duration_day'] ?? '-'} วัน",
-                          style: TextStyle(color: Colors.grey.shade600),
-                        ),
-
-                        const SizedBox(height: 5),
-
-                        Text(
-                          "${tour['price'] ?? '-'} บาท",
-                          style: const TextStyle(
-                            color: Colors.orange,
-                            fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            height: 38,
+                            child: Text(
+                              tour['tour_name'] ?? 'ไม่มีชื่อทริป',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13.5,
+                                height: 1.3,
+                              ),
+                            ),
                           ),
-                        ),
-                      ],
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.star_rounded,
+                                color: Colors.amber,
+                                size: 15,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                formatRating(tour['average_rating'] ?? 0.0),
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  color: Colors.grey.shade700,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.mode_comment_outlined,
+                                size: 13,
+                                color: Colors.grey.shade600,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                '$reviewCount',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  color: Colors.grey.shade700,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            height: 20,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'เริ่มต้น',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                                const Spacer(),
+                                Expanded(
+                                  child: Align(
+                                    alignment: Alignment.centerRight,
+                                    child: Text(
+                                      '${formatPrice(tour['price'] ?? '-')} บาท',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Colors.orange,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -575,6 +912,214 @@ class _HomepageState extends State<Homepage> {
           );
         },
       ),
+    );
+  }
+
+  Widget buildCountryTourSection() {
+    if (isLoading) {
+      return const SizedBox(
+        height: 120,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final countries = toursByCountry;
+    if (countries.isEmpty) {
+      return const Center(child: Text('ยังไม่มีทัวร์ตามประเทศ'));
+    }
+
+    return Column(
+      children: countries.entries.map((entry) {
+        final countryName = entry.key;
+        final countryTours = entry.value;
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 8),
+                child: Text(
+                  countryName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              SizedBox(
+                height: 182,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: countryTours.length,
+                  itemBuilder: (context, index) {
+                    final tour = countryTours[index];
+                    final tourId = parseTourId(tour['tour_id']);
+                    final imageUrl = (tour['image'] ?? '').toString().trim();
+
+                    return GestureDetector(
+                      onTap: () {
+                        if (tourId == null) return;
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DetailTour(tourId: tourId),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: 165,
+                        height: 182,
+                        margin: const EdgeInsets.only(right: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade200),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 7,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ClipRRect(
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(16),
+                              ),
+                              child: Container(
+                                height: 94,
+                                width: double.infinity,
+                                color: Colors.grey.shade200,
+                                child: imageUrl.isNotEmpty
+                                    ? Image.network(
+                                        imageUrl,
+                                        fit: BoxFit.cover,
+                                        width: double.infinity,
+                                        height: 92,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                              return const Center(
+                                                child: Icon(
+                                                  Icons.image_not_supported,
+                                                  size: 32,
+                                                  color: Colors.grey,
+                                                ),
+                                              );
+                                            },
+                                      )
+                                    : const Center(
+                                        child: Icon(
+                                          Icons.image,
+                                          size: 32,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    tour['tour_name'] ?? 'ไม่มีชื่อทริป',
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.star_rounded,
+                                        color: Colors.amber,
+                                        size: 14,
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        formatRating(
+                                          tour['average_rating'] ?? 0.0,
+                                        ),
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.grey.shade700,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Icon(
+                                        Icons.mode_comment_outlined,
+                                        size: 12,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        '${int.tryParse((tour['review_count'] ?? tour['reviews_count'] ?? tour['reviewCount'] ?? 0).toString()) ?? 0}',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.grey.shade700,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  SizedBox(
+                                    height: 18,
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          'เริ่มต้น',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                        const Spacer(),
+                                        Expanded(
+                                          child: Align(
+                                            alignment: Alignment.centerRight,
+                                            child: Text(
+                                              '${formatPrice(tour['price'] ?? '-')} บาท',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              textAlign: TextAlign.right,
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.orange,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 }

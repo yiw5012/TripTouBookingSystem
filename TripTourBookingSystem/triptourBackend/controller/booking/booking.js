@@ -1055,20 +1055,39 @@ router.get('/history/:memberId', async (req, res) => {
 
     const sql = `
       SELECT 
-    b.booking_id,
-    b.status AS booking_status,  
-    b.payment_status,
-    b.total_price,
-    b.booking_date,
-    b.slip_image,
-    b.round_id,
-    t.tour_id,
-    t.tour_name,
-    t.video,
-    t.include_flight,
-    t.pdf_file,
-    t.status AS tour_status  
-    
+        b.booking_id,
+        b.member_id,
+        b.round_id,
+        b.status AS booking_status,
+        b.payment_status,
+        b.payment_date,
+        b.total_price,
+        b.booking_date,
+        b.slip_image,
+        b.total_price,
+
+        t.tour_id,
+        t.tour_name,
+        t.type,
+        t.duration_day,
+        t.include_flight,
+        t.video,
+        t.pdf_file,
+        t.promotion,
+        t.condition_detail,
+        t.price AS tour_price,
+        t.status AS tour_status,
+
+        r.start_date,
+        r.end_date,
+        r.departure,
+        r.destination,
+        r.airline,
+        r.flight,
+        r.flight_time,
+        r.guide_id,
+        r.count AS round_count
+
       FROM booking b
       LEFT JOIN tour_round r ON b.round_id = r.round_id
       LEFT JOIN tour t ON r.tour_id = t.tour_id
