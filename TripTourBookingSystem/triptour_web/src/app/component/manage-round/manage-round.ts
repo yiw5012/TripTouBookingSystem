@@ -180,11 +180,16 @@ export class ManageRound implements OnInit {
       return;
     }
 
-    const startDate = new Date(value.start_date);
-    const endDate = new Date(value.end_date);
+    const parseLocalDate = (dateString: string): Date => {
+      const [year, month, day] = dateString.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    };
 
-    if (startDate.getTime() > endDate.getTime()) {
-      this.errorMessage = 'วันเริ่มทัวร์ต้องไม่มากกว่าวันสิ้นสุด';
+    const startDate = parseLocalDate(value.start_date);
+    const endDate = parseLocalDate(value.end_date);
+
+    if (endDate.getTime() <= startDate.getTime()) {
+      this.errorMessage = 'วันสิ้นสุดทัวร์ต้องอยู่หลังวันเริ่มทัวร์';
       return;
     }
 

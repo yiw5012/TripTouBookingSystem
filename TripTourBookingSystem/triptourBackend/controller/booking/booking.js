@@ -187,15 +187,6 @@ router.post('/create-order', async (req, res) => {
       });
     }
 
-    if (remainingSeats === 1) {
-      await connection.rollback();
-      transactionStarted = false;
-      return res.status(409).json({
-        success: false,
-        message: 'รอบทัวร์เหลือที่นั่งเพียง 1 คน กรุณาทำรายการใหม่อีกครั้ง',
-      });
-    }
-
     if (occupiedSeats >= roundCapacity) {
       await connection.rollback();
       transactionStarted = false;

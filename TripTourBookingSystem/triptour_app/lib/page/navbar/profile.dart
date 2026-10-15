@@ -201,24 +201,63 @@ class _ProfilePageState extends State<ProfilePage> {
     required dynamic value,
     Color? iconColor,
   }) {
-    return Card(
-      elevation: 0,
-      color: Colors.grey.shade100,
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: ListTile(
-        leading: Icon(icon, color: iconColor ?? Colors.blueGrey),
-        title: Text(
-          title,
-          style: const TextStyle(fontSize: 12, color: Colors.grey),
-        ),
-        subtitle: Text(
-          displayValue(value),
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: Colors.black87,
+    final Color resolvedColor = iconColor ?? const Color(0xFF0F766E);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-        ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: resolvedColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: resolvedColor, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade500,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  displayValue(value),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1F2937),
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -228,14 +267,27 @@ class _ProfilePageState extends State<ProfilePage> {
   // ==========================================================
   Widget buildSectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.only(top: 10, bottom: 8),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Colors.grey,
-        ),
+      padding: const EdgeInsets.only(top: 20, bottom: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 6,
+            height: 18,
+            decoration: BoxDecoration(
+              color: const Color(0xFF22C55E),
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF111827),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -256,66 +308,93 @@ class _ProfilePageState extends State<ProfilePage> {
 
     final bool hasProfileImage = profileImage != '-';
 
-    return Column(
-      children: [
-        const SizedBox(height: 15),
-
-        CircleAvatar(
-          radius: 55,
-          backgroundColor: Colors.grey.shade300,
-          backgroundImage: hasProfileImage ? NetworkImage(profileImage) : null,
-          child: hasProfileImage
-              ? null
-              : const Icon(Icons.person, size: 55, color: Colors.white),
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 18),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFECFDF5), Color(0xFFFFFFFF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-
-        const SizedBox(height: 12),
-
-        Text(
-          fullName == '- -' ? 'ไม่ระบุชื่อ' : fullName,
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-        ),
-
-        const SizedBox(height: 6),
-
-        Chip(
-          label: Text(
-            role.toUpperCase(),
-            style: const TextStyle(color: Colors.white, fontSize: 12),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFD1FAE5)),
+      ),
+      child: Column(
+        children: [
+          CircleAvatar(
+            radius: 52,
+            backgroundColor: const Color(0xFFD1FAE5),
+            backgroundImage: hasProfileImage
+                ? NetworkImage(profileImage)
+                : null,
+            child: hasProfileImage
+                ? null
+                : const Icon(Icons.person, size: 52, color: Color(0xFF0F766E)),
           ),
-          backgroundColor: Colors.blueGrey,
-        ),
-        const SizedBox(height: 8),
+          const SizedBox(height: 14),
+          Text(
+            fullName == '- -' ? 'ไม่ระบุชื่อ' : fullName,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF111827),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFF16A34A),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              role.toUpperCase(),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: 190,
+            child: ElevatedButton.icon(
+              onPressed: () async {
+                if (memberData == null) {
+                  return;
+                }
 
-        SizedBox(
-          width: 180,
-          child: OutlinedButton.icon(
-            onPressed: () async {
-              if (memberData == null) {
-                return;
-              }
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        EditProfilePage(memberData: memberData!),
+                  ),
+                );
 
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      EditProfilePage(memberData: memberData!),
+                if (result == true && mounted) {
+                  await loadProfile();
+                }
+              },
+              icon: const Icon(Icons.edit, size: 18),
+              label: const Text('แก้ไขข้อมูล'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF16A34A),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              );
-
-              // ถ้าบันทึกสำเร็จ
-              if (result == true && mounted) {
-                await loadProfile();
-              }
-            },
-            icon: const Icon(Icons.edit),
-            label: const Text('แก้ไขข้อมูล'),
+              ),
+            ),
           ),
-        ),
-
-        const SizedBox(height: 15),
-      ],
+        ],
+      ),
     );
   }
 
@@ -501,18 +580,21 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAF9),
       appBar: AppBar(
-        title: const Text('Profile'),
-        backgroundColor: Colors.greenAccent,
+        title: const Text('โปรไฟล์'),
+        centerTitle: true,
+        backgroundColor: const Color(0xFF16A34A),
+        foregroundColor: Colors.white,
+        elevation: 0,
         actions: [
           IconButton(
             onPressed: sigout,
-            icon: const Icon(Icons.refresh),
-            tooltip: 'โหลดข้อมูลใหม่',
+            icon: const Icon(Icons.logout_rounded),
+            tooltip: 'ออกจากระบบ',
           ),
         ],
       ),
-
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : errorMessage != null
@@ -521,15 +603,14 @@ class _ProfilePageState extends State<ProfilePage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Icon(Icons.person_off, size: 60, color: Colors.grey),
-
                   const SizedBox(height: 12),
-
                   Text(errorMessage!, style: const TextStyle(fontSize: 16)),
-
                   const SizedBox(height: 12),
-
                   ElevatedButton(
                     onPressed: loadProfile,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF16A34A),
+                    ),
                     child: const Text('ลองใหม่'),
                   ),
                 ],
@@ -541,40 +622,43 @@ class _ProfilePageState extends State<ProfilePage> {
               onRefresh: loadProfile,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 30),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     buildProfileHeader(),
-
-                    const Divider(height: 10),
-
                     buildPersonalSection(),
-
                     buildFavoriteCountrySection(),
-
                     buildHealthSection(),
-
                     buildDocumentSection(),
-
-                    const SizedBox(height: 10),
-                    Center(
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: sigout,
-                        icon: const Icon(Icons.logout),
+                        icon: const Icon(Icons.logout_rounded),
                         label: const Text('ออกจากระบบ'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
+                          foregroundColor: const Color(0xFF111827),
+                          side: const BorderSide(color: Color(0xFFE5E7EB)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 18),
                     Center(
                       child: TextButton(
                         onPressed: inactiveAccount,
                         child: const Text(
                           'ลบบัญชีผู้ใช้',
-                          style: TextStyle(color: Colors.red),
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
