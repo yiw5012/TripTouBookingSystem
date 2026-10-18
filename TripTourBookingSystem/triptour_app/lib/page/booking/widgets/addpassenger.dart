@@ -194,7 +194,7 @@ class _AddPassengerPageState extends State<AddPassengerPage> {
                       Expanded(
                         child: DropdownButtonFormField<String>(
                           isExpanded: true,
-                          initialValue: gender,
+                          value: gender,
                           decoration: InputDecoration(
                             labelText: "เพศ",
                             prefixIcon: const Icon(Icons.wc, size: 20),

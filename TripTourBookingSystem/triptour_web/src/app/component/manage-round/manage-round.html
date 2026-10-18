@@ -174,10 +174,25 @@
               <label for="round-flight">หมายเลขเที่ยวบิน</label>
               <input id="round-flight" type="text" formControlName="flight" placeholder="เช่น TG640"/>
             </div>
-            <div class="form-group">
-              <label for="round-flight-time">เวลาเที่ยวบิน</label>
-              <input id="round-flight-time" type="time" formControlName="flight_time"/>
-            </div>
+            
+<div class="form-group">
+  <label for="round-flight-time">
+    เวลาเที่ยวบิน <span class="required-mark">*</span>
+  </label>
+  <input
+    id="round-flight-time"
+    type="time"
+    formControlName="flight_time"
+  />
+  <small
+    class="field-error"
+    *ngIf="form.get('flight_time')?.touched &&
+           form.get('flight_time')?.hasError('required')"
+  >
+    กรุณาระบุเวลาเที่ยวบิน
+  </small>
+</div>
+
           </div>
         </ng-container>
 

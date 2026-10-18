@@ -121,7 +121,7 @@ router.get(
                         last_name,
                         email,
                         age,
-                        birthday,
+                        DATE_FORMAT(birthday, '%Y-%m-%d') AS birthday,
                         phone,
                         address,
                         status,
@@ -184,6 +184,7 @@ router.put(
             const {
                 first_name,
                 last_name,
+                guide_code,
                 email,
                 age,
                 birthday,
@@ -214,7 +215,7 @@ router.put(
             const [guideRows] =
                 await conn.query(
                     `
-                    SELECT guide_id
+                    SELECT guide_id, guide_code, image_profile, email
                     FROM guide
                     WHERE google_id = ?
                     LIMIT 1
@@ -308,6 +309,7 @@ router.put(
                 `
                 UPDATE guide
                 SET 
+                    guide_code = ?,
                     image_profile = ?,
                     first_name = ?,
                     last_name = ?,
@@ -319,6 +321,7 @@ router.put(
                 WHERE google_id = ?
                 `,
                 [
+                    guide_code?.toString().trim() || null,
                     newGuideImage,
                     first_name?.toString().trim() || null,
                     last_name?.toString().trim() || null,
@@ -339,7 +342,7 @@ router.put(
                 `
                 SELECT
                     guide_id, guide_code, image_profile, first_name, last_name,
-                    email, age, birthday, phone, address, status, google_id
+                    email, age, DATE_FORMAT(birthday, '%Y-%m-%d') AS birthday, phone, address, status, google_id
                 FROM guide
                 WHERE google_id = ?
                 LIMIT 1

@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:async';
 import 'package:http/http.dart' as http;
 
-const String _defaultBaseUrl = 'http://192.168.1.8:4000';
+const String _defaultBaseUrl = 'http://192.168.1.146:4000';
 
 String normalizeBaseUrl(String? value) {
   final raw = (value ?? '').trim();
@@ -616,6 +616,7 @@ class Serverapi {
     required String age,
     required String birthday,
     required String address,
+    required String guideCode,
     String? password,
     File? imageProfileFile,
   }) async {
@@ -631,6 +632,7 @@ class Serverapi {
       request.fields['age'] = age;
       request.fields['birthday'] = birthday;
       request.fields['address'] = address;
+      request.fields['guide_code'] = guideCode;
 
       if (password != null && password.trim().isNotEmpty) {
         request.fields['password'] = password.trim();
