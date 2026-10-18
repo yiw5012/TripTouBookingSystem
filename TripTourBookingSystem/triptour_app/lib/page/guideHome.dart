@@ -359,8 +359,8 @@ class _GuidehomeState extends State<Guidehome> {
                       ..._managedRounds.take(3).map((round) {
                         final status = (round['status'] ?? '').toString();
                         final tourName = round['tour_name'] ?? 'ทัวร์';
-                        final startDate = round['start_date'] ?? '-';
-                        final endDate = round['end_date'] ?? '-';
+                        final startDate = _formatDateText(round['start_date']);
+                        final endDate = _formatDateText(round['end_date']);
                         final statusColor =
                             (status.toLowerCase() == 'closed' ||
                                 status.toLowerCase() == 'finish')
@@ -441,11 +441,37 @@ class _GuidehomeState extends State<Guidehome> {
                                         ),
                                       ),
                                       const SizedBox(height: 6),
-                                      Text(
-                                        '$startDate - $endDate',
-                                        style: const TextStyle(
-                                          color: Colors.black54,
-                                          fontSize: 12,
+                                      Container(
+                                        margin: const EdgeInsets.only(top: 6),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 8,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFEFF8F1),
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.calendar_month_rounded,
+                                              size: 16,
+                                              color: Color(0xFF1FAE5B),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                '$startDate - $endDate',
+                                                style: const TextStyle(
+                                                  color: Color(0xFF267747),
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                       const SizedBox(height: 10),
@@ -486,6 +512,30 @@ class _GuidehomeState extends State<Guidehome> {
               ),
       ),
     );
+  }
+
+  String _formatDateText(dynamic value) {
+    if (value == null) return '-';
+
+    final text = value.toString().trim();
+    if (text.isEmpty) return '-';
+
+    final datePart = text.split('T').first.split(' ').first;
+    final parts = datePart.split('-');
+
+    if (parts.length == 3 && parts[0].length == 4) {
+      final year = int.tryParse(parts[0]);
+      final month = int.tryParse(parts[1]);
+      final day = int.tryParse(parts[2]);
+
+      if (year != null && month != null && day != null) {
+        return '${day.toString().padLeft(2, '0')}/'
+            '${month.toString().padLeft(2, '0')}/'
+            '${year + 543}';
+      }
+    }
+
+    return text;
   }
 
   Widget _buildStatCard({

@@ -21,6 +21,7 @@ class _EditGuideProfileState extends State<EditGuideProfile> {
 
   late final TextEditingController firstNameController;
   late final TextEditingController lastNameController;
+  late final TextEditingController guideCodeController;
   late final TextEditingController emailCtl;
   late final TextEditingController ageController;
   late final TextEditingController birthdayController;
@@ -50,6 +51,10 @@ class _EditGuideProfileState extends State<EditGuideProfile> {
 
     lastNameController = TextEditingController(
       text: getValue(widget.guide['last_name']),
+    );
+
+    guideCodeController = TextEditingController(
+      text: getValue(widget.guide['guide_code']),
     );
 
     ageController = TextEditingController(text: getValue(widget.guide['age']));
@@ -83,6 +88,7 @@ class _EditGuideProfileState extends State<EditGuideProfile> {
     phoneController.dispose();
     addressController.dispose();
     passwordCtl.dispose();
+    guideCodeController.dispose();
 
     super.dispose();
   }
@@ -353,6 +359,7 @@ class _EditGuideProfileState extends State<EditGuideProfile> {
         address: addressController.text.trim(),
         password: passwordCtl.text.trim(),
         imageProfileFile: _selectedImage,
+        guideCode: guideCodeController.text.trim(),
       );
       // เพิ่ม print เพื่อดูค่าที่ Backend ตอบกลับมาจริง ๆ ใน Debug Console
       print("StatusCode: ${result['statusCode']}");
@@ -499,6 +506,17 @@ class _EditGuideProfileState extends State<EditGuideProfile> {
                               fontWeight: FontWeight.w800,
                               fontSize: 15,
                               color: Color(0xFF1B1B1B),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: guideCodeController,
+                            decoration: const InputDecoration(
+                              labelText: 'รหัสไกด์',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.badge_outlined),
+                              filled: true,
+                              fillColor: Color(0xFFF8FBF9),
                             ),
                           ),
                           const SizedBox(height: 12),

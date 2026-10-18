@@ -46,7 +46,7 @@ export class ManageRound implements OnInit {
       end_date: ['', Validators.required],
       airline: [''],
       flight: [''],
-      flight_time: [''],
+      flight_time: ['', Validators.required],
       price_single: ['', [Validators.required, Validators.min(0)]],
       price_double: ['', [Validators.required, Validators.min(0)]],
       price_triple: ['', [Validators.required, Validators.min(0)]],

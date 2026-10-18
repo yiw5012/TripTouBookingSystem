@@ -30,6 +30,7 @@ export class MemberComponent implements OnInit {
   selectedImagePreview: string | null = null;
 
   guideForm: any = {
+    guide_code: '',
     first_name: '',
     last_name: '',
     email: '',
@@ -137,6 +138,7 @@ export class MemberComponent implements OnInit {
     this.selectedImagePreview = null;
 
     this.guideForm = {
+      guide_code: member.code && member.code !== '-' ? member.code : '',
       first_name: member.first_name || '',
       last_name: member.last_name || '',
       email: member.email || '',
@@ -176,6 +178,7 @@ export class MemberComponent implements OnInit {
     try {
       // 📌 สร้าง FormData เพื่อส่งรูปภาพพร้อมข้อความไปยัง Express (Multer)
       const formData = new FormData();
+      formData.append('guide_code', this.guideForm.guide_code?.trim() || '');
       formData.append('first_name', this.guideForm.first_name || '');
       formData.append('last_name', this.guideForm.last_name || '');
       formData.append('email', this.guideForm.email || '');

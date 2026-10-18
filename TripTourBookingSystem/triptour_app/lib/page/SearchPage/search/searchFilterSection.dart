@@ -481,22 +481,9 @@ class SearchFilterSection extends StatelessWidget {
                   ),
                 ),
                 if (startDate != null && endDate != null)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4),
-                    child: IconButton(
-                      onPressed: onClearDate,
-                      icon: const Icon(
-                        Icons.close,
-                        color: Colors.grey,
-                        size: 18,
-                      ),
-                      splashRadius: 18,
-                      constraints: const BoxConstraints(
-                        minWidth: 30,
-                        minHeight: 30,
-                      ),
-                      padding: EdgeInsets.zero,
-                    ),
+                  IconButton(
+                    onPressed: onClearDate,
+                    icon: const Icon(Icons.close, color: Colors.grey),
                   ),
                 const Icon(Icons.keyboard_arrow_down),
               ],
@@ -554,7 +541,7 @@ class SearchFilterSection extends StatelessWidget {
         const SizedBox(height: 8),
 
         DropdownButtonFormField<String>(
-          initialValue: selectedSort,
+          value: selectedSort,
           decoration: InputDecoration(
             prefixIcon: const Icon(Icons.sort, color: Colors.orange),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
