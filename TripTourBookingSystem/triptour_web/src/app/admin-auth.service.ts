@@ -22,7 +22,7 @@ interface AdminLoginResponse {
 @Injectable({ providedIn: 'root' })
 export class AdminAuthService {
   private readonly storageKey = 'triptour_admin_session';
-  private readonly apiBaseUrl = 'http://localhost:4000';
+  private readonly apiBaseUrl = 'https://triptoubookingsystem-production.up.railway.app';
   private readonly http = inject(HttpClient);
   private readonly firebaseApp = initializeApp(environment.firebaseConfig);
   private readonly auth = getAuth(this.firebaseApp);
