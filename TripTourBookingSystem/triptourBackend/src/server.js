@@ -22,7 +22,7 @@ io.on('connection', (socket) => {
     socket.join(orderId);
   });
 });
-server.listen(port, () => {
+server.listen(port,'0.0.0.0', () => {
   console.log(`Server is running on port ${port}`);
 }).on("error", (error) => {
   console.error('Error starting server:', error);

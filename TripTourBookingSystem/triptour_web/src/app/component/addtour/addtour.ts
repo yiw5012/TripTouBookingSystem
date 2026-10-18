@@ -164,7 +164,6 @@ private updateConditionControlState(): void {
 
       pdf_file: [
         '',
-        Validators.required
       ],
 
       status: [
@@ -741,14 +740,7 @@ removeCloudImage(publicId: string): void {
     // PDF จำเป็น
     // --------------------------------------------------------
 
-    if (!this.selectedPdf) {
 
-      alert(
-        'กรุณาเลือกไฟล์ PDF ของโปรแกรมทัวร์'
-      );
-
-      return;
-    }
 
 
     this.isSubmitting =
@@ -916,10 +908,12 @@ formData.append(
       // PDF
       // ======================================================
 
-      formData.append(
-        'pdf_file',
-        this.selectedPdf
-      );
+      if (this.selectedPdf) {
+  formData.append(
+    'pdf_file',
+    this.selectedPdf
+  );
+}
 
 
       // ======================================================

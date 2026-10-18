@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:triptour_app/services/serverApi.dart';
@@ -22,6 +21,7 @@ class _EditGuideProfileState extends State<EditGuideProfile> {
 
   late final TextEditingController firstNameController;
   late final TextEditingController lastNameController;
+  late final TextEditingController guideCodeController;
   late final TextEditingController emailCtl;
   late final TextEditingController ageController;
   late final TextEditingController birthdayController;
@@ -51,6 +51,10 @@ class _EditGuideProfileState extends State<EditGuideProfile> {
 
     lastNameController = TextEditingController(
       text: getValue(widget.guide['last_name']),
+    );
+
+    guideCodeController = TextEditingController(
+      text: getValue(widget.guide['guide_code']),
     );
 
     ageController = TextEditingController(text: getValue(widget.guide['age']));
@@ -84,6 +88,7 @@ class _EditGuideProfileState extends State<EditGuideProfile> {
     phoneController.dispose();
     addressController.dispose();
     passwordCtl.dispose();
+    guideCodeController.dispose();
 
     super.dispose();
   }
@@ -354,6 +359,7 @@ class _EditGuideProfileState extends State<EditGuideProfile> {
         address: addressController.text.trim(),
         password: passwordCtl.text.trim(),
         imageProfileFile: _selectedImage,
+        guideCode: guideCodeController.text.trim(),
       );
       // เพิ่ม print เพื่อดูค่าที่ Backend ตอบกลับมาจริง ๆ ใน Debug Console
       print("StatusCode: ${result['statusCode']}");
@@ -393,252 +399,294 @@ class _EditGuideProfileState extends State<EditGuideProfile> {
 
       showMessage('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
     } finally {
-      if (!mounted) {
-        return;
+      if (mounted) {
+        setState(() {
+          isSaving = false;
+        });
       }
-
-      setState(() {
-        isSaving = false;
-      });
     }
   }
 
   // ==========================================================
   // BUILD
   // ==========================================================
+  @override
   Widget build(BuildContext context) {
     final String currentImageUrl = widget.guide['image_profile'] ?? '';
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F7F3),
       appBar: AppBar(
         title: const Text('แก้ไขข้อมูลไกด์'),
-        backgroundColor: Colors.amber,
-        foregroundColor: Colors.black,
+        centerTitle: true,
+        backgroundColor: const Color(0xFF1FAE5B),
+        foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : Form(
               key: _formKey,
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
                 child: Column(
                   children: [
-                    Center(
-                      child: Stack(
-                        children: [
-                          CircleAvatar(
-                            radius: 55,
-                            backgroundColor: Colors.grey.shade300,
-                            backgroundImage: _selectedImage != null
-                                ? FileImage(_selectedImage!) as ImageProvider
-                                : (currentImageUrl.isNotEmpty &&
-                                          currentImageUrl != '-'
-                                      ? NetworkImage(currentImageUrl)
-                                      : null),
-                            child:
-                                (_selectedImage == null &&
-                                    (currentImageUrl.isEmpty ||
-                                        currentImageUrl == '-'))
-                                ? const Icon(
-                                    Icons.person,
-                                    size: 55,
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF1FAE5B), Color(0xFF17A85B)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: Center(
+                        child: Stack(
+                          children: [
+                            CircleAvatar(
+                              radius: 54,
+                              backgroundColor: Colors.white.withOpacity(0.18),
+                              backgroundImage: _selectedImage != null
+                                  ? FileImage(_selectedImage!) as ImageProvider
+                                  : (currentImageUrl.isNotEmpty &&
+                                        currentImageUrl != '-')
+                                  ? NetworkImage(currentImageUrl)
+                                  : null,
+                              child:
+                                  (_selectedImage == null &&
+                                      (currentImageUrl.isEmpty ||
+                                          currentImageUrl == '-'))
+                                  ? const Icon(
+                                      Icons.person_rounded,
+                                      size: 48,
+                                      color: Colors.white,
+                                    )
+                                  : null,
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: InkWell(
+                                onTap: _pickImage,
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: const BoxDecoration(
                                     color: Colors.white,
-                                  )
-                                : null,
-                          ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: InkWell(
-                              onTap: _pickImage,
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: const BoxDecoration(
-                                  color: Colors.amber,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.camera_alt,
-                                  color: Colors.black,
-                                  size: 20,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.camera_alt_rounded,
+                                    color: Color(0xFF1FAE5B),
+                                    size: 20,
+                                  ),
                                 ),
                               ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFE7EAE6)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'ข้อมูลบัญชีผู้ใช้',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
+                              color: Color(0xFF1B1B1B),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: guideCodeController,
+                            decoration: const InputDecoration(
+                              labelText: 'รหัสไกด์',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.badge_outlined),
+                              filled: true,
+                              fillColor: Color(0xFFF8FBF9),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: emailCtl,
+                            keyboardType: TextInputType.emailAddress,
+                            decoration: const InputDecoration(
+                              labelText: 'อีเมล',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.email_outlined),
+                              filled: true,
+                              fillColor: Color(0xFFF8FBF9),
+                            ),
+                            validator: (val) {
+                              if (val == null || val.trim().isEmpty) {
+                                return 'กรุณากรอกอีเมล';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: passwordCtl,
+                            obscureText: true,
+                            decoration: const InputDecoration(
+                              labelText:
+                                  'รหัสผ่านใหม่ (เว้นว่างไว้หากไม่ต้องการเปลี่ยน)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.lock_outline_rounded),
+                              filled: true,
+                              fillColor: Color(0xFFF8FBF9),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
-
-                    Card(
-                      elevation: 1,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'ข้อมูลบัญชีผู้ใช้ (Firebase & System)',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: emailCtl,
-                              keyboardType: TextInputType.emailAddress,
-                              decoration: const InputDecoration(
-                                labelText: 'อีเมล',
-                                border: OutlineInputBorder(),
-                                prefixIcon: Icon(Icons.email_outlined),
-                              ),
-                              validator: (val) {
-                                if (val == null || val.trim().isEmpty)
-                                  return 'กรุณากรอกอีเมล';
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: passwordCtl,
-                              obscureText: true,
-                              decoration: const InputDecoration(
-                                labelText:
-                                    'รหัสผ่านใหม่ (เว้นว่างไว้หากไม่ต้องการเปลี่ยน)',
-                                border: OutlineInputBorder(),
-                                prefixIcon: Icon(Icons.lock_outline),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
                     const SizedBox(height: 16),
-
-                    // ส่วนแก้ไขข้อมูลส่วนตัว
-                    Card(
-                      elevation: 1,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFE7EAE6)),
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'ข้อมูลส่วนตัว',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                              ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'ข้อมูลส่วนตัว',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
+                              color: Color(0xFF1B1B1B),
                             ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: firstNameController,
-                                    decoration: const InputDecoration(
-                                      labelText: 'ชื่อ',
-                                      border: OutlineInputBorder(),
-                                    ),
-                                    validator: (val) => val!.trim().isEmpty
-                                        ? 'กรุณากรอกชื่อ'
-                                        : null,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: lastNameController,
-                                    decoration: const InputDecoration(
-                                      labelText: 'นามสกุล',
-                                      border: OutlineInputBorder(),
-                                    ),
-                                    validator: (val) => val!.trim().isEmpty
-                                        ? 'กรุณากรอกนามสกุล'
-                                        : null,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: phoneController,
-                                    keyboardType: TextInputType.phone,
-                                    decoration: const InputDecoration(
-                                      labelText: 'เบอร์โทรศัพท์',
-                                      border: OutlineInputBorder(),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: ageController,
-                                    keyboardType: TextInputType.number,
-                                    decoration: const InputDecoration(
-                                      labelText: 'อายุ',
-                                      border: OutlineInputBorder(),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            InkWell(
-                              onTap: selectBirthday,
-                              child: IgnorePointer(
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
                                 child: TextFormField(
-                                  controller: birthdayController,
+                                  controller: firstNameController,
                                   decoration: const InputDecoration(
-                                    labelText: 'วันเกิด',
+                                    labelText: 'ชื่อ',
                                     border: OutlineInputBorder(),
-                                    suffixIcon: Icon(Icons.calendar_today),
+                                    filled: true,
+                                    fillColor: Color(0xFFF8FBF9),
+                                  ),
+                                  validator: (val) => val!.trim().isEmpty
+                                      ? 'กรุณากรอกชื่อ'
+                                      : null,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: TextFormField(
+                                  controller: lastNameController,
+                                  decoration: const InputDecoration(
+                                    labelText: 'นามสกุล',
+                                    border: OutlineInputBorder(),
+                                    filled: true,
+                                    fillColor: Color(0xFFF8FBF9),
+                                  ),
+                                  validator: (val) => val!.trim().isEmpty
+                                      ? 'กรุณากรอกนามสกุล'
+                                      : null,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  controller: phoneController,
+                                  keyboardType: TextInputType.phone,
+                                  decoration: const InputDecoration(
+                                    labelText: 'เบอร์โทรศัพท์',
+                                    border: OutlineInputBorder(),
+                                    filled: true,
+                                    fillColor: Color(0xFFF8FBF9),
                                   ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: addressController,
-                              maxLines: 2,
-                              decoration: const InputDecoration(
-                                labelText: 'ที่อยู่',
-                                border: OutlineInputBorder(),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: TextFormField(
+                                  controller: ageController,
+                                  keyboardType: TextInputType.number,
+                                  decoration: const InputDecoration(
+                                    labelText: 'อายุ',
+                                    border: OutlineInputBorder(),
+                                    filled: true,
+                                    fillColor: Color(0xFFF8FBF9),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          InkWell(
+                            onTap: selectBirthday,
+                            child: IgnorePointer(
+                              child: TextFormField(
+                                controller: birthdayController,
+                                decoration: const InputDecoration(
+                                  labelText: 'วันเกิด',
+                                  border: OutlineInputBorder(),
+                                  suffixIcon: Icon(
+                                    Icons.calendar_today_rounded,
+                                  ),
+                                  filled: true,
+                                  fillColor: Color(0xFFF8FBF9),
+                                ),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: addressController,
+                            maxLines: 2,
+                            decoration: const InputDecoration(
+                              labelText: 'ที่อยู่',
+                              border: OutlineInputBorder(),
+                              filled: true,
+                              fillColor: Color(0xFFF8FBF9),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 24),
-
+                    const SizedBox(height: 22),
                     SizedBox(
                       width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
+                      height: 54,
+                      child: FilledButton(
                         onPressed: isSaving ? null : saveProfile,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.amber,
-                          foregroundColor: Colors.black,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFF1FAE5B),
+                          foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(16),
                           ),
                         ),
                         child: const Text(
                           'บันทึกการเปลี่ยนแปลง',
                           style: TextStyle(
                             fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       ),

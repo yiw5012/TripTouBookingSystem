@@ -1,13 +1,9 @@
-import 'dart:ffi';
-
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import 'package:triptour_app/page/Tourdetail/detailTour.dart';
-import 'package:triptour_app/page/Tourdetail/tour/tourDetailSection.dart';
-import 'package:triptour_app/page/homepage.dart';
 import 'package:triptour_app/page/wrapper.dart';
 import 'firebase_options.dart';
 
@@ -28,12 +24,14 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 void _navigateToTourDetail(String tourId) {
-  final tour_id = tourId.hashCode;
-  if (tourId.isNotEmpty) {
-    navigatorKey.currentState?.push(
-      MaterialPageRoute(builder: (context) => DetailTour(tourId: tour_id)),
-    );
+  final parsedTourId = int.tryParse(tourId.trim());
+  if (parsedTourId == null) {
+    return;
   }
+
+  navigatorKey.currentState?.push(
+    MaterialPageRoute(builder: (context) => DetailTour(tourId: parsedTourId)),
+  );
 }
 
 // ตั้งค่าระบบ Notification ทั้งหมด
@@ -132,7 +130,22 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1E8E5A)),
+        scaffoldBackgroundColor: Colors.white,
+
+        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+          backgroundColor: Colors.white,
+          selectedItemColor: Color(0xFF1E8E5A),
+          unselectedItemColor: Color(0xFF8A94A6),
+          selectedLabelStyle: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+          unselectedLabelStyle: TextStyle(fontSize: 10),
+          type: BottomNavigationBarType.fixed,
+          elevation: 8,
+        ),
       ),
       home: const Wrapper(),
     );

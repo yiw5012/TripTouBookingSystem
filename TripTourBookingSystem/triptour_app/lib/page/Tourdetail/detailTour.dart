@@ -131,12 +131,20 @@ class _DetailTourState extends State<DetailTour>
               int.tryParse(loadedDetails.first['day_number'].toString()) ?? 1;
         }
 
+        final visibleRounds = (data['rounds'] ?? []).where((round) {
+          final status = (round['status'] ?? '')
+              .toString()
+              .trim()
+              .toLowerCase();
+          return status != 'success';
+        }).toList();
+
         setState(() {
           tour = data['tour'];
 
           images = data['images'] ?? [];
 
-          rounds = data['rounds'] ?? [];
+          rounds = visibleRounds;
 
           details = loadedDetails;
 
@@ -318,12 +326,12 @@ class _DetailTourState extends State<DetailTour>
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(
-          top: BorderSide(color: Colors.grey.shade200),
-          bottom: BorderSide(color: Colors.grey.shade300),
+          top: BorderSide(color: const Color(0xFFE7EAE6)),
+          bottom: BorderSide(color: const Color(0xFFE7EAE6)),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 5,
             offset: const Offset(0, 2),
           ),
@@ -334,9 +342,9 @@ class _DetailTourState extends State<DetailTour>
         onTap: (index) {
           scrollToSection(index);
         },
-        labelColor: Colors.orange,
+        labelColor: const Color(0xFF1FAE5B),
         unselectedLabelColor: Colors.grey.shade600,
-        indicatorColor: Colors.orange,
+        indicatorColor: const Color(0xFF1FAE5B),
         indicatorWeight: 3,
         labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
         unselectedLabelStyle: const TextStyle(fontSize: 12),
@@ -359,103 +367,82 @@ class _DetailTourState extends State<DetailTour>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-
-      // ======================================================
-      // APP BAR
-      // ======================================================
-      appBar: AppBar(
-        title: const Text(
-          'รายละเอียดทัวร์',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-      ),
-
-      // ======================================================
-      // BODY
-      // ======================================================
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : errorMessage != null
-          ? buildError()
-          : tour == null
-          ? const Center(child: Text('ไม่พบข้อมูลทัวร์'))
-          : CustomScrollView(
-              controller: scrollController,
-
-              slivers: [
-                // ==================================================
-                // HEADER
-                // ==================================================
-                SliverToBoxAdapter(
-                  child: TourHeader(
-                    tour: tour!,
-                    images: images,
-                    videoUrl: tour!['video']?.toString() ?? '',
-                    pdfUrl: tour!['pdf_file']?.toString() ?? '',
-
-                    // ส่ง tourId ไปให้ TourHeader
-                    tourId: widget.tourId,
-
-                    // ส่งข้อมูลรีวิวไปแสดงผล
-                    averageRating: averageRating,
-
-                    reviewCount: reviewCount,
-                  ),
-                ),
-
-                // ==================================================
-                // STICKY TAB
-                // ==================================================
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: StickyTabDelegate(
-                    height: stickyTabHeight,
-                    child: buildStickyTabBar(),
-                  ),
-                ),
-
-                // ==================================================
-                // SECTION 1
-                // จอง
-                // ==================================================
-                if (!widget.isGuide)
-                  SliverToBoxAdapter(
-                    child: TourBookingSection(
-                      key: sectionKeys[0],
-                      rounds: rounds,
+      body: Stack(
+        children: [
+          isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : errorMessage != null
+              ? buildError()
+              : tour == null
+              ? const Center(child: Text('ไม่พบข้อมูลทัวร์'))
+              : CustomScrollView(
+                  controller: scrollController,
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: TourHeader(
+                        tour: tour!,
+                        images: images,
+                        videoUrl: tour!['video']?.toString() ?? '',
+                        pdfUrl: tour!['pdf_file']?.toString() ?? '',
+                        tourId: widget.tourId,
+                        averageRating: averageRating,
+                        reviewCount: reviewCount,
+                      ),
                     ),
-                  ),
-
-                // ==================================================
-                // SECTION 2
-                // รายละเอียด / มื้ออาหาร
-                // ==================================================
-                SliverToBoxAdapter(
-                  child: TourDetailSection(
-                    key: sectionKeys[1],
-                    details: details,
-                    selectedDay: selectedDay,
-                    onDaySelected: (day) {
-                      setState(() {
-                        selectedDay = day;
-                      });
-                    },
+                    SliverPersistentHeader(
+                      pinned: true,
+                      delegate: StickyTabDelegate(
+                        height: stickyTabHeight,
+                        child: buildStickyTabBar(),
+                      ),
+                    ),
+                    if (!widget.isGuide)
+                      SliverToBoxAdapter(
+                        child: TourBookingSection(
+                          key: sectionKeys[0],
+                          rounds: rounds,
+                        ),
+                      ),
+                    SliverToBoxAdapter(
+                      child: TourDetailSection(
+                        key: sectionKeys[1],
+                        details: details,
+                        selectedDay: selectedDay,
+                        onDaySelected: (day) {
+                          setState(() {
+                            selectedDay = day;
+                          });
+                        },
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: TourNoteSection(key: sectionKeys[2]),
+                    ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 40)),
+                  ],
+                ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.only(left: 12, top: 8),
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: Material(
+                  color: Colors.black54,
+                  shape: const CircleBorder(),
+                  child: IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(
+                      Icons.arrow_back_ios_rounded,
+                      color: Colors.white,
+                    ),
+                    tooltip: 'ย้อนกลับ',
                   ),
                 ),
-
-                // ==================================================
-                // SECTION 3
-                // หมายเหตุ
-                // ==================================================
-                SliverToBoxAdapter(child: TourNoteSection(key: sectionKeys[2])),
-
-                // ==================================================
-                // BOTTOM SPACE
-                // ==================================================
-                const SliverToBoxAdapter(child: SizedBox(height: 40)),
-              ],
+              ),
             ),
+          ),
+        ],
+      ),
     );
   }
 

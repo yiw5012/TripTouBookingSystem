@@ -1,5 +1,35 @@
-/* You can add global styles to this file, and also import other style files */
 @import 'bootstrap/dist/css/bootstrap.min.css';
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+/* Global font */
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+}
+
+html {
+  font-family: 'Prompt', sans-serif;
+}
+
+body {
+  margin: 0;
+  font-family: 'Prompt', sans-serif;
+  font-size: 14px;
+  color: #1f2937;
+}
+
+/* Form controls and buttons */
+button,
+input,
+select,
+textarea,
+.btn,
+.form-control,
+.form-select {
+  font-family: inherit;
+}
+
+/* Preserve Material Icons font */
+.material-icons {
+  font-family: 'Material Icons';
+}

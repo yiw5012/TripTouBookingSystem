@@ -25,23 +25,22 @@ class TourHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(children: [buildTourImage(), buildTourSummary(context)]);
+    return Column(
+      children: [buildTourImage(context), buildTourSummary(context)],
+    );
   }
 
   // ==========================================================
   // IMAGE + VIDEO
   // ==========================================================
 
-  Widget buildTourImage() {
+  Widget buildTourImage(BuildContext context) {
     final String currentVideoUrl = videoUrl.trim();
     final bool hasVideo = currentVideoUrl.isNotEmpty;
+    final bool hasImages = images.isNotEmpty;
 
-    // จำนวนรายการสื่อทั้งหมด:
-    // จำนวนรูปภาพ + 1 รายการ หากมีวิดีโอ
-    final int mediaCount = images.length + (hasVideo ? 1 : 0);
-
-    // ไม่มีทั้งรูปภาพและวิดีโอ
-    if (mediaCount == 0) {
+    // หากไม่มีทั้งรูปภาพและวิดีโอ แสดงพื้นที่ว่าง
+    if (!hasImages && !hasVideo) {
       return Container(
         width: double.infinity,
         height: 230,
@@ -58,80 +57,111 @@ class TourHeader extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          PageView.builder(
-            itemCount: mediaCount,
-            itemBuilder: (context, index) {
-              // รายการสุดท้ายคือวิดีโอ
-              if (hasVideo && index == images.length) {
-                return TourVideoPlayer(videoUrl: currentVideoUrl);
-              }
+          // PageView ใช้เลื่อนดูเฉพาะรูปภาพ ไม่รวมวิดีโอเป็นหน้าสุดท้าย
+          if (hasImages)
+            PageView.builder(
+              itemCount: images.length,
+              itemBuilder: (context, index) {
+                final String imageUrl =
+                    images[index]['image']?.toString() ?? '';
 
-              // รายการอื่น ๆ เป็นรูปภาพเหมือนเดิม
-              final String imageUrl = images[index]['image']?.toString() ?? '';
-
-              if (imageUrl.isEmpty) {
-                return Container(
-                  color: const Color(0xFFE0E0E0),
-                  child: const Center(
-                    child: Icon(Icons.image, size: 70, color: Colors.grey),
-                  ),
-                );
-              }
-
-              return Image.network(
-                imageUrl,
-                width: double.infinity,
-                height: 230,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
+                if (imageUrl.isEmpty) {
                   return Container(
                     color: const Color(0xFFE0E0E0),
                     child: const Center(
-                      child: Icon(
-                        Icons.broken_image,
-                        size: 60,
-                        color: Colors.grey,
-                      ),
+                      child: Icon(Icons.image, size: 70, color: Colors.grey),
                     ),
                   );
-                },
-              );
-            },
-          ),
+                }
 
-          // แจ้งผู้ใช้ว่ามีวิดีโอให้เลื่อนดู
+                return Image.network(
+                  imageUrl,
+                  width: double.infinity,
+                  height: 230,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: const Color(0xFFE0E0E0),
+                      child: const Center(
+                        child: Icon(
+                          Icons.broken_image,
+                          size: 60,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            )
+          else
+            Container(
+              color: const Color(0xFFE0E0E0),
+              child: const Center(
+                child: Icon(Icons.movie, size: 70, color: Colors.grey),
+              ),
+            ),
+
+          // ปุ่มเล่นวิดีโออยู่มุมขวาล่างของรูป
           if (hasVideo)
             Positioned(
-              top: 12,
               right: 12,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.play_circle_fill,
+              bottom: 12,
+              child: Material(
+                color: Colors.black.withOpacity(0.72),
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () => _showVideoDialog(context, currentVideoUrl),
+                  child: const SizedBox(
+                    width: 54,
+                    height: 54,
+                    child: Icon(
+                      Icons.play_arrow_rounded,
                       color: Colors.white,
-                      size: 18,
+                      size: 36,
                     ),
-                    const SizedBox(width: 5),
-                    Text(
-                      images.isNotEmpty ? 'มีวิดีโอ • ปัดเพื่อดู' : 'วิดีโอ',
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
         ],
       ),
+    );
+  }
+
+  // เปิดวิดีโอในหน้าต่าง Popup โดยไม่ต้องเลื่อนไปหน้าสุดท้ายของรูป
+  void _showVideoDialog(BuildContext context, String currentVideoUrl) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.black,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Align(
+                alignment: Alignment.centerRight,
+                child: IconButton(
+                  tooltip: 'ปิดวิดีโอ',
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  icon: const Icon(Icons.close, color: Colors.white),
+                ),
+              ),
+              AspectRatio(
+                aspectRatio: 16 / 9,
+                child: TourVideoPlayer(videoUrl: currentVideoUrl),
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -142,7 +172,7 @@ class TourHeader extends StatelessWidget {
   Widget buildTourSummary(BuildContext context) {
     final String tourName = tour['tour_name']?.toString() ?? 'ไม่มีชื่อทัวร์';
 
-    final String tourIdText = tour['tour_id']?.toString() ?? '-';
+    final String tourIdText = tour['tour_code']?.toString() ?? '-';
 
     final String country = tour['country_name_th']?.toString() ?? '-';
 

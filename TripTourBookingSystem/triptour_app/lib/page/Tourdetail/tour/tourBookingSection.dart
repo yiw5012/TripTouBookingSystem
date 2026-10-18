@@ -106,7 +106,7 @@ class TourBookingSection extends StatelessWidget {
         border: Border.all(color: Colors.grey.shade300),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 5,
             offset: const Offset(0, 2),
           ),
@@ -117,7 +117,7 @@ class TourBookingSection extends StatelessWidget {
         children: [
           // รอบ
           Text(
-            'รอบทัวร์ ${round['round_id'] ?? '-'}',
+            'รอบทัวร์ ${round['round_code'] ?? '-'}',
             style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),
@@ -254,12 +254,28 @@ class TourBookingSection extends StatelessWidget {
 
   String formatDateText(dynamic value) {
     if (value == null) return '-';
-    final String text = value.toString();
+
+    final String text = value.toString().trim();
     if (text.isEmpty) return '-';
-    final parts = text.split('-');
+
+    // รองรับวันที่ที่มีเวลาต่อท้ายด้วย
+    final String datePart = text.split('T').first.split(' ').first;
+    final parts = datePart.split('-');
+
     if (parts.length == 3 && parts[0].length == 4) {
-      return '${parts[2]}/${parts[1]}/${parts[0]}';
+      final int? year = int.tryParse(parts[0]);
+      final int? month = int.tryParse(parts[1]);
+      final int? day = int.tryParse(parts[2]);
+
+      if (year != null && month != null && day != null) {
+        final String formattedDay = day.toString().padLeft(2, '0');
+        final String formattedMonth = month.toString().padLeft(2, '0');
+        final int buddhistYear = year + 543;
+
+        return '$formattedDay/$formattedMonth/$buddhistYear';
+      }
     }
+
     return text;
   }
 }

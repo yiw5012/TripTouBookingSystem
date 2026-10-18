@@ -67,6 +67,7 @@ class _Step1TourDetailsState extends State<Step1TourDetails> {
   // ตรวจสอบสิทธิ์การกดเพิ่ม (+)
   bool _canIncrement(int index) {
     final bool isSharedIndex = index == 3 || index == 4;
+    final bool isChildIndex = index == 5;
     final bool hasSharedSelected =
         widget.passengerCounts[3] > 0 || widget.passengerCounts[4] > 0;
     final bool hasNonSharedSelected =
@@ -74,6 +75,16 @@ class _Step1TourDetailsState extends State<Step1TourDetails> {
         widget.passengerCounts[1] > 0 ||
         widget.passengerCounts[2] > 0 ||
         widget.passengerCounts[5] > 0;
+    final bool hasAdultSelected =
+        widget.passengerCounts[0] > 0 ||
+        widget.passengerCounts[1] > 0 ||
+        widget.passengerCounts[2] > 0 ||
+        widget.passengerCounts[3] > 0 ||
+        widget.passengerCounts[4] > 0;
+
+    if (isChildIndex && !hasAdultSelected) {
+      return false;
+    }
 
     if (isSharedIndex) {
       if (hasNonSharedSelected) return false;
@@ -103,14 +114,50 @@ class _Step1TourDetailsState extends State<Step1TourDetails> {
 
     final bool hasSharedSelected =
         widget.passengerCounts[3] > 0 || widget.passengerCounts[4] > 0;
+    final bool hasChildSelected = widget.passengerCounts[5] > 0;
+    final bool hasAdultSelected =
+        widget.passengerCounts[0] > 0 ||
+        widget.passengerCounts[1] > 0 ||
+        widget.passengerCounts[2] > 0 ||
+        widget.passengerCounts[3] > 0 ||
+        widget.passengerCounts[4] > 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _infoRow('Tour', tourName),
-        _infoRow('Price', formatCurrency(widget.totalPrice)),
-        _infoRow('Type', widget.tourData['type'] ?? 'N/A'),
-        _infoRow('Duration', '${widget.tourData['duration_day'] ?? 'N/A'} day'),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                tourName,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF111827),
+                ),
+              ),
+              const SizedBox(height: 8),
+              _simpleInfoRow('เส้นทาง', '$departure → $destination'),
+              _simpleInfoRow('วันเดินทาง', '$startDate ถึง $endDate'),
+              _simpleInfoRow('สายการบิน', airline),
+              _simpleInfoRow(
+                'ที่นั่งคงเหลือ',
+                '$availableSeats / $capacity ที่',
+                valueColor: availableSeats > 0
+                    ? Colors.green.shade700
+                    : Colors.red,
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 16),
 
         // -------------------------------------------------------------
@@ -127,15 +174,43 @@ class _Step1TourDetailsState extends State<Step1TourDetails> {
               _buildTabButton(
                 index: 0,
                 icon: Icons.hotel_rounded,
-                title: 'ห้องพักเหมา / กลุ่ม',
+                title: 'เดินทางทั่วไป',
                 badgeCount: _getTabCount(0),
               ),
               const SizedBox(width: 4),
               _buildTabButton(
                 index: 1,
                 icon: Icons.group_add_rounded,
-                title: 'พักแชร์ (Solo)',
+                title: 'พักแชร์',
                 badgeCount: _getTabCount(1),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFFBEB),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFFFCD34D)),
+          ),
+          child: const Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.info_outline, color: Color(0xFFD97706), size: 18),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'เงื่อนไขสำคัญ: เด็กต่ำกว่า 11 ปี ต้องเดินทางพร้อมผู้ใหญ่อย่างน้อย 1 คน และไม่สามารถจองเดินทางลำพังได้',
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.45,
+                    color: Color(0xFF92400E),
+                  ),
+                ),
               ),
             ],
           ),
@@ -171,7 +246,7 @@ class _Step1TourDetailsState extends State<Step1TourDetails> {
                       ),
                       const SizedBox(height: 2),
                       const Text(
-                        'เดินทางคนเดียวจ่ายราคาสบายกระเป๋า ไกด์จะทำการจับคู่พักร่วมกับลูกค้ารายอื่นในกรุ๊ปให้ครับ',
+                        'ระบบจะจัดจับคู่ห้องพักให้โดยอัตโนมัติ',
                         style: TextStyle(fontSize: 12, color: Colors.black87),
                       ),
                       if (widget.estimatedSavings > 0)
@@ -216,42 +291,26 @@ class _Step1TourDetailsState extends State<Step1TourDetails> {
             ),
           ),
           const SizedBox(height: 14),
+        ] else if (hasChildSelected && hasAdultSelected) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+            ),
+            child: const Text(
+              'มีเด็กอยู่ในรายการจองแล้ว กรุณาคงผู้ใหญ่อย่างน้อย 1 คนไว้เสมอ',
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.5,
+                color: Color(0xFF4B5563),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
         ],
-
-        // Card แสดงข้อมูลรอบเดินทาง
-        Card(
-          color: Colors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(
-              color: availableSeats > 0
-                  ? Colors.green.shade200
-                  : Colors.red.shade200,
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _infoRow('Route', '$departure → $destination'),
-                _infoRow('Dates', '$startDate ถึง $endDate'),
-                _infoRow('Airline', airline),
-                _infoRow(
-                  'Seats Left',
-                  '$availableSeats / $capacity ที่',
-                  valueColor: availableSeats > 0
-                      ? Colors.green.shade700
-                      : Colors.red,
-                  isBold: true,
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 14),
         const Divider(),
 
         // -------------------------------------------------------------
@@ -282,7 +341,7 @@ class _Step1TourDetailsState extends State<Step1TourDetails> {
         // สรุปยอดและรายละเอียดห้องพัก
         if (widget.roomBreakdown.isNotEmpty) ...[
           const Text(
-            'Room breakdown',
+            'รายละเอียดที่เลือก',
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
@@ -327,24 +386,65 @@ class _Step1TourDetailsState extends State<Step1TourDetails> {
           const SizedBox(height: 12),
         ],
 
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Total',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            Text(
-              formatCurrency(widget.totalPrice),
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.green,
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF0FDF4),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFBBF7D0)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'ยอดรวมปัจจุบัน',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-            ),
-          ],
+              Text(
+                formatCurrency(widget.totalPrice),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                ),
+              ),
+            ],
+          ),
         ),
       ],
+    );
+  }
+
+  Widget _simpleInfoRow(String label, String value, {Color? valueColor}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 88,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF6B7280),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 13,
+                color: valueColor ?? const Color(0xFF111827),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -426,39 +526,6 @@ class _Step1TourDetailsState extends State<Step1TourDetails> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _infoRow(
-    String label,
-    String value, {
-    Color? valueColor,
-    bool isBold = false,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 85,
-            child: Text(
-              '$label:',
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: 13,
-                color: valueColor ?? Colors.black87,
-                fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

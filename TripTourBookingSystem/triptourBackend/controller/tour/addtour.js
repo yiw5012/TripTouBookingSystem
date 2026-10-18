@@ -337,21 +337,6 @@ const normalizedConditionDetail =
 
 
       // ======================================================
-      // PDF จำเป็น
-      // เพราะ tour.pdf_file เป็น NOT NULL
-      // ======================================================
-
-      if (!pdfFile) {
-
-        return res.status(400).json({
-          success: false,
-          message: "กรุณาเลือกไฟล์ PDF ของโปรแกรมทัวร์"
-        });
-
-      }
-
-
-      // ======================================================
       // แปลง tour_details
       // เพราะ FormData จะส่งมาเป็น String
       // ======================================================
@@ -950,6 +935,7 @@ if (
     let sql = `
       SELECT DISTINCT
         t.tour_id,
+        t.tour_code,
         t.tour_name,
         t.country_id,
         c.country_name_th,
@@ -971,7 +957,15 @@ if (
         tr.flight_time,
         tr.price_single,
         tr.price_double,
-        tr.price_triple
+        tr.price_triple,
+
+        (
+          SELECT ti.image
+          FROM tour_image ti
+          WHERE ti.tour_id = t.tour_id
+          ORDER BY ti.img_id ASC
+          LIMIT 1
+        ) AS image
 
       FROM tour t
 
@@ -1017,14 +1011,14 @@ if (sortBy === 'price_desc') {
 
     // ============================================
     // 1. Keyword
-    // ค้นจาก tour_id หรือ tour_name
+    // ค้นจาก tour_code หรือ tour_name
     // ============================================
     if (keyword && keyword.trim() !== "") {
       const searchKeyword = keyword.trim();
 
       sql += `
         AND (
-          CAST(t.tour_id AS CHAR) LIKE ?
+          t.tour_code LIKE ?
           OR t.tour_name LIKE ?
         )
       `;
@@ -1177,6 +1171,7 @@ router.get("/detail/:tourId", async (req, res) => {
       `
       SELECT
         t.tour_id,
+        t.tour_code,
         t.tour_name,
         t.country_id,
         c.country_name_th,

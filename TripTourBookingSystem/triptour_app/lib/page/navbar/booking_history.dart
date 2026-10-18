@@ -19,13 +19,18 @@ class _BookingHistoryPageState extends State<BookingHistoryPage> {
   bool _isLoading = true;
   List<dynamic> _bookingList = [];
 
+  void _safeSetState(VoidCallback callback) {
+    if (!mounted) return;
+    setState(callback);
+  }
+
   @override
   void initState() {
     super.initState();
     if (widget.memberId.isNotEmpty) {
       _fetchBookingHistory();
     } else {
-      setState(() => _isLoading = false);
+      _safeSetState(() => _isLoading = false);
     }
   }
 
@@ -40,26 +45,27 @@ class _BookingHistoryPageState extends State<BookingHistoryPage> {
   Future<void> _fetchBookingHistory() async {
     if (widget.memberId.isEmpty) return;
 
-    setState(() => _isLoading = true);
+    _safeSetState(() => _isLoading = true);
 
     final res = await ServiceBookingApi.getBookingHistory(widget.memberId);
+    if (!mounted) return;
 
     if (res != null) {
       if (res['statusCode'] == 200) {
         final body = res['body'];
         if (body is Map && body['success'] == true) {
-          setState(() {
+          _safeSetState(() {
             _bookingList = body['data'] ?? [];
           });
         }
       } else if (res['statusCode'] == 404) {
-        setState(() {
+        _safeSetState(() {
           _bookingList = [];
         });
       }
     }
 
-    if (mounted) setState(() => _isLoading = false);
+    _safeSetState(() => _isLoading = false);
   }
 
   // --- กรองเฉพาะรายการปัจจุบัน (pending และ paid ที่ยังไม่ finish) ---

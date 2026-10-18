@@ -144,7 +144,7 @@ class _ReviewTourPageState extends State<ReviewTourPage> {
           : null,
       icon: Icon(
         isSelected ? Icons.star : Icons.star_border,
-        size: 48,
+        size: 34,
         color: Colors.amber,
       ),
     );
@@ -160,106 +160,128 @@ class _ReviewTourPageState extends State<ReviewTourPage> {
       appBar: AppBar(title: const Text("ให้คะแนนทัวร์"), centerTitle: true),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 30),
-
-                  const Icon(Icons.rate_review, size: 70, color: Colors.orange),
-
-                  const SizedBox(height: 20),
-
-                  const Text(
-                    "ให้คะแนนโปรแกรมทัวร์",
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  Text(
-                    widget.tourName,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 17),
-                  ),
-
-                  const SizedBox(height: 30),
-
-                  if (!canReview)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        message,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.grey),
-                      ),
-                    ),
-
-                  if (canReview) ...[
-                    const Text(
-                      "ระดับความพึงพอใจ",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+          : SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 520),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        buildStar(1),
-                        buildStar(2),
-                        buildStar(3),
-                        buildStar(4),
-                        buildStar(5),
-                      ],
-                    ),
+                        const SizedBox(height: 30),
 
-                    const SizedBox(height: 10),
-
-                    Text(
-                      selectedRating == 0
-                          ? "กรุณาเลือกคะแนน"
-                          : "$selectedRating / 5 ดาว",
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-
-                    const SizedBox(height: 30),
-
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: submitReview,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                        const Icon(
+                          Icons.rate_review,
+                          size: 70,
+                          color: Colors.orange,
                         ),
-                        child: const Text(
-                          "ส่งรีวิว",
+
+                        const SizedBox(height: 20),
+
+                        const Text(
+                          "ให้คะแนนโปรแกรมทัวร์",
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 22,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ),
+
+                        const SizedBox(height: 12),
+
+                        Text(
+                          widget.tourName,
+                          textAlign: TextAlign.center,
+                          softWrap: true,
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 17),
+                        ),
+
+                        const SizedBox(height: 30),
+
+                        if (!canReview)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              message,
+                              textAlign: TextAlign.center,
+                              softWrap: true,
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                          ),
+
+                        if (canReview) ...[
+                          const Text(
+                            "ระดับความพึงพอใจ",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+
+                          const SizedBox(height: 10),
+
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 4,
+                            runSpacing: 4,
+                            children: [
+                              buildStar(1),
+                              buildStar(2),
+                              buildStar(3),
+                              buildStar(4),
+                              buildStar(5),
+                            ],
+                          ),
+
+                          const SizedBox(height: 10),
+
+                          Text(
+                            selectedRating == 0
+                                ? "กรุณาเลือกคะแนน"
+                                : "$selectedRating / 5 ดาว",
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+
+                          const SizedBox(height: 30),
+
+                          SizedBox(
+                            width: double.infinity,
+                            height: 52,
+                            child: ElevatedButton(
+                              onPressed: submitReview,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.orange,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text(
+                                "ส่งรีวิว",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                  ],
-                ],
+                  ),
+                ),
               ),
             ),
     );

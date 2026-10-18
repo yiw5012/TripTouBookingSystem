@@ -7,7 +7,7 @@ class Step2PassengerForm extends StatefulWidget {
   final List<PassengerFormControllers> passengerForms;
   final List<String> genderOptions;
   final Function(PassengerFormControllers form) onSelectDate;
-  final int expectedCount; // จำนวนผู้เดินทางรวมทั้งหมด
+  final int expectedCount;
   final String route;
   final String tripDates;
   final String airline;
@@ -48,7 +48,7 @@ class _Step2PassengerFormState extends State<Step2PassengerForm> {
   @override
   void initState() {
     super.initState();
-    _initUserData();
+    _adjustPassengerForms();
   }
 
   @override
@@ -59,20 +59,19 @@ class _Step2PassengerFormState extends State<Step2PassengerForm> {
     }
   }
 
-  void _initUserData() {
-    _adjustPassengerForms();
-  }
-
   void _adjustPassengerForms() {
     final requiredCount = requiredPassengerCount;
     if (requiredCount == 0) {
-      for (var form in widget.passengerForms) {
+      for (final form in widget.passengerForms) {
         form.dispose();
       }
       widget.passengerForms.clear();
-    } else if (widget.passengerForms.length > requiredCount) {
+      return;
+    }
+
+    if (widget.passengerForms.length > requiredCount) {
       final removedForms = widget.passengerForms.sublist(requiredCount);
-      for (var form in removedForms) {
+      for (final form in removedForms) {
         form.dispose();
       }
       widget.passengerForms.removeRange(
@@ -87,44 +86,45 @@ class _Step2PassengerFormState extends State<Step2PassengerForm> {
     int? customIndex,
   }) async {
     final requiredCount = requiredPassengerCount;
-
     if (existing == null && widget.passengerForms.length >= requiredCount) {
       return;
     }
 
-    final idx =
+    final index =
         customIndex ??
         (existing?.passengerIndex ?? widget.passengerForms.length + 1);
 
     final result = await Navigator.of(context).push<PassengerFormControllers>(
       MaterialPageRoute(
         builder: (_) => AddPassengerPage(
-          index: idx,
+          index: index,
           genderOptions: widget.genderOptions,
           existingPassenger: existing,
         ),
       ),
     );
 
-    if (!mounted) return;
-
-    if (result != null) {
-      if (existing != null) {
-        final replaceIndex = widget.passengerForms.indexOf(existing);
-        if (replaceIndex >= 0) {
-          widget.passengerForms[replaceIndex] = result;
-        }
-      } else {
-        widget.passengerForms.add(result);
-      }
-      setState(() {});
+    if (!mounted || result == null) {
+      return;
     }
+
+    if (existing != null) {
+      final replaceIndex = widget.passengerForms.indexOf(existing);
+      if (replaceIndex >= 0) {
+        widget.passengerForms[replaceIndex] = result;
+      }
+    } else {
+      widget.passengerForms.add(result);
+    }
+
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     final current = widget.passengerForms.length;
     final requiredCount = requiredPassengerCount;
+    final progress = requiredCount == 0 ? 1.0 : current / requiredCount;
 
     if (widget.expectedCount == 0) {
       return const Center(
@@ -150,7 +150,59 @@ class _Step2PassengerFormState extends State<Step2PassengerForm> {
           travelerSummary: widget.travelerSummary,
         ),
         const SizedBox(height: 16),
-
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.fact_check_rounded,
+                    color: Color(0xFF2563EB),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      requiredCount == 0
+                          ? 'ผู้จองเดินทางเอง ไม่ต้องเพิ่มผู้ร่วมเดินทาง'
+                          : 'เพิ่มข้อมูลผู้ร่วมเดินทางให้ครบก่อนเข้าสู่ขั้นตอนชำระเงิน',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111827),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 8,
+                  backgroundColor: const Color(0xFFE5E7EB),
+                  valueColor: const AlwaysStoppedAnimation(Color(0xFF2563EB)),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                requiredCount == 0
+                    ? 'ระบบจะใช้ข้อมูลผู้ติดต่อด้านล่างเป็นข้อมูลผู้เดินทางหลักโดยอัตโนมัติ'
+                    : 'บันทึกแล้ว $current จาก $requiredCount คน',
+                style: const TextStyle(fontSize: 12, color: Color(0xFF4B5563)),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(12.0),
@@ -166,9 +218,11 @@ class _Step2PassengerFormState extends State<Step2PassengerForm> {
                   Container(
                     padding: const EdgeInsets.all(12.0),
                     decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
+                      color: Colors.blueAccent.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.blue.shade200),
+                      border: Border.all(
+                        color: Colors.blueAccent.withValues(alpha: 0.25),
+                      ),
                     ),
                     child: const Row(
                       children: [
@@ -209,7 +263,6 @@ class _Step2PassengerFormState extends State<Step2PassengerForm> {
                     ],
                   ),
                   const SizedBox(height: 8),
-
                   Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.symmetric(
@@ -229,7 +282,6 @@ class _Step2PassengerFormState extends State<Step2PassengerForm> {
                       ),
                     ),
                   ),
-
                   if (current == 0)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 12.0),
@@ -238,7 +290,6 @@ class _Step2PassengerFormState extends State<Step2PassengerForm> {
                         style: TextStyle(color: Colors.grey.shade700),
                       ),
                     ),
-
                   ListView.separated(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
@@ -303,7 +354,6 @@ class _Step2PassengerFormState extends State<Step2PassengerForm> {
           ),
         ),
         const SizedBox(height: 12),
-
         Card(
           child: Padding(
             padding: const EdgeInsets.all(12.0),
@@ -314,6 +364,11 @@ class _Step2PassengerFormState extends State<Step2PassengerForm> {
                   'ข้อมูลผู้ติดต่อ (ผู้จอง)',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                 ),
+                const SizedBox(height: 4),
+                const Text(
+                  'ข้อมูลส่วนนี้จะถูกใช้สำหรับติดต่อกลับและยืนยันการจอง',
+                  style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: widget.contactNameCtl,
@@ -321,6 +376,7 @@ class _Step2PassengerFormState extends State<Step2PassengerForm> {
                     labelText: 'ชื่อ-นามสกุล ผู้ติดต่อ',
                     border: OutlineInputBorder(),
                     isDense: true,
+                    prefixIcon: Icon(Icons.person_outline),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -331,6 +387,7 @@ class _Step2PassengerFormState extends State<Step2PassengerForm> {
                     labelText: 'เบอร์โทรศัพท์ ผู้ติดต่อ',
                     border: OutlineInputBorder(),
                     isDense: true,
+                    prefixIcon: Icon(Icons.phone_outlined),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -341,6 +398,7 @@ class _Step2PassengerFormState extends State<Step2PassengerForm> {
                     labelText: 'อีเมล ผู้ติดต่อ',
                     border: OutlineInputBorder(),
                     isDense: true,
+                    prefixIcon: Icon(Icons.email_outlined),
                   ),
                 ),
               ],

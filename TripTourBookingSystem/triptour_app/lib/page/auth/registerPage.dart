@@ -1,15 +1,12 @@
 import 'dart:io';
-import 'dart:math';
 
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:triptour_app/model/country.dart';
-import 'package:triptour_app/page/auth/loginPage.dart';
 import 'package:triptour_app/page/homepage.dart';
-import 'package:triptour_app/page/wrapper.dart';
 import 'package:triptour_app/services/noti_service.dart';
 import 'package:triptour_app/services/serverApi.dart';
 import 'package:image_picker/image_picker.dart';
@@ -84,6 +81,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   List<Country> countries = [];
   bool isLoading = true;
+  bool _isSubmitting = false;
 
   String _countryLabel(Country country) {
     final nameTh = country.countryNameTH.trim();
@@ -130,7 +128,7 @@ class _RegisterPageState extends State<RegisterPage> {
           _currentStep++; // เพิ่มค่า Step +1
         });
       }
-    } else {
+    } else if (_validateCurrentStep()) {
       await signUp();
     }
   }
@@ -179,11 +177,64 @@ class _RegisterPageState extends State<RegisterPage> {
     }
 
     if (_currentStep == 2) {
-      if (firstname_lastnamectl.text.trim().isEmpty
-      // phonectl.text.trim().isEmpty
-      ) {
+      if (_selectedImage == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('กรุณากรอกข้อมูลส่วนตัวให้ครบ')),
+          const SnackBar(content: Text('กรุณาเลือกรูปโปรไฟล์ก่อนดำเนินการต่อ')),
+        );
+        return false;
+      }
+
+      if (firstname_lastnamectl.text.trim().isEmpty) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('กรุณากรอกชื่อ-นามสกุล')));
+        return false;
+      }
+
+      if (number_idctl.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('กรุณากรอกเลขบัตรประชาชน/เลขประจำตัว')),
+        );
+        return false;
+      }
+
+      if (birthdayctl.text.trim().isEmpty) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('กรุณาเลือกวันเกิด')));
+        return false;
+      }
+
+      if (phonectl.text.trim().isEmpty) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('กรุณากรอกเบอร์โทรศัพท์')));
+        return false;
+      }
+
+      if (addressctl.text.trim().isEmpty) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('กรุณากรอกที่อยู่')));
+        return false;
+      }
+
+      if (selectedCountryIds.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('กรุณาเลือกประเทศที่ชอบอย่างน้อย 1 ประเทศ'),
+          ),
+        );
+        return false;
+      }
+    }
+
+    if (_currentStep == 3) {
+      if (_selectedImage_passport == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('กรุณาอัปโหลดรูป Passport หรือบัตรประชาชน'),
+          ),
         );
         return false;
       }
@@ -287,81 +338,83 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(10),
-          child: Column(
-            children: [
-              const SizedBox(height: 10),
-              Image.asset("assets/logo.png", height: 50, width: 50),
-              const SizedBox(height: 10),
-              Text(
-                "Sigen Up TripTour",
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              Row(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          children: [
+            const SizedBox(height: 10),
+            Image.asset("assets/logo.png", height: 50, width: 50),
+            const SizedBox(height: 10),
+            Text(
+              "Sigen Up TripTour",
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                _buildStepCircle(1, "บัญชีผู้ใช้"),
+                _buildStepLine(1),
+                _buildStepCircle(2, "ข้อมูลส่วนตัว"),
+                _buildStepLine(2),
+                _buildStepCircle(3, "รายละเอียด"),
+              ],
+            ),
+
+            const SizedBox(height: 10),
+
+            _buildStepContent(),
+            Padding(
+              padding: const EdgeInsets.only(top: 20),
+              child: Row(
                 children: [
-                  _buildStepCircle(1, "บัญชีผู้ใช้"),
-                  _buildStepLine(1),
-                  _buildStepCircle(2, "ข้อมูลส่วนตัว"),
-                  _buildStepLine(2),
-                  _buildStepCircle(3, "รายละเอียด"),
-                ],
-              ),
-
-              const SizedBox(height: 10),
-
-              _buildStepContent(),
-              Padding(
-                padding: const EdgeInsets.only(top: 20),
-                child: Row(
-                  children: [
-                    if (_currentStep >= 2)
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: _prevStep,
-                          child: const Text('ย้อนกลับ'),
-                        ),
-                      ),
-                    if (_currentStep > 1) const SizedBox(width: 10),
+                  if (_currentStep >= 2)
                     Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.all(4.0),
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8), // ทำขอบมน
-                            ),
-                            foregroundColor: Colors.white,
-                            backgroundColor:
-                                Colors.green, // Set the background color
+                      child: OutlinedButton(
+                        onPressed: _prevStep,
+                        child: const Text('ย้อนกลับ'),
+                      ),
+                    ),
+                  if (_currentStep > 1) const SizedBox(width: 10),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8), // ทำขอบมน
                           ),
-                          onPressed: _nextStep,
-                          child: Text(
-                            _currentStep == 3 ? 'ยืนยันการสมัคร' : 'ถัดไป',
-                          ),
+                          foregroundColor: Colors.white,
+                          backgroundColor:
+                              Colors.green, // Set the background color
+                        ),
+                        onPressed: _isSubmitting ? null : _nextStep,
+                        child: Text(
+                          _isSubmitting
+                              ? 'กำลังดำเนินการ...'
+                              : (_currentStep == 3
+                                    ? 'ยืนยันการสมัคร'
+                                    : 'ถัดไป'),
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
+            ),
 
-              TextButton(
-                onPressed: () async {
-                  await FirebaseAuth.instance.signOut();
-                  await GoogleSignIn().signOut();
-                  Get.offAll(() => const Homepage());
-                },
-                child: Text("ยกเลิกการสมัครสมาชิก"),
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.red, // Set the text color
-                ),
+            TextButton(
+              onPressed: () async {
+                await FirebaseAuth.instance.signOut();
+                await GoogleSignIn().signOut();
+                Get.offAll(() => const Homepage());
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red, // Set the text color
               ),
-            ],
-          ),
+              child: const Text("ยกเลิกการสมัครสมาชิก"),
+            ),
+          ],
         ),
       ),
     );
@@ -385,6 +438,12 @@ class _RegisterPageState extends State<RegisterPage> {
                 controller: emailctl,
                 keyboardType: TextInputType.emailAddress,
                 autocorrect: false,
+                enableSuggestions: false,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(
+                    RegExp(r'[a-zA-Z0-9@._+-]'),
+                  ),
+                ],
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),
                   hintText: "กรอก Email ของคุณ",
@@ -426,7 +485,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       String? googleId = userCredential.user?.uid;
                       String? gmail = userCredential.user?.email;
                       print(
-                        "Google Sign In Success: ID=${googleId}, Email=${gmail}",
+                        "Google Sign In Success: ID=$googleId, Email=$gmail",
                       );
 
                       Get.offAll(() => const Homepage());
@@ -507,6 +566,14 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Future<void> signUp() async {
+    if (_isSubmitting) {
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
     try {
       final cleanEmail = emailctl.text.trim().toLowerCase();
       if (google_id == null) {
@@ -573,16 +640,27 @@ class _RegisterPageState extends State<RegisterPage> {
         passportUrl: passportUrl,
         favoriteCountries: selectedCountryIds,
       );
-      if (result != null && result['status'] == 'success') {
+      if (result['status'] == 'success') {
         print("process 4 - ไปหน้า Wrapper เพื่อเช็คข้อมูลผู้ใช้และเข้าสู่ระบบ");
         print(selectedCountries.toString());
-        await NotiService.subscribeToPreferredCountries(selectedCountries);
+
+        try {
+          await NotiService.subscribeToPreferredCountries(selectedCountries);
+        } catch (e) {
+          print('Subscribe preferred countries failed: $e');
+        }
+
         Get.offAll(() => const Homepage());
       } else {
+        if (!mounted) return;
         print(result);
+        final backendMessage =
+            result['message']?.toString() ??
+            result['body']?['message']?.toString() ??
+            "สมัครสมาชิกไม่สำเร็จ";
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text("สมัครสมาชิกไม่สำเร็จ")));
+        ).showSnackBar(SnackBar(content: Text(backendMessage)));
       }
     } on FirebaseAuthException catch (e) {
       final message = formatRegistrationError(e);
@@ -596,6 +674,12 @@ class _RegisterPageState extends State<RegisterPage> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text("สมัครสมาชิกไม่สำเร็จ: $e")));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
       }
     }
   }

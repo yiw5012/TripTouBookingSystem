@@ -123,8 +123,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
       for (var item in rawFavs) {
         if (item is Map) {
           final cId = int.tryParse(item['country_id']?.toString() ?? '');
-          final cNameEn = item['country_name_en']?.toString()?.trim() ?? '';
-          final cNameTh = item['country_name_th']?.toString()?.trim() ?? '';
+          final cNameEn = item['country_name_en']?.toString().trim() ?? '';
+          final cNameTh = item['country_name_th']?.toString().trim() ?? '';
           final displayName = cNameEn.isNotEmpty ? cNameEn : cNameTh;
 
           if (cId != null) {
@@ -251,7 +251,21 @@ class _EditProfilePageState extends State<EditProfilePage> {
         maxLines: maxLines,
         decoration: InputDecoration(
           labelText: label,
-          border: const OutlineInputBorder(),
+          labelStyle: const TextStyle(color: Color(0xFF4B5563)),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 14,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFFD1FAE5)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFF16A34A), width: 1.5),
+          ),
         ),
       ),
     );
@@ -556,263 +570,291 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final String email = displayValue(widget.memberData['email']);
-
     return Scaffold(
+      backgroundColor: const Color(0xFFF4F8F5),
       appBar: AppBar(
         title: const Text('แก้ไขข้อมูลส่วนตัว'),
-        backgroundColor: Colors.greenAccent,
+        backgroundColor: const Color(0xFF16A34A),
+        foregroundColor: Colors.white,
+        elevation: 0,
       ),
-
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ==================================================
-            // รูป Profile
-            // ==================================================
-            Center(
-              child: Column(
-                children: [
-                  buildProfileImage(),
-
-                  const SizedBox(height: 10),
-
-                  OutlinedButton.icon(
-                    onPressed: isSaving ? null : pickProfileImage,
-                    icon: const Icon(Icons.image),
-                    label: const Text('เปลี่ยนรูป Profile'),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: const Color(0xFFD1FAE5)),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x1A16A34A),
+                    blurRadius: 10,
+                    offset: Offset(0, 6),
                   ),
                 ],
               ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // ==================================================
-            // ข้อมูลบัญชี
-            // ==================================================
-            const Text(
-              'ข้อมูลบัญชี',
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            TextField(
-              controller: TextEditingController(text: email),
-              readOnly: true,
-              decoration: const InputDecoration(
-                labelText: 'อีเมล',
-                border: OutlineInputBorder(),
-              ),
-            ),
-
-            const SizedBox(height: 14),
-
-            // ==================================================
-            // ข้อมูลส่วนตัว
-            // ==================================================
-            const Text(
-              'ข้อมูลส่วนตัว',
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            buildTextField(label: 'ชื่อ-นามสกุล', controller: nameController),
-
-            buildTextField(
-              label: 'เบอร์โทรศัพท์',
-              controller: phoneController,
-              keyboardType: TextInputType.phone,
-            ),
-
-            // ==================================================
-            // เพศ
-            // ==================================================
-            Padding(
-              padding: const EdgeInsets.only(bottom: 14),
-              child: DropdownButtonFormField<String>(
-                value: selectedGender,
-                decoration: const InputDecoration(
-                  labelText: 'เพศ',
-                  border: OutlineInputBorder(),
-                ),
-                items: genderList
-                    .map(
-                      (gender) =>
-                          DropdownMenuItem(value: gender, child: Text(gender)),
-                    )
-                    .toList(),
-                onChanged: isSaving
-                    ? null
-                    : (value) {
-                        if (value == null) {
-                          return;
-                        }
-
-                        setState(() {
-                          selectedGender = value;
-                        });
-                      },
-              ),
-            ),
-
-            // ==================================================
-            // วันเกิด
-            // ==================================================
-            Padding(
-              padding: const EdgeInsets.only(bottom: 14),
-              child: TextField(
-                controller: birthdayController,
-                readOnly: true,
-                onTap: isSaving ? null : selectBirthday,
-                decoration: const InputDecoration(
-                  labelText: 'วันเกิด',
-                  border: OutlineInputBorder(),
-                  suffixIcon: Icon(Icons.calendar_month),
-                ),
-              ),
-            ),
-
-            buildTextField(
-              label: 'ที่อยู่',
-              controller: addressController,
-              maxLines: 3,
-            ),
-
-            buildTextField(
-              label: 'เลขบัตรประชาชน / Passport',
-              controller: numberIdController,
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'ประเทศที่ชอบ (เลือกได้มากกว่า 1)',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 8),
-            InkWell(
-              onTap: isSaving ? null : showCountrySelectionDialog,
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 14,
-                ),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Row(
+              child: Center(
+                child: Column(
                   children: [
-                    Expanded(
-                      child: Text(
-                        selectedCountries.isEmpty
-                            ? 'เลือกประเทศที่ชอบ'
-                            : selectedCountries.join(', '),
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: selectedCountries.isEmpty
-                              ? Colors.grey.shade600
-                              : Colors.black87,
+                    buildProfileImage(),
+                    const SizedBox(height: 12),
+                    Text(
+                      'อัปโหลดรูปโปรไฟล์',
+                      style: TextStyle(
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: isSaving ? null : pickProfileImage,
+                        icon: const Icon(Icons.image_outlined),
+                        label: const Text('เปลี่ยนรูป Profile'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF166534),
+                          side: const BorderSide(color: Color(0xFF86EFAC)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                       ),
                     ),
-                    const Icon(Icons.arrow_drop_down),
                   ],
                 ),
               ),
             ),
 
-            const Divider(height: 30),
+            const SizedBox(height: 18),
 
-            // ==================================================
-            // ข้อมูลสุขภาพ
-            // ==================================================
-            const Text(
-              'ข้อมูลสุขภาพ',
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
+            _buildSectionCard(
+              title: 'ข้อมูลส่วนตัว',
+              icon: Icons.person_outline,
+              child: Column(
+                children: [
+                  buildTextField(
+                    label: 'ชื่อ-นามสกุล',
+                    controller: nameController,
+                  ),
+                  buildTextField(
+                    label: 'เบอร์โทรศัพท์',
+                    controller: phoneController,
+                    keyboardType: TextInputType.phone,
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: DropdownButtonFormField<String>(
+                      value: selectedGender,
+                      decoration: InputDecoration(
+                        labelText: 'เพศ',
+                        labelStyle: const TextStyle(color: Color(0xFF4B5563)),
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 14,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFD1FAE5),
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF16A34A),
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                      items: genderList
+                          .map(
+                            (gender) => DropdownMenuItem(
+                              value: gender,
+                              child: Text(gender),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: isSaving
+                          ? null
+                          : (value) {
+                              if (value == null) {
+                                return;
+                              }
+                              setState(() {
+                                selectedGender = value;
+                              });
+                            },
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: TextField(
+                      controller: birthdayController,
+                      readOnly: true,
+                      onTap: isSaving ? null : selectBirthday,
+                      decoration: InputDecoration(
+                        labelText: 'วันเกิด',
+                        labelStyle: const TextStyle(color: Color(0xFF4B5563)),
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 14,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFD1FAE5),
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF16A34A),
+                            width: 1.5,
+                          ),
+                        ),
+                        suffixIcon: const Icon(
+                          Icons.calendar_month,
+                          color: Color(0xFF16A34A),
+                        ),
+                      ),
+                    ),
+                  ),
+                  buildTextField(
+                    label: 'ที่อยู่',
+                    controller: addressController,
+                    maxLines: 3,
+                  ),
+                  buildTextField(
+                    label: 'เลขบัตรประชาชน / Passport',
+                    controller: numberIdController,
+                  ),
+                  const SizedBox(height: 4),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'ประเทศที่ชอบ (เลือกได้มากกว่า 1)',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  InkWell(
+                    onTap: isSaving ? null : showCountrySelectionDialog,
+                    borderRadius: BorderRadius.circular(14),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(color: const Color(0xFFD1FAE5)),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              selectedCountries.isEmpty
+                                  ? 'เลือกประเทศที่ชอบ'
+                                  : selectedCountries.join(', '),
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: selectedCountries.isEmpty
+                                    ? Colors.grey.shade600
+                                    : Colors.black87,
+                              ),
+                            ),
+                          ),
+                          const Icon(
+                            Icons.arrow_drop_down,
+                            color: Color(0xFF16A34A),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 18),
 
-            buildTextField(
-              label: 'โรคประจำตัว',
-              controller: congenitalDiseaseController,
-            ),
-
-            buildTextField(
-              label: 'ยาที่ใช้ประจำ',
-              controller: medicineController,
-            ),
-
-            buildTextField(
-              label: 'ประวัติการแพ้ยา/อาหาร',
-              controller: allergicListController,
-            ),
-
-            buildTextField(
-              label: 'อื่น ๆ',
-              controller: othersController,
-              maxLines: 3,
-            ),
-
-            const Divider(height: 30),
-
-            // ==================================================
-            // Passport
-            // ==================================================
-            const Text(
-              'เอกสารยืนยันตัวตน',
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
+            _buildSectionCard(
+              title: 'ข้อมูลสุขภาพ',
+              icon: Icons.medical_services_outlined,
+              child: Column(
+                children: [
+                  buildTextField(
+                    label: 'โรคประจำตัว',
+                    controller: congenitalDiseaseController,
+                  ),
+                  buildTextField(
+                    label: 'ยาที่ใช้ประจำ',
+                    controller: medicineController,
+                  ),
+                  buildTextField(
+                    label: 'ประวัติการแพ้ยา/อาหาร',
+                    controller: allergicListController,
+                  ),
+                  buildTextField(
+                    label: 'อื่น ๆ',
+                    controller: othersController,
+                    maxLines: 3,
+                  ),
+                ],
               ),
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 18),
 
-            buildPassportImage(),
+            _buildSectionCard(
+              title: 'เอกสารยืนยันตัวตน',
+              icon: Icons.badge_outlined,
+              child: Column(
+                children: [
+                  buildPassportImage(),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: isSaving ? null : pickPassportImage,
+                      icon: const Icon(Icons.upload_file_outlined),
+                      label: const Text('เปลี่ยนรูป Passport / ID Card'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF166534),
+                        side: const BorderSide(color: Color(0xFF86EFAC)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 22),
 
             SizedBox(
               width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: isSaving ? null : pickPassportImage,
-                icon: const Icon(Icons.badge),
-                label: const Text('เปลี่ยนรูป Passport / ID Card'),
-              ),
-            ),
-
-            const SizedBox(height: 25),
-
-            // ==================================================
-            // Save Button
-            // ==================================================
-            SizedBox(
-              width: double.infinity,
-              height: 52,
+              height: 54,
               child: ElevatedButton.icon(
                 onPressed: isSaving ? null : saveProfile,
                 icon: isSaving
@@ -824,19 +866,64 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           color: Colors.white,
                         ),
                       )
-                    : const Icon(Icons.save),
+                    : const Icon(Icons.save_alt_rounded),
                 label: Text(isSaving ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
+                  backgroundColor: const Color(0xFF16A34A),
                   foregroundColor: Colors.white,
+                  elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                 ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionCard({
+    required String title,
+    required IconData icon,
+    required Widget child,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFD1FAE5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFECFDF5),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: const Color(0xFF16A34A), size: 20),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF111827),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          child,
+        ],
       ),
     );
   }

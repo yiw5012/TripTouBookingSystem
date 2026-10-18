@@ -1,169 +1,593 @@
-<div class="container mt-4">
+<div class="manage-tour-page">
 
-  <div class="d-flex justify-content-between align-items-center mb-3">
+  <!-- Page Header -->
+  <header class="page-header">
+    <div class="page-heading-copy">
 
-    <h2 class="mb-0">
-      จัดการโปรแกรมทัวร์
-    </h2>
+      <div class="breadcrumb-line" aria-label="เส้นทางนำทาง">
+        <span>จัดการโปรแกรมทัวร์</span>
+        <span class="breadcrumb-divider" aria-hidden="true">/</span>
+        <span class="breadcrumb-current">รายการทัวร์ทั้งหมด</span>
+      </div>
 
-    <div>
+      <h1>จัดการโปรแกรมทัวร์</h1>
 
+      <p class="page-description">
+        ดูรายละเอียดสถานะและจัดการข้อมูลโปรแกรมทัวร์ทั้งหมดในระบบ
+      </p>
+
+    </div>
+
+    <div class="header-actions">
+
+      <!-- Refresh -->
       <button
         type="button"
-        class="btn btn-secondary me-2"
+        class="btn btn-secondary"
         (click)="loadTours()"
         [disabled]="loading"
+        aria-label="รีเฟรชรายการทัวร์"
       >
+        <svg
+          *ngIf="!loading"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M20 7v5h-5M4 17v-5h5"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+
+          <path
+            d="M6.1 9A7 7 0 0 1 18 6l2 6M4 12l2 6a7 7 0 0 0 11.9-3"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+
+        <span
+          *ngIf="loading"
+          class="loading-spinner"
+          aria-hidden="true"
+        ></span>
+
         {{ loading ? 'กำลังโหลด...' : 'รีเฟรชข้อมูล' }}
       </button>
 
+      <!-- Add Tour -->
       <button
         type="button"
-        class="btn btn-success"
+        class="btn btn-primary"
         (click)="addTour()"
       >
-        + เพิ่มทัวร์
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            d="M12 5v14M5 12h14"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        </svg>
+
+        เพิ่มทัวร์ใหม่
       </button>
 
+    </div>
+  </header>
+
+
+  <!-- Summary Card -->
+  <section
+    class="summary-card"
+    aria-label="สรุปรายการทัวร์"
+  >
+
+    <div class="summary-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path
+          d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linejoin="round"
+        />
+
+        <path
+          d="m4.5 7.7 7.5 4.4 7.5-4.4M12 12.1V21"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </div>
+
+    <div class="summary-copy">
+      <span class="summary-label">ทัวร์ทั้งหมด</span>
+
+      <strong class="summary-value">
+        {{ tours.length }}
+      </strong>
+
+      <span class="summary-note">
+        รายการในระบบ
+      </span>
+    </div>
+
+    <div class="summary-side-note">
+      <span class="summary-dot" aria-hidden="true"></span>
+
+      <span>
+        {{ loading ? 'กำลังอัปเดตข้อมูล' : 'ข้อมูลโปรแกรมทัวร์' }}
+      </span>
+    </div>
+
+  </section>
+
+
+  <!-- Error State -->
+  <div
+    *ngIf="errorMessage && !loading"
+    class="state-card error-state"
+    role="alert"
+  >
+
+    <div class="state-icon error-icon" aria-hidden="true">
+      !
+    </div>
+
+    <div class="state-copy">
+      <h2>โหลดข้อมูลไม่สำเร็จ</h2>
+
+      <p>{{ errorMessage }}</p>
+    </div>
+
+    <button
+      type="button"
+      class="btn btn-secondary"
+      (click)="loadTours()"
+    >
+      ลองอีกครั้ง
+    </button>
+
+  </div>
+
+
+  <!-- Loading State -->
+  <div
+    *ngIf="loading && tours.length === 0"
+    class="state-card loading-state"
+    role="status"
+    aria-live="polite"
+  >
+
+    <span
+      class="large-spinner"
+      aria-hidden="true"
+    ></span>
+
+    <div class="state-copy">
+      <h2>กำลังโหลดข้อมูลทัวร์</h2>
+
+      <p>
+        กรุณารอสักครู่ ระบบกำลังดึงรายการโปรแกรมทัวร์
+      </p>
     </div>
 
   </div>
 
 
-  <div
-    *ngIf="loading"
-    class="alert alert-info"
-  >
-    กำลังโหลดข้อมูลทัวร์...
-  </div>
-
-
-  <div
-    *ngIf="!loading && errorMessage"
-    class="alert alert-danger"
-  >
-    {{ errorMessage }}
-  </div>
-
-
-  <div
+  <!-- Empty State -->
+  <section
     *ngIf="!loading && !errorMessage && tours.length === 0"
-    class="alert alert-warning"
-  >
-    ยังไม่มีข้อมูลทัวร์
-  </div>
-
-
-  <div
-    *ngIf="!loading && tours.length > 0"
-    class="table-responsive"
+    class="state-card empty-state"
   >
 
-    <table class="table table-bordered table-hover align-middle">
+    <div class="empty-illustration" aria-hidden="true">
+      <svg viewBox="0 0 48 48" fill="none">
+        <rect
+          x="7"
+          y="9"
+          width="34"
+          height="30"
+          rx="7"
+          stroke="currentColor"
+          stroke-width="1.7"
+        />
 
-      <thead>
+        <path
+          d="M16 18h16M16 24h10M24 31h8"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+        />
 
-        <tr>
-          <th>รหัส</th>
-          <th>รูป</th>
-          <th>ชื่อทัวร์</th>
-          <th>ประเทศ</th>
-          <th>ประเภท</th>
-          <th>วัน</th>
-          <th>ราคา</th>
-          <th>สถานะ</th>
-          <th style="width: 180px;">จัดการ</th>
-        </tr>
+        <path
+          d="M35 5v8M31 9h8"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+        />
+      </svg>
+    </div>
 
-      </thead>
+    <h2>ยังไม่มีโปรแกรมทัวร์</h2>
 
-      <tbody>
+    <p>
+      เริ่มต้นเพิ่มโปรแกรมทัวร์แรก เพื่อให้รายการแสดงในหน้านี้
+    </p>
 
-        <tr *ngFor="let tour of tours">
+    <button
+      type="button"
+      class="btn btn-primary"
+      (click)="addTour()"
+    >
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="M12 5v14M5 12h14"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+      </svg>
 
-          <td>
-            {{ tour.tour_id }}
-          </td>
+      เพิ่มทัวร์ใหม่
+    </button>
 
-          <td>
+  </section>
 
-            <img
-              *ngIf="tour.image"
-              [src]="tour.image"
-              width="100"
-              height="70"
-              style="object-fit: cover;"
-            >
 
-            <span
-              *ngIf="!tour.image"
-              class="text-muted"
-            >
-              ไม่มีรูป
-            </span>
+  <!-- Tour Table -->
+  <section
+    *ngIf="!errorMessage && tours.length > 0"
+    class="table-card"
+    aria-labelledby="tour-table-title"
+  >
 
-          </td>
+    <!-- Table Header -->
+    <div class="table-card-header">
 
-          <td>
-            {{ tour.tour_name }}
-          </td>
+      <div>
+        <h2 id="tour-table-title">
+          รายการโปรแกรมทัวร์
+        </h2>
 
-          <td>
-            {{ tour.country_name_th }}
-          </td>
+        <p>
+          จัดการข้อมูลและสถานะของแต่ละโปรแกรม
+        </p>
+      </div>
 
-          <td>
-            {{ tour.type }}
-          </td>
+      <span class="record-count">
+        {{ tours.length }} รายการ
+      </span>
 
-          <td>
-            {{ tour.duration_day }}
-          </td>
+    </div>
 
-          <td>
-            {{ tour.price | number:'1.0-2' }}
-          </td>
 
-          <td
-            [ngClass]="getStatusClass(tour.status)"
-          >
-            {{ getTourStatus(tour.status) }}
-          </td>
+    <!-- Responsive Table -->
+    <div
+      class="table-scroll"
+      [attr.aria-busy]="loading"
+    >
 
-          <td>
+      <table class="tour-table">
 
-            <button
-              type="button"
-              class="btn-round"
-              (click)="manageRounds(tour.tour_id)"
-            >
-              จัดการรอบ
-            </button>
+        <thead>
+          <tr>
+            <th scope="col" class="col-code">รหัสทัวร์</th>
+            <th scope="col" class="col-image">รูปปก</th>
+            <th scope="col" class="col-name">ชื่อโปรแกรมทัวร์</th>
+            <th scope="col" class="col-country">ประเทศ</th>
+            <th scope="col" class="col-type">ประเภท</th>
+            <th scope="col" class="col-days">ระยะเวลา</th>
+            <th scope="col" class="col-price">ราคาเริ่มต้น</th>
+            <th scope="col" class="col-status">สถานะ</th>
+            <th scope="col" class="col-actions">การจัดการ</th>
+          </tr>
+        </thead>
 
-            <button
-              type="button"
-              class="btn btn-warning btn-sm me-2"
-              (click)="editTour(tour.tour_id)"
-            >
-              แก้ไข
-            </button>
 
-            <button
-              type="button"
-              class="btn btn-danger btn-sm"
-              (click)="deleteTour(tour.tour_id)"
-            >
-              ลบ
-            </button>
+        <tbody>
 
-          </td>
+          <tr *ngFor="let tour of tours">
 
-        </tr>
+            <!-- Tour Code -->
+            <td class="code-cell">
 
-      </tbody>
+              <span class="tour-code">
+                {{ tour.tour_code || ('#' + tour.tour_id) }}
+              </span>
 
-    </table>
+              <span class="tour-id">
+                ID: {{ tour.tour_id }}
+              </span>
 
+            </td>
+
+
+            <!-- Tour Image -->
+            <td>
+
+              <div
+                class="tour-image-wrap"
+                *ngIf="tour.image; else noTourImage"
+              >
+
+                <img
+                  class="tour-image"
+                  [src]="tour.image"
+                  [alt]="'รูปปก ' + tour.tour_name"
+                  loading="lazy"
+                />
+
+              </div>
+
+              <ng-template #noTourImage>
+
+                <div
+                  class="no-image"
+                  aria-label="ไม่มีรูปภาพ"
+                >
+
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <rect
+                      x="3.5"
+                      y="4.5"
+                      width="17"
+                      height="15"
+                      rx="2.5"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                    />
+
+                    <circle
+                      cx="8.5"
+                      cy="9"
+                      r="1.5"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                    />
+
+                    <path
+                      d="m5 17 4.5-4 3 2.5 2.5-2 4 3.5"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+
+                  <span>ไม่มีรูป</span>
+
+                </div>
+
+              </ng-template>
+
+            </td>
+
+
+            <!-- Tour Name -->
+            <td class="name-cell">
+
+              <strong>
+                {{ tour.tour_name || 'ไม่ระบุชื่อทัวร์' }}
+              </strong>
+
+              <span
+                *ngIf="tour.promotion"
+                class="promotion-note"
+              >
+                มีโปรโมชัน
+              </span>
+
+            </td>
+
+
+            <!-- Country -->
+            <td>
+              <span class="country-name">
+                {{ tour.country_name_th || 'ไม่ระบุประเทศ' }}
+              </span>
+            </td>
+
+
+            <!-- Tour Type -->
+            <td>
+              <span class="type-chip">
+                {{ tour.type || '—' }}
+              </span>
+            </td>
+
+
+            <!-- Duration -->
+            <td class="duration-cell">
+
+              <strong>
+                {{ tour.duration_day ?? '—' }}
+              </strong>
+
+              <span *ngIf="tour.duration_day">
+                วัน
+              </span>
+
+            </td>
+
+
+            <!-- Price -->
+            <td class="price-cell">
+
+              <strong>
+                {{ tour.price | number:'1.0-2' }}
+              </strong>
+
+              <span>บาท</span>
+
+            </td>
+
+
+            <!-- Status -->
+            <td>
+
+              <span
+                class="status-badge"
+                [ngClass]="
+                  tour.status === 'open'
+                    ? 'status-open'
+                    : tour.status === 'closed'
+                      ? 'status-closed'
+                      : 'status-other'
+                "
+              >
+
+                <span
+                  class="status-dot"
+                  aria-hidden="true"
+                ></span>
+
+                {{ getTourStatus(tour.status) }}
+
+              </span>
+
+            </td>
+
+
+            <!-- Actions -->
+            <td>
+
+              <div class="action-group">
+
+                <!-- Manage Rounds -->
+                <button
+                  type="button"
+                  class="action-button action-rounds"
+                  (click)="manageRounds(tour.tour_id)"
+                  [attr.aria-label]="'จัดการรอบทัวร์ ' + tour.tour_name"
+                  title="จัดการรอบทัวร์"
+                >
+
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <rect
+                      x="3.5"
+                      y="5"
+                      width="17"
+                      height="15.5"
+                      rx="2.5"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                    />
+
+                    <path
+                      d="M7.5 3.5v3M16.5 3.5v3M3.5 9.5h17M8 13h3M8 16.5h3M14 13h2"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+
+                  <span>จัดการรอบ</span>
+
+                </button>
+
+
+                <!-- Edit Tour -->
+                <button
+                  type="button"
+                  class="action-button action-edit"
+                  (click)="editTour(tour.tour_id)"
+                  [attr.aria-label]="'แก้ไขทัวร์ ' + tour.tour_name"
+                  title="แก้ไขทัวร์"
+                >
+
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="m14 5 5 5M4 20l4.2-.8L19 8.4a2.1 2.1 0 0 0-3-3L5.2 16.2 4 20Z"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+
+                  <span>แก้ไข</span>
+
+                </button>
+
+
+                <!-- Delete Tour -->
+                <button
+                  type="button"
+                  class="action-button action-delete"
+                  (click)="openDeleteTourDialog(tour)"
+                  [attr.aria-label]="'ลบทัวร์ ' + tour.tour_name"
+                  title="ลบทัวร์"
+                >
+
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="M4.5 7h15M9 7V4.5h6V7M7 7l.8 13h8.4L17 7M10 10.5v6M14 10.5v6"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+
+                  <span>ลบ</span>
+
+                </button>
+
+              </div>
+
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+
+    <!-- Table Footer -->
+    <div class="table-card-footer">
+
+      <span>
+        แสดงรายการทัวร์ทั้งหมด {{ tours.length }} รายการ
+      </span>
+
+      <button
+        type="button"
+        class="footer-refresh"
+        (click)="loadTours()"
+        [disabled]="loading"
+      >
+        อัปเดตรายการ
+        <span aria-hidden="true">↻</span>
+      </button>
+
+    </div>
+
+  </section>
+
+  <div class="delete-modal-backdrop" *ngIf="deleteConfirmOpen" (click)="cancelDeleteTour()">
+    <div class="delete-modal" role="dialog" aria-modal="true" aria-labelledby="delete-tour-title" (click)="$event.stopPropagation()">
+      <div class="delete-modal-icon">!</div>
+      <h3 id="delete-tour-title">ยืนยันการลบทัวร์</h3>
+      <p>
+        คุณต้องการลบทัวร์
+        <strong>{{ pendingDeleteTourName }}</strong>
+        ใช่หรือไม่?
+      </p>
+      <div class="delete-modal-actions">
+        <button type="button" class="btn btn-secondary" (click)="cancelDeleteTour()">ยกเลิก</button>
+        <button type="button" class="btn btn-danger" (click)="confirmDeleteTour()">ลบเลย</button>
+      </div>
+    </div>
   </div>
 
 </div>
