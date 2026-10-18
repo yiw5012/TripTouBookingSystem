@@ -117,7 +117,7 @@ class TourBookingSection extends StatelessWidget {
         children: [
           // รอบ
           Text(
-            'รอบทัวร์ ${round['round_id'] ?? '-'}',
+            'รอบทัวร์ ${round['round_code'] ?? '-'}',
             style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),

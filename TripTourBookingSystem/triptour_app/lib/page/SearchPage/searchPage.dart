@@ -5,6 +5,12 @@ import 'search/searchFilterSection.dart';
 import 'search/searchOptionSheets.dart';
 import 'search/searchResultList.dart';
 
+// ---------- Design tokens ----------
+const _kPrimary = Color(0xFF10B981);
+const _kInk = Color(0xFF111827);
+const _kMuted = Color(0xFF6B7280);
+const _kBg = Color(0xFFF9FAFB);
+
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
 
@@ -437,11 +443,12 @@ class _SearchPageState extends State<SearchPage> {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: _kBg,
 
       child: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 30),
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
 
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -491,7 +498,7 @@ class _SearchPageState extends State<SearchPage> {
                 },
               ),
 
-              const SizedBox(height: 25),
+              const SizedBox(height: 24),
 
               // =================================================
               // Loading
@@ -500,7 +507,7 @@ class _SearchPageState extends State<SearchPage> {
                 const Center(
                   child: Padding(
                     padding: EdgeInsets.all(20),
-                    child: CircularProgressIndicator(),
+                    child: CircularProgressIndicator(color: _kPrimary),
                   ),
                 ),
 
@@ -514,12 +521,31 @@ class _SearchPageState extends State<SearchPage> {
               // Empty
               // =================================================
               if (!isSearchingTours && searchResults.isEmpty && hasSearched)
-                const Center(
+                Center(
                   child: Padding(
-                    padding: EdgeInsets.all(20),
-                    child: Text(
-                      'ไม่พบข้อมูลทริป',
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                    padding: const EdgeInsets.symmetric(vertical: 28),
+                    child: Column(
+                      children: const [
+                        Icon(
+                          Icons.search_off_rounded,
+                          size: 56,
+                          color: _kMuted,
+                        ),
+                        SizedBox(height: 12),
+                        Text(
+                          'ไม่พบข้อมูลทริป',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: _kInk,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'ลองปรับตัวกรองแล้วค้นหาอีกครั้ง',
+                          style: TextStyle(fontSize: 14, color: _kMuted),
+                        ),
+                      ],
                     ),
                   ),
                 ),

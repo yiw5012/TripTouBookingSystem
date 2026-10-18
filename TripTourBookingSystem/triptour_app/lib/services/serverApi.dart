@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:async';
 import 'package:http/http.dart' as http;
 
 const String _defaultBaseUrl = 'http://192.168.1.146:4000';
@@ -49,6 +50,14 @@ class Serverapi {
       print(body);
 
       return {'statusCode': res.statusCode, 'body': body};
+    } on SocketException catch (e) {
+      print('Login network error: $e');
+      return {
+        'statusCode': 503,
+        'body': {
+          'message': 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ ($_baseUrl) กรุณาตรวจสอบการเชื่อมต่อเครือข่าย',
+        },
+      };
     } catch (e) {
       print('Login error: $e');
       return {
@@ -79,40 +88,57 @@ class Serverapi {
     try {
       print("REGISTER URL: $_baseUrl/register");
 
-      final res = await http.post(
-        Uri.parse("$_baseUrl/register"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "google_id": googleId,
-          "email": email,
-          "first_name": firstName,
-          "last_name": lastName,
-          "phone": phone,
-          "number_id": numberId,
-          "birthday": birthday,
-          "address": address,
-          "gender": gender,
-          "medicine": medicine,
-          "congenital_disease": congenitalDisease,
-          "allergic_list": allergicList,
-          "other": other,
-          "image_profile": imageProfileUrl,
-          "image_passport": passportUrl,
-          "favorite_countries": favoriteCountries ?? [],
-        }),
-      );
+      final res = await http
+          .post(
+            Uri.parse("$_baseUrl/register"),
+            headers: {"Content-Type": "application/json"},
+            body: jsonEncode({
+              "google_id": googleId,
+              "email": email,
+              "first_name": firstName,
+              "last_name": lastName,
+              "phone": phone,
+              "number_id": numberId,
+              "birthday": birthday,
+              "address": address,
+              "gender": gender,
+              "medicine": medicine,
+              "congenital_disease": congenitalDisease,
+              "allergic_list": allergicList,
+              "other": other,
+              "image_profile": imageProfileUrl,
+              "image_passport": passportUrl,
+              "favorite_countries": favoriteCountries ?? [],
+            }),
+          )
+          .timeout(const Duration(seconds: 20));
 
       print("Response status: ${res.statusCode}");
-      final data = jsonDecode(res.body);
+      final decoded = jsonDecode(res.body);
+      if (decoded is Map<String, dynamic>) {
+        final data = <String, dynamic>{
+          'statusCode': res.statusCode,
+          ...decoded,
+        };
 
-      print(data);
-      return data;
+        print(data);
+        return data;
+      }
+
+      return {
+        'statusCode': res.statusCode,
+        'status': res.statusCode == 200 ? 'success' : 'error',
+        'message': 'รูปแบบข้อมูลตอบกลับไม่ถูกต้อง',
+      };
+    } on TimeoutException {
+      return {
+        'statusCode': 408,
+        'status': 'error',
+        'message': 'เชื่อมต่อเซิร์ฟเวอร์นานเกินไป กรุณาลองใหม่',
+      };
     } catch (e) {
       print('Registration error: $e');
-      return {
-        'statusCode': 500,
-        'body': {'message': 'Server error'},
-      };
+      return {'statusCode': 500, 'status': 'error', 'message': 'Server error'};
     }
   }
 
@@ -278,7 +304,9 @@ class Serverapi {
     }
 
     try {
-      final response = await request.send();
+      final response = await request.send().timeout(
+        const Duration(seconds: 20),
+      );
 
       if (response.statusCode == 200) {
         final responseBody = await response.stream.bytesToString();
@@ -293,6 +321,9 @@ class Serverapi {
         print("Image upload failed with status: ${response.statusCode}");
         return null;
       }
+    } on TimeoutException {
+      print('Image upload timeout');
+      return null;
     } catch (e) {
       print('Image upload error: $e');
       return null;

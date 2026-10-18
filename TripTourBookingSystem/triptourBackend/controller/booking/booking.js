@@ -526,6 +526,7 @@ router.get('/admin/all-bookings', async (req, res) => {
         b.slip_image,
 
         t.tour_id,
+        t.tour_code,
         t.tour_name,
 
         r.start_date,
@@ -1058,6 +1059,7 @@ router.get('/history/:memberId', async (req, res) => {
         b.total_price,
 
         t.tour_id,
+        t.tour_code,
         t.tour_name,
         t.type,
         t.duration_day,
@@ -1076,6 +1078,7 @@ router.get('/history/:memberId', async (req, res) => {
         r.airline,
         r.flight,
         r.flight_time,
+        r.round_code,
         r.guide_id,
         r.count AS round_count
 

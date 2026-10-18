@@ -172,7 +172,7 @@ class TourHeader extends StatelessWidget {
   Widget buildTourSummary(BuildContext context) {
     final String tourName = tour['tour_name']?.toString() ?? 'ไม่มีชื่อทัวร์';
 
-    final String tourIdText = tour['tour_id']?.toString() ?? '-';
+    final String tourIdText = tour['tour_code']?.toString() ?? '-';
 
     final String country = tour['country_name_th']?.toString() ?? '-';
 

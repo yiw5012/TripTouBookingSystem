@@ -91,6 +91,7 @@ router.get("/:roundId", async (req, res) => {
       SELECT
         tr.*, 
         t.tour_name,
+        t.tour_code,
         t.pdf_file
       FROM tour_round tr
       LEFT JOIN tour t

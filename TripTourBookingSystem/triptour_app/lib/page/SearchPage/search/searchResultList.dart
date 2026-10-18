@@ -1,19 +1,97 @@
 import 'package:flutter/material.dart';
 import 'package:triptour_app/page/Tourdetail/detailTour.dart';
 
+// ---------- Design tokens ----------
+const _kPrimary = Color(0xFF10B981);
+const _kPrimaryDark = Color(0xFF047857);
+const _kInk = Color(0xFF111827);
+const _kMuted = Color(0xFF4B5563);
+
 class SearchResultList extends StatelessWidget {
   final List<dynamic> searchResults;
 
   const SearchResultList({super.key, required this.searchResults});
+
+  // 28900 -> 28,900 (ถ้าแปลงเป็นตัวเลขไม่ได้ จะแสดงค่าเดิม)
+  String _formatPrice(dynamic value) {
+    final raw = value?.toString().replaceAll(',', '').trim() ?? '';
+    if (raw.isEmpty || raw == '-') return '-';
+
+    final number = double.tryParse(raw);
+    if (number == null) return raw;
+
+    final text = number % 1 == 0
+        ? number.toInt().toString()
+        : number.toStringAsFixed(2);
+    final parts = text.split('.');
+    final intPart = parts[0].replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (m) => ',',
+    );
+    return parts.length > 1 ? '$intPart.${parts[1]}' : intPart;
+  }
+
+  String _formatDate(dynamic value) {
+    final raw = value?.toString().trim() ?? '';
+    if (raw.isEmpty) return '-';
+    final d = DateTime.tryParse(raw)?.toLocal();
+    if (d == null) return raw;
+    return '${d.day.toString().padLeft(2, '0')}/'
+        '${d.month.toString().padLeft(2, '0')}/${d.year}';
+  }
+
+  Widget _metaRow(IconData icon, Color color, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12.5, color: _kMuted),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'ผลการค้นหา',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        Row(
+          children: [
+            const Text(
+              'ผลการค้นหา',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: _kInk,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              decoration: BoxDecoration(
+                color: _kPrimary.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                '${searchResults.length} รายการ',
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: _kPrimaryDark,
+                ),
+              ),
+            ),
+          ],
         ),
 
         const SizedBox(height: 12),
@@ -42,166 +120,142 @@ class SearchResultList extends StatelessWidget {
                 ? imageUrl
                 : '';
 
-            return GestureDetector(
-              onTap: () {
-                final int tourId = int.parse(tour['tour_id'].toString());
-
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => DetailTour(tourId: tourId),
+            return Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.07),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
-                );
-              },
-              child: Container(
-                width: double.infinity,
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.shade200),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        width: 100,
-                        height: 110,
-                        color: Colors.grey.shade200,
-                        child: imageToLoad.isNotEmpty
-                            ? Image.network(
-                                imageToLoad,
-                                fit: BoxFit.cover,
-                                width: 100,
-                                height: 110,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const Center(
-                                    child: Icon(
-                                      Icons.image_not_supported,
-                                      size: 28,
-                                      color: Colors.grey,
-                                    ),
-                                  );
-                                },
-                              )
-                            : const Center(
-                                child: Icon(
-                                  Icons.image,
-                                  size: 28,
-                                  color: Colors.grey,
-                                ),
-                              ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(18),
+                  onTap: () {
+                    final int tourId = int.parse(tour['tour_id'].toString());
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DetailTour(tourId: tourId),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Text(
-                            tour['tour_name'] ?? 'ไม่มีชื่อทริป',
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              height: 1.3,
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(14),
+                            child: Container(
+                              width: 104,
+                              constraints: const BoxConstraints(minHeight: 132),
+                              color: const Color(0xFFE5E7EB),
+                              child: imageToLoad.isNotEmpty
+                                  ? Image.network(
+                                      imageToLoad,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                            return const Center(
+                                              child: Icon(
+                                                Icons.image_not_supported,
+                                                size: 28,
+                                                color: Colors.grey,
+                                              ),
+                                            );
+                                          },
+                                    )
+                                  : const Center(
+                                      child: Icon(
+                                        Icons.image,
+                                        size: 28,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.public,
-                                size: 16,
-                                color: Colors.green,
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  '${tour['country_name_th'] ?? '-'}',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade700,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      tour['tour_name'] ?? 'ไม่มีชื่อทริป',
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 15.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: _kInk,
+                                        height: 1.3,
+                                      ),
+                                    ),
+                                    _metaRow(
+                                      Icons.public,
+                                      _kPrimaryDark,
+                                      '${tour['country_name_th'] ?? '-'}',
+                                    ),
+                                    _metaRow(
+                                      Icons.flight,
+                                      Colors.blue,
+                                      '${tour['airline'] ?? '-'}',
+                                    ),
+                                    _metaRow(
+                                      Icons.calendar_month_rounded,
+                                      Colors.orange,
+                                      '${_formatDate(tour['start_date'])} - ${_formatDate(tour['end_date'])}',
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: Text.rich(
+                                    TextSpan(
+                                      children: [
+                                        TextSpan(
+                                          text:
+                                              '฿${_formatPrice(tour['price'])}',
+                                          style: const TextStyle(
+                                            fontSize: 19,
+                                            fontWeight: FontWeight.bold,
+                                            color: _kInk,
+                                          ),
+                                        ),
+                                        const TextSpan(
+                                          text: ' /คน',
+                                          style: TextStyle(
+                                            fontSize: 12.5,
+                                            color: _kMuted,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.flight,
-                                size: 16,
-                                color: Colors.blue,
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  '${tour['airline'] ?? '-'}',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade700,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.calendar_month,
-                                size: 16,
-                                color: Colors.orange,
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  '${tour['start_date'] ?? '-'} - ${tour['end_date'] ?? '-'}',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade700,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: Text(
-                              '${tour['price'] ?? '-'} บาท',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.orange,
-                              ),
+                              ],
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
             );

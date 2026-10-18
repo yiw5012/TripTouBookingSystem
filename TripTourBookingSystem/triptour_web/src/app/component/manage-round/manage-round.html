@@ -17,7 +17,7 @@
         <span class="reference-divider"></span>
         <div class="reference-item">
           <span class="reference-label">รหัสทัวร์</span>
-          <strong>#{{ tour.tour_id }}</strong>
+          <strong>{{ tour.tour_code || ('#' + tour.tour_id) }}</strong>
         </div>
         <span class="flight-indicator" [class.flight-included]="isFlightIncluded">
           {{ isFlightIncluded ? 'รวมเที่ยวบิน' : 'ไม่รวมเที่ยวบิน' }}
