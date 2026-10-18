@@ -314,6 +314,7 @@ async putData(endpoint: string, data: any): Promise<any> {
   }
 
   async getConfirmedMembersByRound(roundId: string | number): Promise<any> {
+    console.log(`Fetching confirmed members for round ID: ${roundId}`);
     return this.getData(`api/booking/admin/confirmed-members/${roundId}`);
   }
   

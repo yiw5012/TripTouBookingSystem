@@ -1,4 +1,3 @@
-
 .member-page {
   padding: 24px;
   max-width: 1240px;
@@ -326,6 +325,102 @@
   background: #fef2f2;
   border: 1px solid #fecaca;
   color: #b91c1c;
+}
+
+.text-muted {
+  color: #94a3b8;
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* ================= สไตล์ผู้ร่วมเดินทาง (จัดให้เหมือนผู้จองหลัก) ================= */
+.main-booker-row td {
+  border-bottom: none !important;
+}
+
+.companion-sub-row td {
+  background: #f8fafc !important;
+  padding: 12px 20px 20px 20px !important;
+  border-top: 1px dashed #cbd5e1 !important;
+  border-bottom: 2px solid #e2e8f0 !important;
+}
+
+.sub-companion-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sub-companion-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0369a1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ตารางย่อยผู้ร่วมเดินทาง */
+.companion-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.companion-table th {
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 10px 14px;
+  border-bottom: 1px solid #cbd5e1;
+  text-align: left;
+}
+
+.companion-table td {
+  padding: 12px 14px;
+  border-top: 1px solid #f1f5f9;
+  vertical-align: top;
+  background: #ffffff !important;
+}
+
+.companion-badge-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-weight: 800;
+  font-size: 12px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+}
+
+.passport-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  background: #eff6ff;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #bfdbfe;
+  transition: all 0.2s;
+}
+
+.passport-btn:hover {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
 }
 
 @media (max-width: 960px) {

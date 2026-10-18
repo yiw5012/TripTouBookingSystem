@@ -72,16 +72,16 @@
               <span class="info-value">{{ formatDate(selectedRound.start_date) }} ถึง {{ formatDate(selectedRound.end_date) }}</span>
             </div>
             <div class="info-item">
-              <span class="info-label">ราคาต่อท่าน</span>
-              <span class="info-value text-primary">{{ getPrice(selectedRound.price) }}</span>
-            </div>
-            <div class="info-item">
               <span class="info-label">สายการบิน / เที่ยวบิน</span>
               <span class="info-value">{{ selectedRound.airline || '-' }} ({{ selectedRound.flight || '-' }})</span>
             </div>
             <div class="info-item">
               <span class="info-label">จำนวนผู้เดินทาง (คอนเฟิร์มแล้ว / ที่นั่งทั้งหมด)</span>
               <span class="info-value">{{ selectedRoundPassengers.length }} / {{ selectedRound.max_seats || '-' }} คน</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">ผู้ร่วมเดินทางทั้งหมดในรอบนี้</span>
+              <span class="info-value">{{ totalTravelers }} คน</span>
             </div>
           </div>
         </div>
@@ -102,6 +102,7 @@
                     <th>ข้อมูลสมาชิก</th>
                     <th>ช่องทางติดต่อ</th>
                     <th>ข้อมูลส่วนตัว</th>
+                    <th>ประเภทห้อง</th>
                     <th>ข้อมูลสุขภาพ</th>
                     <th>ยอดชำระ</th>
                     <th>วันที่จอง</th>
@@ -110,9 +111,15 @@
                 </thead>
                 <tbody>
                   @for (p of selectedRoundPassengers; track p.booking_id; let i = $index) {
-                    <tr>
+                    <!-- 1. แถวผู้จองหลัก (สมาชิก) -->
+                    <tr class="main-booker-row">
                       <td>{{ i + 1 }}</td>
-                      <td><strong>#{{ p.booking_id }}</strong></td>
+                      <td>
+                        <div class="member-cell-stack">
+                          <strong>#{{ p.booking_id }}</strong>
+                          <span>ผู้ร่วมเดินทาง: {{ getBookingTravelerCount(p) }} คน</span>
+                        </div>
+                      </td>
                       <td>
                         <div class="member-cell-stack">
                           <strong>{{ getPassengerName(p) }}</strong>
@@ -135,6 +142,11 @@
                         </div>
                       </td>
                       <td>
+                        <div class="member-cell-stack">
+                          <span>{{ getRoomTypeLabel(p.room_type_summary ?? p.room_type) }}</span>
+                        </div>
+                      </td>
+                      <td>
                         <div class="member-cell-stack member-health-cell">
                           <span>โรคประจำตัว: {{ p.congenital_disease || '-' }}</span>
                           <span>ยา: {{ p.medicine || '-' }}</span>
@@ -146,6 +158,75 @@
                       <td>{{ formatDate(p.booking_date) }}</td>
                       <td><span class="status-badge active">ชำระแล้ว (Confirmed)</span></td>
                     </tr>
+
+                    <!-- 2. แถวแสดงผู้ร่วมเดินทาง (จัดโครงสร้าง UI ให้เหมือนกับผู้จองหลัก) -->
+                    @if (p.passengers && p.passengers.length) {
+                      <tr class="companion-sub-row">
+                        <td colspan="10">
+                          <div class="sub-companion-wrapper">
+                            <div class="sub-companion-title">
+                                <span>👥 ผู้ร่วมเดินทางภายใต้ Booking #{{ p.booking_id }} (รวม {{ getBookingTravelerCount(p) }} คน)</span>
+                            </div>
+
+                            <table class="companion-table">
+                              <thead>
+                                <tr>
+                                  <th style="width: 50px;">#</th>
+                                  <th>ข้อมูลผู้ร่วมเดินทาง</th>
+                                  <th>ช่องทางติดต่อ</th>
+                                  <th>ข้อมูลส่วนตัว</th>
+                                  <th>ข้อมูลสุขภาพ</th>
+                                  <th style="width: 140px;">เอกสาร</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                @for (c of p.passengers; track c.passenger_id || $index) {
+                                  <tr>
+                                    <td>
+                                      <span class="companion-badge-num">{{ $index + 1 }}</span>
+                                    </td>
+                                    <td>
+                                      <div class="member-cell-stack">
+                                        <strong>{{ getCompanionName(c) }}</strong>
+                                        <span>เลขบัตร/พาสปอร์ต: {{ c.number_id || '-' }}</span>
+                                      </div>
+                                    </td>
+                                    <td>
+                                      <div class="member-cell-stack">
+                                        <span>โทร: {{ c.phone || '-' }}</span>
+                                        <span>ที่อยู่: {{ c.address || '-' }}</span>
+                                      </div>
+                                    </td>
+                                    <td>
+                                      <div class="member-cell-stack">
+                                        <span>เพศ: {{ getGenderLabel(c.gender) }}</span>
+                                      </div>
+                                    </td>
+                                    <td>
+                                      <div class="member-cell-stack member-health-cell">
+                                        <span>โรคประจำตัว: {{ c.congenital_disease || '-' }}</span>
+                                        <span>ยา: {{ c.medicine || '-' }}</span>
+                                        <span>แพ้: {{ c.allergic_list || '-' }}</span>
+                                        <span>อื่น ๆ: {{ c.others || '-' }}</span>
+                                      </div>
+                                    </td>
+                                    <td>
+                                      @if (c.image_passport) {
+                                        <a [href]="c.image_passport" target="_blank" rel="noopener" class="passport-btn">
+                                          📄 รูปพาสปอร์ต
+                                        </a>
+                                      } @else {
+                                        <span class="text-muted">- ไม่มี -</span>
+                                      }
+                                    </td>
+                                  </tr>
+                                }
+                              </tbody>
+                            </table>
+                          </div>
+                        </td>
+                      </tr>
+                    }
                   }
                 </tbody>
               </table>

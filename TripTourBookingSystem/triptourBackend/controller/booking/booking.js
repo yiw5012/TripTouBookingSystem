@@ -108,7 +108,7 @@ async function saveBookingRooms(connection, bookingId, rawRooms = []) {
   }
 
   const values = normalizedRooms.map(([roomType, quantity]) => [bookingId, roomType, quantity]);
-   console.log("Saving rooms for bookingId:", bookingId, "Rooms:", values);
+  console.log("Saving rooms for bookingId:", bookingId, "Rooms:", values);
   await connection.query(
     'INSERT INTO room (booking_id, room_type, quantity) VALUES ?',
     [values]
@@ -276,8 +276,8 @@ router.get('/status/:bookingId', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
 
-    const booking = rows[0];    
-    const EXPIRE_MINUTES = 3; 
+    const booking = rows[0];
+    const EXPIRE_MINUTES = 3;
     const bookingDate = new Date(booking.booking_date);
     const expireAt = new Date(bookingDate.getTime() + EXPIRE_MINUTES * 60 * 1000);
     const now = new Date();
@@ -287,7 +287,7 @@ router.get('/status/:bookingId', async (req, res) => {
     // ตรวจสอบหมดอายุเฉพาะเมื่อสถานะยังเป็น pending
     if (now >= expireAt && currentPaymentStatus === 'pending') {
       currentPaymentStatus = 'expired';
-      
+
       await conn.query(
         `UPDATE booking SET status = 'reject', payment_status = 'expired' WHERE booking_id = ?`,
         [bookingId]
@@ -351,7 +351,7 @@ router.post('/confirm-payment', upload.single('slip_image'), async (req, res) =>
     await connection.beginTransaction();
 
     // 2. ดึงข้อมูลรายการจอง พร้อมสั่ง ล็อก Row (FOR UPDATE)
-const [bookingRows] = await connection.query(
+    const [bookingRows] = await connection.query(
       `SELECT
          b.booking_id,
          b.round_id,
@@ -600,10 +600,35 @@ router.get('/admin/confirmed-members/:roundId', async (req, res) => {
         m.congenital_disease,
         m.allergic_list,
         m.others,
+        room_agg.room_type AS room_type,
+        room_agg.room_type AS room_type_summary,
         CONCAT_WS(' ', m.first_name, m.last_name) AS display_name
       FROM booking b
       INNER JOIN member m
         ON m.member_id = b.member_id
+      LEFT JOIN (
+        SELECT
+          rm.booking_id,
+          GROUP_CONCAT(
+            CONCAT(
+              CASE LOWER(rm.room_type)
+                WHEN 'single' THEN 'single'
+                WHEN 'double' THEN 'double'
+                WHEN 'triple' THEN 'triple'
+                WHEN 'shared_double' THEN 'shared_double'
+                WHEN 'shared_triple' THEN 'shared_triple'
+                WHEN 'child' THEN 'child'
+                ELSE rm.room_type
+              END,
+              ' x',
+              rm.quantity
+            )
+            SEPARATOR ', '
+          ) AS room_type
+        FROM room rm
+        GROUP BY rm.booking_id
+      ) AS room_agg
+        ON room_agg.booking_id = b.booking_id
       WHERE b.round_id = ?
         AND b.status IN ('confirmed', 'finish')
         AND b.payment_status = 'paid'
@@ -611,10 +636,29 @@ router.get('/admin/confirmed-members/:roundId', async (req, res) => {
       `,
       [roundId]
     );
+    // ผู้ร่วมเดินทางของทุก booking ในรอบนี้
+    const bookingIds = rows.map((r) => r.booking_id);
+    const passengersByBooking = {};
 
+    if (bookingIds.length) {
+      const [pRows] = await conn.query(
+        'SELECT * FROM passenger WHERE booking_id IN (?)',
+        [bookingIds]
+      );
+      for (const p of pRows) {
+        (passengersByBooking[p.booking_id] ??= []).push(p);
+      }
+    }
+
+    const data = rows.map((r) => ({
+      ...r,
+      passengers: passengersByBooking[r.booking_id] ?? [],
+    }));
+
+    console.log([data]);
     return res.status(200).json({
       success: true,
-      data: rows,
+      data: data,
     });
   } catch (error) {
     console.error('❌ Admin confirmed members error:', error);
@@ -907,14 +951,14 @@ router.post('/add-passengers', upload.single('passpot_passenger'), async (req, r
       bookingId,
       p.first_name || null,
       p.last_name || null,
-      p.id_card || p.number_id || null,            
+      p.id_card || p.number_id || null,
       p.gender || null,
       uploadedPassportPath || p.passport_image_path || null,
       p.congenital_disease || null,
       p.medicine || null,
       p.allergic_list || null,
       p.other || p.others || null,
-      p.phone || null             
+      p.phone || null
     ]);
 
     const sql = `
@@ -938,10 +982,10 @@ router.post('/add-passengers', upload.single('passpot_passenger'), async (req, r
   } catch (error) {
     if (connection) await connection.rollback();
     console.error('Add passengers error:', error);
-    return res.status(500).json({ 
-      success: false, 
+    return res.status(500).json({
+      success: false,
       message: 'Internal server error',
-      error: error.message 
+      error: error.message
     });
   } finally {
     if (connection) connection.release();
@@ -998,7 +1042,7 @@ router.post('/cancel', async (req, res) => {
         message: `ไม่สามารถยกเลิกได้ เนื่องจากรายการจองอยู่ในสถานะ ${booking.payment_status}`,
       });
     }
-    
+
     await connection.query('DELETE FROM passenger WHERE booking_id = ?', [booking_id]);
     await connection.query('DELETE FROM room WHERE booking_id = ?', [booking_id]);
     await connection.query(
@@ -1099,7 +1143,7 @@ router.get('/history/:memberId', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Error in /booking/history:', error.message);
-    
+
     return res.status(500).json({
       success: false,
       message: 'Internal Server Error',

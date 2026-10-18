@@ -78,6 +78,7 @@ export class MemberListComponent implements OnInit {
         this.selectedRoundPassengers = Array.isArray(passengersRes.body.data)
           ? passengersRes.body.data
           : [];
+          console.log(this.selectedRoundPassengers);
       } else {
         this.selectedRoundPassengers = [];
 
@@ -181,32 +182,75 @@ export class MemberListComponent implements OnInit {
     const price = this.escapeHtml(this.getPrice(round.price));
 
     const passengerRows = this.selectedRoundPassengers
-      .map((passenger: any, index: number) => `
-        <tr>
-          <td>${index + 1}</td>
-          <td>#${this.escapeHtml(passenger.booking_id)}</td>
-          <td>
-            <strong>${this.escapeHtml(this.getPassengerName(passenger))}</strong><br />
-            Member ID: ${this.escapeHtml(passenger.member_id)}<br />
-            เลขบัตร: ${this.escapeHtml(passenger.number_id || '-')}
-          </td>
-          <td>
-            อีเมล: ${this.escapeHtml(passenger.email || '-')}<br />
-            โทร: ${this.escapeHtml(passenger.phone || '-')}
-          </td>
-          <td>
-            เพศ: ${this.escapeHtml(this.getGenderLabel(passenger.gender))}<br />
-            วันเกิด: ${this.escapeHtml(this.formatDate(passenger.birthday))}<br />
-            อายุ: ${this.escapeHtml(this.getPassengerAge(passenger))}
-          </td>
-          <td>
-            ${this.escapeHtml(this.getPassengerHealthSummary(passenger))}
-          </td>
-          <td>${this.escapeHtml(this.getPrice(passenger.total_price))}</td>
-          <td>${this.escapeHtml(this.formatDate(passenger.booking_date))}</td>
-          <td>Confirmed</td>
-        </tr>
-      `)
+      .map((passenger: any, index: number) => {
+        const companions = Array.isArray(passenger?.passengers) ? passenger.passengers : [];
+
+        const companionRows = companions
+          .map((companion: any, companionIndex: number) => `
+            <tr class="companion-row">
+              <td>${index + 1}.${companionIndex + 1}</td>
+              <td>#${this.escapeHtml(passenger.booking_id)}</td>
+              <td>
+                <strong>${this.escapeHtml(this.getCompanionName(companion))}</strong><br />
+                ผู้ร่วมเดินทาง<br />
+                เลขบัตร/พาสปอร์ต: ${this.escapeHtml(companion.number_id || '-')}
+              </td>
+              <td>
+                โทร: ${this.escapeHtml(companion.phone || '-')}<br />
+                ที่อยู่: ${this.escapeHtml(companion.address || '-')}
+              </td>
+              <td>
+                เพศ: ${this.escapeHtml(this.getGenderLabel(companion.gender))}
+              </td>
+              <td>-</td>
+              <td>${this.escapeHtml(this.getPassengerHealthSummary(companion))}</td>
+              <td>-</td>
+              <td>-</td>
+              <td>Companion</td>
+            </tr>
+          `)
+          .join('');
+
+        const companionSummaryRow = companions.length
+          ? `
+            <tr class="companion-summary-row">
+              <td colspan="10">ผู้ร่วมเดินทางใน Booking #${this.escapeHtml(passenger.booking_id)}: ${this.escapeHtml(companions.length)} คน</td>
+            </tr>
+          `
+          : '';
+
+        return `
+          <tr>
+            <td>${index + 1}</td>
+            <td>#${this.escapeHtml(passenger.booking_id)}</td>
+            <td>
+              <strong>${this.escapeHtml(this.getPassengerName(passenger))}</strong><br />
+              Member ID: ${this.escapeHtml(passenger.member_id)}<br />
+              เลขบัตร: ${this.escapeHtml(passenger.number_id || '-')}
+            </td>
+            <td>
+              อีเมล: ${this.escapeHtml(passenger.email || '-')}<br />
+              โทร: ${this.escapeHtml(passenger.phone || '-')}
+            </td>
+            <td>
+              เพศ: ${this.escapeHtml(this.getGenderLabel(passenger.gender))}<br />
+              วันเกิด: ${this.escapeHtml(this.formatDate(passenger.birthday))}<br />
+              อายุ: ${this.escapeHtml(this.getPassengerAge(passenger))}
+            </td>
+            <td>
+              ${this.escapeHtml(this.getRoomTypeLabel(passenger.room_type_summary ?? passenger.room_type))}
+            </td>
+            <td>
+              ${this.escapeHtml(this.getPassengerHealthSummary(passenger))}
+            </td>
+            <td>${this.escapeHtml(this.getPrice(passenger.total_price))}</td>
+            <td>${this.escapeHtml(this.formatDate(passenger.booking_date))}</td>
+            <td>Confirmed</td>
+          </tr>
+          ${companionSummaryRow}
+          ${companionRows}
+        `;
+      })
       .join('');
 
     const printableHtml = `
@@ -225,6 +269,8 @@ export class MemberListComponent implements OnInit {
             table { width: 100%; border-collapse: collapse; margin-top: 12px; }
             th, td { border: 1px solid #d1d5db; padding: 10px; text-align: left; font-size: 13px; }
             th { background: #f3f4f6; }
+            .companion-summary-row td { background: #f8fafc; color: #334155; font-weight: 700; }
+            .companion-row td { background: #fcfcfd; }
             .actions { margin-top: 28px; display: flex; gap: 12px; }
             .btn { padding: 10px 16px; border-radius: 8px; color: #ffffff; background: #2563eb; text-decoration: none; border: none; cursor: pointer; font-size: 14px; }
             @media print {
@@ -246,6 +292,7 @@ export class MemberListComponent implements OnInit {
             <div class="meta-item"><span class="label">วันเดินทาง</span>${startDate} ถึง ${endDate}</div>
             <div class="meta-item"><span class="label">ราคา</span>${price}</div>
             <div class="meta-item"><span class="label">ผู้เดินทางที่ยืนยันแล้ว</span>${this.escapeHtml(this.selectedRoundPassengers.length)} คน</div>
+            <div class="meta-item"><span class="label">ผู้ร่วมเดินทางทั้งหมด</span>${this.escapeHtml(this.totalTravelers)} คน</div>
           </div>
 
           <h3>รายชื่อผู้เดินทาง</h3>
@@ -257,6 +304,7 @@ export class MemberListComponent implements OnInit {
                 <th>ข้อมูลสมาชิก</th>
                 <th>ติดต่อ</th>
                 <th>ข้อมูลส่วนตัว</th>
+                <th>ประเภทห้อง</th>
                 <th>ข้อมูลสุขภาพ</th>
                 <th>ยอดชำระ</th>
                 <th>วันที่จอง</th>
@@ -375,6 +423,42 @@ export class MemberListComponent implements OnInit {
     return parts.length ? parts.join(' | ') : '-';
   }
 
+  getRoomTypeLabel(roomTypeSummary: any): string {
+    const text = String(roomTypeSummary ?? '').trim();
+
+    if (!text) {
+      return '-';
+    }
+
+    const roomTypeLabels: Record<string, string> = {
+      single: 'ห้องเดี่ยว',
+      double: 'ห้องคู่',
+      triple: 'ห้องสาม',
+      shared_double: 'ห้องคู่แชร์',
+      shared_triple: 'ห้องสามแชร์',
+      child: 'เด็ก',
+    };
+
+    return text
+      .split(',')
+      .map((item) => {
+        const raw = item.trim();
+
+        if (!raw) {
+          return '';
+        }
+
+        const [typeToken, ...rest] = raw.split(' ');
+        const normalizedType = String(typeToken || '').trim().toLowerCase();
+        const qtyText = rest.join(' ').trim();
+        const label = roomTypeLabels[normalizedType] || normalizedType;
+
+        return `${label} (${normalizedType})${qtyText ? ` ${qtyText}` : ''}`;
+      })
+      .filter(Boolean)
+      .join(', ');
+  }
+
   formatDate(dateStr: any): string {
     if (!dateStr) return '-';
     return String(dateStr).substring(0, 10);
@@ -384,4 +468,24 @@ export class MemberListComponent implements OnInit {
     if (!val) return '0 ฿';
     return Number(val).toLocaleString() + ' ฿';
   }
+  getBookingTravelerCount(booking: any): number {
+    return Array.isArray(booking?.passengers) ? booking.passengers.length : 0;
+  }
+
+  get totalTravelers(): number {
+    return this.selectedRoundPassengers.reduce(
+      (sum, b) => sum + this.getBookingTravelerCount(b), 0
+    );
+  }
+
+  getCompanionName(companion: any): string {
+    if (!companion) return '-';
+    const firstName = companion.first_name || '';
+    const lastName = companion.last_name || '';
+    const fullName = `${firstName} ${lastName}`.trim();
+    return fullName || 'ไม่ระบุชื่อ';
+  }
+
+
+
 }
