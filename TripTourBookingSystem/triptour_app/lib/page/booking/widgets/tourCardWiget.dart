@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 class TourBookingCardWidget extends StatefulWidget {
-  final String? imageUrl;
   final String tourTitle;
   final String route;
   final String tripDates;
@@ -14,7 +13,6 @@ class TourBookingCardWidget extends StatefulWidget {
 
   const TourBookingCardWidget({
     super.key,
-    this.imageUrl,
     this.tourTitle = 'รายละเอียดการจองทัวร์',
     required this.route,
     required this.tripDates,
@@ -102,9 +100,6 @@ class _TourBookingCardWidgetState extends State<TourBookingCardWidget> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. Image Banner
-              _buildImageBanner(),
-
               // 2. Core Details
               Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -161,89 +156,6 @@ class _TourBookingCardWidgetState extends State<TourBookingCardWidget> {
   }
 
   // --- SUB WIDGETS ---
-
-  Widget _buildImageBanner() {
-    return Stack(
-      children: [
-        SizedBox(
-          height: 150,
-          width: double.infinity,
-          child: widget.imageUrl != null && widget.imageUrl!.isNotEmpty
-              ? Image.network(
-                  widget.imageUrl!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _buildImagePlaceholder(),
-                )
-              : _buildImagePlaceholder(),
-        ),
-        Positioned.fill(
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withOpacity(0.2),
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.05),
-                ],
-              ),
-            ),
-          ),
-        ),
-        if (widget.bookingStatus != null)
-          Positioned(
-            top: 12,
-            left: 12,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: widget.statusColor ?? const Color(0xFF10B981),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                widget.bookingStatus!,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-        Positioned(
-          top: 12,
-          right: 12,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.6),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.flight_takeoff_rounded,
-                  color: Colors.white,
-                  size: 13,
-                ),
-                const SizedBox(width: 5),
-                Text(
-                  widget.airline,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildExpandToggleBar() {
     return InkWell(
@@ -372,25 +284,6 @@ class _TourBookingCardWidgetState extends State<TourBookingCardWidget> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildImagePlaceholder() {
-    return Container(
-      color: const Color(0xFFF1F5F9),
-      child: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.image_outlined, size: 32, color: Color(0xFF94A3B8)),
-            SizedBox(height: 4),
-            Text(
-              'ไม่มีรูปภาพทัวร์',
-              style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

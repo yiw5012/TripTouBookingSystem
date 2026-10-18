@@ -16,7 +16,6 @@ class Step2PassengerForm extends StatefulWidget {
   final TextEditingController contactNameCtl;
   final TextEditingController contactPhoneCtl;
   final TextEditingController contactEmailCtl;
-  final String? imageUrl;
   final String? tourTitle;
 
   const Step2PassengerForm({
@@ -33,7 +32,6 @@ class Step2PassengerForm extends StatefulWidget {
     required this.contactNameCtl,
     required this.contactPhoneCtl,
     required this.contactEmailCtl,
-    this.imageUrl,
     this.tourTitle,
   });
 
@@ -141,7 +139,6 @@ class _Step2PassengerFormState extends State<Step2PassengerForm> {
     return Column(
       children: [
         TourBookingCardWidget(
-          imageUrl: widget.imageUrl,
           tourTitle: widget.tourTitle.toString(),
           route: widget.route,
           tripDates: widget.tripDates,

@@ -101,8 +101,8 @@ class _Step1TourDetailsState extends State<Step1TourDetails> {
     final tourName = widget.tourData['tour_name'] ?? 'Tour';
     final departure = widget.selectedRound['departure'] ?? 'Unknown';
     final destination = widget.selectedRound['destination'] ?? 'Unknown';
-    final startDate = widget.selectedRound['start_date'] ?? 'N/A';
-    final endDate = widget.selectedRound['end_date'] ?? 'N/A';
+    final startDate = _formatDate(widget.selectedRound['start_date']);
+    final endDate = _formatDate(widget.selectedRound['end_date']);
     final airline = widget.selectedRound['airline'] ?? 'N/A';
 
     final int capacity =
@@ -414,6 +414,23 @@ class _Step1TourDetailsState extends State<Step1TourDetails> {
         ),
       ],
     );
+  }
+
+  String _formatDate(dynamic value) {
+    if (value == null || value.toString().trim().isEmpty) {
+      return 'N/A';
+    }
+
+    try {
+      final date = DateTime.parse(value.toString());
+      final day = date.day.toString().padLeft(2, '0');
+      final month = date.month.toString().padLeft(2, '0');
+      final year = date.year;
+
+      return '$day/$month/$year';
+    } catch (_) {
+      return value.toString();
+    }
   }
 
   Widget _simpleInfoRow(String label, String value, {Color? valueColor}) {

@@ -561,7 +561,6 @@ class _BookingTourPageState extends State<BookingTourPage> {
             .join(', ');
 
         return Step2PassengerForm(
-          imageUrl: tourData['image_url'],
           tourTitle: tourData['tour_name'],
           passengerForms: passengerForms,
           genderOptions: selectedGender,
