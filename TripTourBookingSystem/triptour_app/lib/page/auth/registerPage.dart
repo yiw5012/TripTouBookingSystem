@@ -81,6 +81,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   List<Country> countries = [];
   bool isLoading = true;
+  bool _isSubmitting = false;
 
   String _countryLabel(Country country) {
     final nameTh = country.countryNameTH.trim();
@@ -387,9 +388,13 @@ class _RegisterPageState extends State<RegisterPage> {
                           backgroundColor:
                               Colors.green, // Set the background color
                         ),
-                        onPressed: _nextStep,
+                        onPressed: _isSubmitting ? null : _nextStep,
                         child: Text(
-                          _currentStep == 3 ? 'ยืนยันการสมัคร' : 'ถัดไป',
+                          _isSubmitting
+                              ? 'กำลังดำเนินการ...'
+                              : (_currentStep == 3
+                                    ? 'ยืนยันการสมัคร'
+                                    : 'ถัดไป'),
                         ),
                       ),
                     ),
@@ -561,6 +566,14 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Future<void> signUp() async {
+    if (_isSubmitting) {
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
     try {
       final cleanEmail = emailctl.text.trim().toLowerCase();
       if (google_id == null) {
@@ -630,14 +643,24 @@ class _RegisterPageState extends State<RegisterPage> {
       if (result['status'] == 'success') {
         print("process 4 - ไปหน้า Wrapper เพื่อเช็คข้อมูลผู้ใช้และเข้าสู่ระบบ");
         print(selectedCountries.toString());
-        await NotiService.subscribeToPreferredCountries(selectedCountries);
+
+        try {
+          await NotiService.subscribeToPreferredCountries(selectedCountries);
+        } catch (e) {
+          print('Subscribe preferred countries failed: $e');
+        }
+
         Get.offAll(() => const Homepage());
       } else {
         if (!mounted) return;
         print(result);
+        final backendMessage =
+            result['message']?.toString() ??
+            result['body']?['message']?.toString() ??
+            "สมัครสมาชิกไม่สำเร็จ";
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text("สมัครสมาชิกไม่สำเร็จ")));
+        ).showSnackBar(SnackBar(content: Text(backendMessage)));
       }
     } on FirebaseAuthException catch (e) {
       final message = formatRegistrationError(e);
@@ -651,6 +674,12 @@ class _RegisterPageState extends State<RegisterPage> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text("สมัครสมาชิกไม่สำเร็จ: $e")));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
       }
     }
   }

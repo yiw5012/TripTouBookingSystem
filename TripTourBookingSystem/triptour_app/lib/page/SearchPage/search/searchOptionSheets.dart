@@ -1,269 +1,341 @@
 import 'package:flutter/material.dart';
 
+// ---------- Design tokens ----------
+const _kPrimary = Color(0xFF10B981);
+const _kPrimaryDark = Color(0xFF047857);
+const _kInk = Color(0xFF111827);
+const _kMuted = Color(0xFF6B7280);
+const _kField = Color(0xFFF3F4F6);
+
 class SearchOptionSheets {
+  // ---------- shared UI helpers ----------
+  static Future<T?> _open<T>(BuildContext context, WidgetBuilder builder) {
+    return showModalBottomSheet<T>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      clipBehavior: Clip.antiAlias,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: builder,
+    );
+  }
+
+  // โครงหน้าต่าง: handle + หัวข้อ + ปุ่มปิด + เนื้อหา
+  static Widget _sheet({
+    required BuildContext context,
+    required String title,
+    required List<Widget> children,
+    bool fixedHeight = true,
+  }) {
+    final content = Padding(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
+      child: Column(
+        mainAxisSize: fixedHeight ? MainAxisSize.max : MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFD1D5DB),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: _kInk,
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                tooltip: 'ปิด',
+                icon: const Icon(Icons.close_rounded, color: _kInk),
+                style: IconButton.styleFrom(backgroundColor: _kField),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...children,
+        ],
+      ),
+    );
+
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: fixedHeight
+            ? SizedBox(
+                height: MediaQuery.of(context).size.height * 0.75,
+                child: content,
+              )
+            : content,
+      ),
+    );
+  }
+
+  static Widget _searchField({
+    required String hint,
+    required ValueChanged<String> onChanged,
+  }) {
+    return TextField(
+      onChanged: onChanged,
+      style: const TextStyle(fontSize: 15, color: _kInk),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(fontSize: 14, color: _kMuted),
+        prefixIcon: const Icon(Icons.search_rounded, color: _kMuted),
+        filled: true,
+        fillColor: _kField,
+        contentPadding: const EdgeInsets.symmetric(vertical: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: _kPrimary, width: 1.5),
+        ),
+      ),
+    );
+  }
+
+  static Widget _optionTile({
+    required String title,
+    String? subtitle,
+    required bool selected,
+    required VoidCallback onTap,
+    bool multi = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Material(
+        color: selected
+            ? _kPrimary.withValues(alpha: 0.12)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: _kInk,
+                          fontWeight: selected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                        ),
+                      ),
+                      if (subtitle != null && subtitle.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            subtitle,
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              color: _kMuted,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                if (multi)
+                  Icon(
+                    selected
+                        ? Icons.check_box_rounded
+                        : Icons.check_box_outline_blank_rounded,
+                    color: selected ? _kPrimaryDark : _kMuted,
+                  )
+                else if (selected)
+                  const Icon(Icons.check_circle_rounded, color: _kPrimaryDark),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  static Widget _loading() =>
+      const Center(child: CircularProgressIndicator(color: _kPrimary));
+
+  static Widget _empty(String text) => Padding(
+    padding: const EdgeInsets.all(24),
+    child: Center(
+      child: Text(text, style: const TextStyle(color: _kMuted)),
+    ),
+  );
+
+  // =====================================================
+  // CONTINENT
+  // =====================================================
   static Future<String?> showContinentPicker({
     required BuildContext context,
     required List<dynamic> continents,
     required bool isLoadingContinents,
     required String? selectedContinent,
   }) async {
-    return showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      builder: (context) {
-        String searchText = '';
+    return _open<String>(context, (context) {
+      String searchText = '';
 
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            final filteredContinents = continents.where((item) {
-              final name = item is Map
-                  ? (item['continent'] ?? '').toString()
-                  : item.toString();
+      return StatefulBuilder(
+        builder: (context, setModalState) {
+          final filteredContinents = continents.where((item) {
+            final name = item is Map
+                ? (item['continent'] ?? '').toString()
+                : item.toString();
 
-              return name.toLowerCase().contains(
-                searchText.trim().toLowerCase(),
-              );
-            }).toList();
+            return name.toLowerCase().contains(searchText.trim().toLowerCase());
+          }).toList();
 
-            final isAllSelected =
-                selectedContinent == null || selectedContinent.isEmpty;
+          final isAllSelected =
+              selectedContinent == null || selectedContinent.isEmpty;
 
-            return SafeArea(
-              child: SizedBox(
-                height: MediaQuery.of(context).size.height * 0.75,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      Row(
+          return _sheet(
+            context: context,
+            title: 'เลือกทวีป',
+            children: [
+              _searchField(
+                hint: 'ค้นหาทวีป',
+                onChanged: (value) => setModalState(() => searchText = value),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: isLoadingContinents
+                    ? _loading()
+                    : ListView(
                         children: [
-                          const Expanded(
-                            child: Text(
-                              'เลือกทวีป',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                          // ไม่จำกัดทวีป
+                          _optionTile(
+                            title: 'ทุกทวีป',
+                            selected: isAllSelected,
+                            onTap: () => Navigator.pop(context, ''),
                           ),
-                          IconButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            icon: const Icon(Icons.close),
-                          ),
+                          if (filteredContinents.isEmpty)
+                            _empty('ไม่พบข้อมูลทวีป'),
+                          ...filteredContinents.map((item) {
+                            final continentName = item is Map
+                                ? (item['continent'] ?? '').toString()
+                                : item.toString();
+
+                            return _optionTile(
+                              title: continentName,
+                              selected: selectedContinent == continentName,
+                              onTap: () =>
+                                  Navigator.pop(context, continentName),
+                            );
+                          }),
                         ],
                       ),
-
-                      const SizedBox(height: 10),
-
-                      TextField(
-                        decoration: InputDecoration(
-                          hintText: 'ค้นหาทวีป',
-                          prefixIcon: const Icon(Icons.search),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onChanged: (value) {
-                          setModalState(() {
-                            searchText = value;
-                          });
-                        },
-                      ),
-
-                      const SizedBox(height: 15),
-
-                      Expanded(
-                        child: isLoadingContinents
-                            ? const Center(child: CircularProgressIndicator())
-                            : ListView(
-                                children: [
-                                  // ไม่จำกัดทวีป
-                                  ListTile(
-                                    title: const Text('ทุกทวีป'),
-                                    trailing: isAllSelected
-                                        ? const Icon(
-                                            Icons.check,
-                                            color: Colors.green,
-                                          )
-                                        : null,
-                                    onTap: () {
-                                      Navigator.pop(context, '');
-                                    },
-                                  ),
-
-                                  if (filteredContinents.isEmpty)
-                                    const Padding(
-                                      padding: EdgeInsets.all(20),
-                                      child: Center(
-                                        child: Text('ไม่พบข้อมูลทวีป'),
-                                      ),
-                                    ),
-
-                                  ...filteredContinents.map((item) {
-                                    final continentName = item is Map
-                                        ? (item['continent'] ?? '').toString()
-                                        : item.toString();
-
-                                    final isSelected =
-                                        selectedContinent == continentName;
-
-                                    return ListTile(
-                                      title: Text(continentName),
-                                      trailing: isSelected
-                                          ? const Icon(
-                                              Icons.check,
-                                              color: Colors.green,
-                                            )
-                                          : null,
-                                      onTap: () {
-                                        Navigator.pop(context, continentName);
-                                      },
-                                    );
-                                  }),
-                                ],
-                              ),
-                      ),
-                    ],
-                  ),
-                ),
               ),
-            );
-          },
-        );
-      },
-    );
+            ],
+          );
+        },
+      );
+    });
   }
 
+  // =====================================================
+  // COUNTRY
+  // =====================================================
   static Future<Map<String, dynamic>?> showCountryPicker({
     required BuildContext context,
     required List<dynamic> countries,
     required bool isLoadingCountries,
     required String? selectedCountry,
   }) async {
-    return showModalBottomSheet<Map<String, dynamic>>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      builder: (context) {
-        String searchText = '';
-        List<dynamic> filteredCountries = List.from(countries);
+    return _open<Map<String, dynamic>>(context, (context) {
+      String searchText = '';
+      List<dynamic> filteredCountries = List.from(countries);
 
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            filteredCountries = countries.where((country) {
-              final nameTh = (country['country_name_th'] ?? '')
-                  .toString()
-                  .toLowerCase();
+      return StatefulBuilder(
+        builder: (context, setModalState) {
+          filteredCountries = countries.where((country) {
+            final nameTh = (country['country_name_th'] ?? '')
+                .toString()
+                .toLowerCase();
 
-              final nameEn = (country['country_name_en'] ?? '')
-                  .toString()
-                  .toLowerCase();
+            final nameEn = (country['country_name_en'] ?? '')
+                .toString()
+                .toLowerCase();
 
-              final keyword = searchText.toLowerCase();
+            final keyword = searchText.toLowerCase();
 
-              return nameTh.contains(keyword) || nameEn.contains(keyword);
-            }).toList();
+            return nameTh.contains(keyword) || nameEn.contains(keyword);
+          }).toList();
 
-            return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        const Expanded(
-                          child: Text(
-                            'เลือกประเทศ',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                          icon: const Icon(Icons.close),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    TextField(
-                      decoration: InputDecoration(
-                        hintText: 'ค้นหาประเทศ',
-                        prefixIcon: const Icon(Icons.search),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onChanged: (value) {
-                        setModalState(() {
-                          searchText = value;
-                        });
-                      },
-                    ),
-
-                    const SizedBox(height: 15),
-
-                    Expanded(
-                      child: isLoadingCountries
-                          ? const Center(child: CircularProgressIndicator())
-                          : filteredCountries.isEmpty
-                          ? const Center(child: Text('ไม่พบประเทศที่มีทัวร์'))
-                          : ListView.builder(
-                              itemCount: filteredCountries.length,
-                              itemBuilder: (context, index) {
-                                final country = filteredCountries[index];
-
-                                final countryName =
-                                    country['country_name_th'] ??
-                                    country['country_name_en'] ??
-                                    '';
-
-                                final bool isSelected =
-                                    selectedCountry == countryName;
-
-                                return ListTile(
-                                  title: Text(countryName.toString()),
-                                  subtitle: Text(
-                                    country['country_name_en']?.toString() ??
-                                        '',
-                                  ),
-                                  trailing: isSelected
-                                      ? const Icon(
-                                          Icons.check,
-                                          color: Colors.green,
-                                        )
-                                      : null,
-                                  onTap: () {
-                                    Navigator.pop(context, {
-                                      'country_id': country['country_id'],
-                                      'country_name_th':
-                                          country['country_name_th'],
-                                      'country_name_en':
-                                          country['country_name_en'],
-                                    });
-                                  },
-                                );
-                              },
-                            ),
-                    ),
-                  ],
-                ),
+          return _sheet(
+            context: context,
+            title: 'เลือกประเทศ',
+            children: [
+              _searchField(
+                hint: 'ค้นหาประเทศ',
+                onChanged: (value) => setModalState(() => searchText = value),
               ),
-            );
-          },
-        );
-      },
-    );
+              const SizedBox(height: 12),
+              Expanded(
+                child: isLoadingCountries
+                    ? _loading()
+                    : filteredCountries.isEmpty
+                    ? _empty('ไม่พบประเทศที่มีทัวร์')
+                    : ListView.builder(
+                        itemCount: filteredCountries.length,
+                        itemBuilder: (context, index) {
+                          final country = filteredCountries[index];
+
+                          final countryName =
+                              country['country_name_th'] ??
+                              country['country_name_en'] ??
+                              '';
+
+                          return _optionTile(
+                            title: countryName.toString(),
+                            subtitle: country['country_name_en']?.toString(),
+                            selected: selectedCountry == countryName,
+                            onTap: () {
+                              Navigator.pop(context, {
+                                'country_id': country['country_id'],
+                                'country_name_th': country['country_name_th'],
+                                'country_name_en': country['country_name_en'],
+                              });
+                            },
+                          );
+                        },
+                      ),
+              ),
+            ],
+          );
+        },
+      );
+    });
   }
 
+  // =====================================================
+  // AIRLINE (เลือกได้หลายรายการ)
+  // =====================================================
   static Future<List<String>?> showAirlinePicker({
     required BuildContext context,
     required List<dynamic> airlines,
@@ -272,107 +344,90 @@ class SearchOptionSheets {
   }) async {
     final List<String> tempSelected = List<String>.from(selectedAirlines);
 
-    return showModalBottomSheet<List<String>>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      children: [
-                        const Expanded(
-                          child: Text(
-                            'เลือกสายการบิน',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                          icon: const Icon(Icons.close),
-                        ),
-                      ],
-                    ),
+    return _open<List<String>>(context, (context) {
+      return StatefulBuilder(
+        builder: (context, setModalState) {
+          return _sheet(
+            context: context,
+            title: 'เลือกสายการบิน',
+            fixedHeight: false,
+            children: [
+              if (isLoadingAirlines)
+                const Padding(
+                  padding: EdgeInsets.all(30),
+                  child: Center(
+                    child: CircularProgressIndicator(color: _kPrimary),
+                  ),
+                )
+              else if (airlines.isEmpty)
+                _empty('ยังไม่มีข้อมูลสายการบิน')
+              else
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: airlines.length,
+                    itemBuilder: (context, index) {
+                      final String airline =
+                          airlines[index]['airline']?.toString() ?? '';
 
-                    const SizedBox(height: 10),
+                      final bool isSelected = tempSelected.contains(airline);
 
-                    if (isLoadingAirlines)
-                      const Padding(
-                        padding: EdgeInsets.all(30),
-                        child: CircularProgressIndicator(),
-                      )
-                    else if (airlines.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.all(30),
-                        child: Text('ยังไม่มีข้อมูลสายการบิน'),
-                      )
-                    else
-                      Flexible(
-                        child: ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: airlines.length,
-                          itemBuilder: (context, index) {
-                            final String airline =
-                                airlines[index]['airline']?.toString() ?? '';
-
-                            final bool isSelected = tempSelected.contains(
-                              airline,
-                            );
-
-                            return CheckboxListTile(
-                              value: isSelected,
-                              title: Text(airline),
-                              onChanged: (value) {
-                                setModalState(() {
-                                  if (value == true) {
-                                    if (!tempSelected.contains(airline)) {
-                                      tempSelected.add(airline);
-                                    }
-                                  } else {
-                                    tempSelected.remove(airline);
-                                  }
-                                });
-                              },
-                            );
-                          },
-                        ),
-                      ),
-
-                    const SizedBox(height: 10),
-
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(
-                            context,
-                            List<String>.from(tempSelected),
-                          );
+                      return _optionTile(
+                        title: airline,
+                        selected: isSelected,
+                        multi: true,
+                        onTap: () {
+                          setModalState(() {
+                            if (isSelected) {
+                              tempSelected.remove(airline);
+                            } else if (!tempSelected.contains(airline)) {
+                              tempSelected.add(airline);
+                            }
+                          });
                         },
-                        child: const Text('ยืนยัน'),
-                      ),
+                      );
+                    },
+                  ),
+                ),
+
+              const SizedBox(height: 12),
+
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context, List<String>.from(tempSelected));
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _kPrimary,
+                    foregroundColor: _kInk,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                  ],
+                  ),
+                  child: Text(
+                    tempSelected.isEmpty
+                        ? 'ยืนยัน'
+                        : 'ยืนยัน (${tempSelected.length})',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
               ),
-            );
-          },
-        );
-      },
-    );
+            ],
+          );
+        },
+      );
+    });
   }
 
+  // =====================================================
+  // LOCATION (ต้นทาง / ปลายทาง)
+  // =====================================================
   static Future<String?> showLocationPicker({
     required BuildContext context,
     required String title,
@@ -380,126 +435,68 @@ class SearchOptionSheets {
     required bool isLoading,
     required String? selectedValue,
   }) async {
-    return showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      builder: (context) {
-        String searchText = '';
+    return _open<String>(context, (context) {
+      String searchText = '';
 
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            final allLocations =
-                locations
-                    .map<String>((item) {
-                      if (item is Map) {
-                        return (item['departure'] ?? item['destination'] ?? '')
-                            .toString();
-                      }
-                      return item.toString();
-                    })
-                    .where((value) => value.trim().isNotEmpty)
-                    .toSet()
-                    .toList()
-                  ..sort();
+      return StatefulBuilder(
+        builder: (context, setModalState) {
+          final allLocations =
+              locations
+                  .map<String>((item) {
+                    if (item is Map) {
+                      return (item['departure'] ?? item['destination'] ?? '')
+                          .toString();
+                    }
+                    return item.toString();
+                  })
+                  .where((value) => value.trim().isNotEmpty)
+                  .toSet()
+                  .toList()
+                ..sort();
 
-            final filteredLocations = allLocations
-                .where(
-                  (value) => value.toLowerCase().contains(
-                    searchText.trim().toLowerCase(),
-                  ),
-                )
-                .toList();
+          final filteredLocations = allLocations
+              .where(
+                (value) => value.toLowerCase().contains(
+                  searchText.trim().toLowerCase(),
+                ),
+              )
+              .toList();
 
-            return SafeArea(
-              child: SizedBox(
-                height: MediaQuery.of(context).size.height * 0.75,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      Row(
+          return _sheet(
+            context: context,
+            title: title,
+            children: [
+              _searchField(
+                hint: 'ค้นหา$title',
+                onChanged: (value) => setModalState(() => searchText = value),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: isLoading
+                    ? _loading()
+                    : ListView(
                         children: [
-                          Expanded(
-                            child: Text(
-                              title,
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                          _optionTile(
+                            title: 'ทั้งหมด',
+                            selected:
+                                selectedValue == null || selectedValue.isEmpty,
+                            onTap: () => Navigator.pop(context, ''),
                           ),
-                          IconButton(
-                            onPressed: () => Navigator.pop(context),
-                            icon: const Icon(Icons.close),
-                          ),
+                          if (filteredLocations.isEmpty) _empty('ไม่พบข้อมูล'),
+                          ...filteredLocations.map((location) {
+                            return _optionTile(
+                              title: location,
+                              selected: selectedValue == location,
+                              onTap: () => Navigator.pop(context, location),
+                            );
+                          }),
                         ],
                       ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        decoration: InputDecoration(
-                          hintText: 'ค้นหา$title',
-                          prefixIcon: const Icon(Icons.search),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onChanged: (value) {
-                          setModalState(() {
-                            searchText = value;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      Expanded(
-                        child: isLoading
-                            ? const Center(child: CircularProgressIndicator())
-                            : ListView(
-                                children: [
-                                  ListTile(
-                                    title: const Text('ทั้งหมด'),
-                                    trailing:
-                                        selectedValue == null ||
-                                            selectedValue.isEmpty
-                                        ? const Icon(
-                                            Icons.check,
-                                            color: Colors.green,
-                                          )
-                                        : null,
-                                    onTap: () {
-                                      Navigator.pop(context, '');
-                                    },
-                                  ),
-                                  if (filteredLocations.isEmpty)
-                                    const Padding(
-                                      padding: EdgeInsets.all(20),
-                                      child: Center(child: Text('ไม่พบข้อมูล')),
-                                    ),
-                                  ...filteredLocations.map((location) {
-                                    return ListTile(
-                                      title: Text(location),
-                                      trailing: selectedValue == location
-                                          ? const Icon(
-                                              Icons.check,
-                                              color: Colors.green,
-                                            )
-                                          : null,
-                                      onTap: () {
-                                        Navigator.pop(context, location);
-                                      },
-                                    );
-                                  }),
-                                ],
-                              ),
-                      ),
-                    ],
-                  ),
-                ),
               ),
-            );
-          },
-        );
-      },
-    );
+            ],
+          );
+        },
+      );
+    });
   }
 }

@@ -33,16 +33,6 @@ class BookingDetailPage extends StatelessWidget {
     return text.isEmpty ? fallback : text;
   }
 
-  dynamic _firstNonEmpty(List<dynamic> values) {
-    for (final value in values) {
-      if (value == null) continue;
-      if (value is Map && value.isEmpty) continue;
-      if (value is String && value.trim().isEmpty) continue;
-      return value;
-    }
-    return null;
-  }
-
   // แปลงสีตามสถานะ
   Color _getStatusColor(String bStatus, String pStatus) {
     if (bStatus == 'completed') return Colors.blue;
@@ -63,277 +53,77 @@ class BookingDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Map<String, dynamic> raw = bookingData;
-    final Map<String, dynamic> tourMap = (bookingData['tour'] is Map)
-        ? Map<String, dynamic>.from(bookingData['tour'])
-        : {};
-    final Map<String, dynamic> roundMap = (bookingData['round'] is Map)
-        ? Map<String, dynamic>.from(bookingData['round'])
-        : {};
-
-    final dynamic firstBookingStatus = _firstNonEmpty([
-      bookingData['booking_status'],
-      bookingData['status'],
-      bookingData['bookingStatus'],
-      raw['status'],
-    ]);
-
     final int bookingId =
         int.tryParse(_textValue(bookingData['booking_id'], '0')) ?? 0;
     final int memberId =
         int.tryParse(_textValue(bookingData['member_id'], '0')) ?? 0;
-    final int roundId =
-        int.tryParse(_textValue(bookingData['round_id'], '0')) ?? 0;
-    final String pStatus = (_textValue(
-      _firstNonEmpty([
-        bookingData['payment_status'],
-        bookingData['paymentStatus'],
-      ]),
+    final String roundCode = _textValue(bookingData['round_code'], '-');
+    final String pStatus = _textValue(
+      bookingData['payment_status'],
       '',
-    )).toLowerCase();
+    ).toLowerCase();
 
-    final String bStatus = (_textValue(firstBookingStatus, '')).toLowerCase();
+    final String bStatus = _textValue(
+      bookingData['booking_status'],
+      '',
+    ).toLowerCase();
 
+    final String bookingDateRaw = _textValue(bookingData['booking_date'], '');
     final String bookingDate = _formatDateTime(
-      _textValue(
-                _firstNonEmpty([
-                  bookingData['booking_date'],
-                  bookingData['created_at'],
-                ]),
-                '',
-              ) ==
-              '-'
-          ? null
-          : _textValue(
-              _firstNonEmpty([
-                bookingData['booking_date'],
-                bookingData['created_at'],
-              ]),
-              '',
-            ),
+      bookingDateRaw.isEmpty ? null : bookingDateRaw,
     );
-    final dynamic paymentDate = _firstNonEmpty([
-      bookingData['payment_date'],
-      bookingData['paid_at'],
-    ]);
-    final String? formattedPaymentDate = paymentDate == null
+
+    final String paymentDateRaw = _textValue(bookingData['payment_date'], '');
+    final String? formattedPaymentDate = paymentDateRaw.isEmpty
         ? null
-        : _formatDateTime(paymentDate.toString());
-    final String? slipImage =
-        _textValue(
-              _firstNonEmpty([
-                bookingData['slip_image'],
-                bookingData['slipImage'],
-              ]),
-              '',
-            ) ==
-            ''
-        ? null
-        : _textValue(
-            _firstNonEmpty([
-              bookingData['slip_image'],
-              bookingData['slipImage'],
-            ]),
-            '',
-          );
+        : _formatDateTime(paymentDateRaw);
+
+    final String slipImageRaw = _textValue(bookingData['slip_image'], '');
+    final String? slipImage = slipImageRaw.isEmpty ? null : slipImageRaw;
 
     // --- 2. ข้อมูลแพ็กเกจทัวร์ & การเดินทาง ---
     final String tourName = _textValue(
-      _firstNonEmpty([
-        bookingData['tour_name'],
-        bookingData['tourName'],
-        tourMap['tour_name'],
-        tourMap['tourName'],
-      ]),
+      bookingData['tour_name'],
       'แพ็กเกจทัวร์',
     );
-    final int tourId =
-        int.tryParse(
-          _textValue(
-            _firstNonEmpty([
-              bookingData['tour_id'],
-              bookingData['tourId'],
-              tourMap['tour_id'],
-              tourMap['tourId'],
-            ]),
-            '0',
-          ),
-        ) ??
-        0;
-    final String tourType = _textValue(
-      _firstNonEmpty([
-        bookingData['type'],
-        bookingData['tour_type'],
-        tourMap['type'],
-        tourMap['tour_type'],
-      ]),
-      '-',
-    );
+    final String tourCode = _textValue(bookingData['tour_code'], '-');
+    final String tourType = _textValue(bookingData['type'], '-');
     final int durationDay =
-        int.tryParse(
-          _textValue(
-            _firstNonEmpty([
-              bookingData['duration_day'],
-              tourMap['duration_day'],
-              roundMap['duration_day'],
-            ]),
-            '0',
-          ),
-        ) ??
-        0;
-    final String departure = _textValue(
-      _firstNonEmpty([
-        bookingData['departure'],
-        roundMap['departure'],
-        bookingData['from'],
-      ]),
-      '-',
-    );
-    final String destination = _textValue(
-      _firstNonEmpty([
-        bookingData['destination'],
-        roundMap['destination'],
-        bookingData['to'],
-      ]),
-      '-',
-    );
+        int.tryParse(_textValue(bookingData['duration_day'], '0')) ?? 0;
+    final String departure = _textValue(bookingData['departure'], '-');
+    final String destination = _textValue(bookingData['destination'], '-');
     final String startDate = _formatOnlyDate(
-      _textValue(
-                _firstNonEmpty([
-                  bookingData['start_date'],
-                  roundMap['start_date'],
-                  bookingData['startDate'],
-                ]),
-                '',
-              ) ==
-              '-'
+      _textValue(bookingData['start_date'], '') == '-'
           ? null
-          : _textValue(
-              _firstNonEmpty([
-                bookingData['start_date'],
-                roundMap['start_date'],
-                bookingData['startDate'],
-              ]),
-              '',
-            ),
+          : _textValue(bookingData['start_date'], ''),
     );
     final String endDate = _formatOnlyDate(
-      _textValue(
-                _firstNonEmpty([
-                  bookingData['end_date'],
-                  roundMap['end_date'],
-                  bookingData['endDate'],
-                ]),
-                '',
-              ) ==
-              '-'
+      _textValue(bookingData['end_date'], '') == '-'
           ? null
-          : _textValue(
-              _firstNonEmpty([
-                bookingData['end_date'],
-                roundMap['end_date'],
-                bookingData['endDate'],
-              ]),
-              '',
-            ),
+          : _textValue(bookingData['end_date'], ''),
     );
-    final String airline = _textValue(
-      _firstNonEmpty([bookingData['airline'], roundMap['airline']]),
-      '-',
-    );
-    final String flight = _textValue(
-      _firstNonEmpty([bookingData['flight'], roundMap['flight']]),
-      '-',
-    );
-    final String flightTime = _textValue(
-      _firstNonEmpty([bookingData['flight_time'], roundMap['flight_time']]),
-      '-',
-    );
-    final String includeFlight = _textValue(
-      _firstNonEmpty([
-        bookingData['include_flight'],
-        tourMap['include_flight'],
-      ]),
-      '-',
-    );
-    final String? guideId =
-        _textValue(
-              _firstNonEmpty([bookingData['guide_id'], roundMap['guide_id']]),
-              '',
-            ) ==
-            ''
+    final String airline = _textValue(bookingData['airline'], '-');
+    final String flight = _textValue(bookingData['flight'], '-');
+    final String flightTime = _textValue(bookingData['flight_time'], '-');
+    final String includeFlight = _textValue(bookingData['include_flight'], '-');
+    final String? guideId = _textValue(bookingData['guide_id'], '') == ''
         ? null
-        : _textValue(
-            _firstNonEmpty([bookingData['guide_id'], roundMap['guide_id']]),
-            '',
-          );
+        : _textValue(bookingData['guide_id'], '');
 
     // --- 3. รายละเอียดราคา & จำนวน ---
-    final int count =
-        int.tryParse(
-          _textValue(
-            _firstNonEmpty([
-              bookingData['count'],
-              bookingData['quantity'],
-              roundMap['count'],
-            ]),
-            '1',
-          ),
-        ) ??
-        1;
-    final String totalPrice = _textValue(
-      _firstNonEmpty([bookingData['total_price'], bookingData['totalPrice']]),
-      '0.00',
-    );
-    final String basePrice = _textValue(
-      _firstNonEmpty([
-        bookingData['price'],
-        bookingData['tour_price'],
-        tourMap['price'],
-        tourMap['tour_price'],
-      ]),
-      '0.00',
-    );
-    final String priceSingle = _textValue(
-      _firstNonEmpty([bookingData['price_single'], roundMap['price_single']]),
-      '-',
-    );
-    final String priceDouble = _textValue(
-      _firstNonEmpty([bookingData['price_double'], roundMap['price_double']]),
-      '-',
-    );
-    final String priceTriple = _textValue(
-      _firstNonEmpty([bookingData['price_triple'], roundMap['price_triple']]),
-      '-',
-    );
-    final String? promotion =
-        _textValue(
-              _firstNonEmpty([bookingData['promotion'], tourMap['promotion']]),
-              '',
-            ) ==
-            ''
+    final int count = int.tryParse(_textValue(bookingData['count'], '1')) ?? 1;
+    final String totalPrice = _textValue(bookingData['total_price'], '0.00');
+    final String basePrice = _textValue(bookingData['price'], '0.00');
+    final String priceSingle = _textValue(bookingData['price_single'], '-');
+    final String priceDouble = _textValue(bookingData['price_double'], '-');
+    final String priceTriple = _textValue(bookingData['price_triple'], '-');
+    final String? promotion = _textValue(bookingData['promotion'], '') == ''
         ? null
-        : _textValue(
-            _firstNonEmpty([bookingData['promotion'], tourMap['promotion']]),
-            '',
-          );
+        : _textValue(bookingData['promotion'], '');
     final String? conditionDetail =
-        _textValue(
-              _firstNonEmpty([
-                bookingData['condition_detail'],
-                tourMap['condition_detail'],
-              ]),
-              '',
-            ) ==
-            ''
+        _textValue(bookingData['condition_detail'], '') == ''
         ? null
-        : _textValue(
-            _firstNonEmpty([
-              bookingData['condition_detail'],
-              tourMap['condition_detail'],
-            ]),
-            '',
-          );
+        : _textValue(bookingData['condition_detail'], '');
     final Color statusColor = _getStatusColor(bStatus, pStatus);
 
     return Scaffold(
@@ -418,7 +208,7 @@ class BookingDetailPage extends StatelessWidget {
               children: [
                 _buildDetailRow('หมายเลขการจอง', '#$bookingId'),
                 _buildDetailRow('รหัสสมาชิก (Member ID)', '#$memberId'),
-                _buildDetailRow('รอบการเดินทาง (Round ID)', '#$roundId'),
+                _buildDetailRow('รหัสรอบทัวร์', roundCode),
                 _buildDetailRow('วันที่ทำรายการจอง', bookingDate),
                 if (formattedPaymentDate != null)
                   _buildDetailRow('วันที่ชำระเงิน', formattedPaymentDate),
@@ -453,7 +243,7 @@ class BookingDetailPage extends StatelessWidget {
             _buildSectionCard(
               title: 'ข้อมูลโปรแกรมทัวร์',
               children: [
-                _buildDetailRow('รหัสทัวร์ (Tour ID)', '#$tourId'),
+                _buildDetailRow('รหัสทัวร์', tourCode),
                 _buildDetailRow('ประเภททัวร์', tourType),
                 _buildDetailRow('เส้นทาง', '$departure ➔ $destination'),
                 _buildDetailRow('ช่วงเวลาเดินทาง', '$startDate ถึง $endDate'),

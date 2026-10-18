@@ -24,14 +24,14 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 void _navigateToTourDetail(String tourId) {
-  final detailTourId = tourId.hashCode;
-  if (tourId.isNotEmpty) {
-    navigatorKey.currentState?.push(
-      MaterialPageRoute(
-        builder: (context) => DetailTour(tourId: detailTourId),
-      ),
-    );
+  final parsedTourId = int.tryParse(tourId.trim());
+  if (parsedTourId == null) {
+    return;
   }
+
+  navigatorKey.currentState?.push(
+    MaterialPageRoute(builder: (context) => DetailTour(tourId: parsedTourId)),
+  );
 }
 
 // ตั้งค่าระบบ Notification ทั้งหมด
@@ -130,7 +130,22 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1E8E5A)),
+        scaffoldBackgroundColor: Colors.white,
+
+        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+          backgroundColor: Colors.white,
+          selectedItemColor: Color(0xFF1E8E5A),
+          unselectedItemColor: Color(0xFF8A94A6),
+          selectedLabelStyle: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+          unselectedLabelStyle: TextStyle(fontSize: 10),
+          type: BottomNavigationBarType.fixed,
+          elevation: 8,
+        ),
       ),
       home: const Wrapper(),
     );

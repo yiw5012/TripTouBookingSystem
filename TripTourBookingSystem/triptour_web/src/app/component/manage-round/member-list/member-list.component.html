@@ -60,12 +60,12 @@
 
           <div class="info-grid">
             <div class="info-item">
-              <span class="info-label">รหัสรอบทัวร์ (Round ID)</span>
-              <span class="info-value">#{{ selectedRound.round_id }}</span>
+              <span class="info-label">รหัสรอบทัวร์</span>
+              <span class="info-value">{{ selectedRound.round_code || ('#' + selectedRound.round_id) }}</span>
             </div>
             <div class="info-item">
-              <span class="info-label">รหัสทัวร์ (Tour ID)</span>
-              <span class="info-value">#{{ selectedRound.tour_id || '-' }}</span>
+              <span class="info-label">รหัสทัวร์</span>
+              <span class="info-value">{{ selectedRound.tour_code || ('#' + (selectedRound.tour_id || '-')) }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">ช่วงวันเดินทาง</span>

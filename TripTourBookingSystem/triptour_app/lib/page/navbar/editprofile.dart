@@ -570,8 +570,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final String email = displayValue(widget.memberData['email']);
-
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8F5),
       appBar: AppBar(
@@ -631,35 +629,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     ),
                   ],
                 ),
-              ),
-            ),
-
-            const SizedBox(height: 18),
-
-            _buildSectionCard(
-              title: 'ข้อมูลบัญชี',
-              icon: Icons.account_circle_outlined,
-              child: Column(
-                children: [
-                  TextField(
-                    controller: TextEditingController(text: email),
-                    readOnly: true,
-                    decoration: InputDecoration(
-                      labelText: 'อีเมล',
-                      labelStyle: const TextStyle(color: Color(0xFF4B5563)),
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 14,
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(color: Color(0xFFD1FAE5)),
-                      ),
-                    ),
-                  ),
-                ],
               ),
             ),
 

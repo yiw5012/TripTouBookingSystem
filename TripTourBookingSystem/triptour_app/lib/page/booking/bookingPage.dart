@@ -349,7 +349,11 @@ class _BookingTourPageState extends State<BookingTourPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('จองทริป'),
+        toolbarHeight: 50,
+        title: const Text(
+          'จองทริป',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
         centerTitle: true,
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF111827),
