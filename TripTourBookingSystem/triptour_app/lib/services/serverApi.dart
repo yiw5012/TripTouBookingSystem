@@ -3,7 +3,8 @@ import 'dart:io';
 import 'dart:async';
 import 'package:http/http.dart' as http;
 
-const String _defaultBaseUrl = 'http://192.168.1.146:4000';
+const String _defaultBaseUrl =
+    'https://triptoubookingsystem-production.up.railway.app/';
 
 String normalizeBaseUrl(String? value) {
   final raw = (value ?? '').trim();
@@ -55,7 +56,8 @@ class Serverapi {
       return {
         'statusCode': 503,
         'body': {
-          'message': 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ ($_baseUrl) กรุณาตรวจสอบการเชื่อมต่อเครือข่าย',
+          'message':
+              'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ ($_baseUrl) กรุณาตรวจสอบการเชื่อมต่อเครือข่าย',
         },
       };
     } catch (e) {
