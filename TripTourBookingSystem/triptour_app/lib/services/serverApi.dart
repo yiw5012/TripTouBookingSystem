@@ -4,7 +4,7 @@ import 'dart:async';
 import 'package:http/http.dart' as http;
 
 const String _defaultBaseUrl =
-    'https://triptoubookingsystem-production.up.railway.app/';
+    'https://triptoubookingsystem-production.up.railway.app';
 
 String normalizeBaseUrl(String? value) {
   final raw = (value ?? '').trim();

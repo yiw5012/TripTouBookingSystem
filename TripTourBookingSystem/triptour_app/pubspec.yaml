@@ -52,7 +52,8 @@ dependencies:
   url_launcher: ^6.3.2
   flutter_local_notifications: ^20.1.0
   google_fonts: ^6.2.1
-
+  flutter_launcher_icons: ^0.14.4
+ 
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -106,3 +107,11 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+  # วางไว้บรรทัดล่างสุดของไฟล์ ห้ามมีช่องว่าง (Indent) ด้านหน้าคำว่า flutter_launcher_icons
+flutter_launcher_icons:
+  android: true
+  image_path: "assets/logo_app.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/logo_app.png"
+  min_sdk_version: 21
+

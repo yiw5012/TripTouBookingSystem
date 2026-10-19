@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 class ServiceBookingApi {
-  static const String _baseUrl = 'http://192.168.1.146:4000';
+  static const String _baseUrl =
+      'https://triptoubookingsystem-production.up.railway.app';
 
   static Future<Map<String, dynamic>?> getTourById(String tourId) async {
     try {
