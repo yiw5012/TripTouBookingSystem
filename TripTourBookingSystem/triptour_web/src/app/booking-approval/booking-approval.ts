@@ -33,7 +33,7 @@ interface BookingItem {
 })
 export class BookingApproval {
   // API
-  private readonly baseUrl = 'http://localhost:4000';
+  private readonly baseUrl = 'https://triptoubookingsystem-production.up.railway.app';
 
   // DATA
   allBookings: BookingItem[] = [];

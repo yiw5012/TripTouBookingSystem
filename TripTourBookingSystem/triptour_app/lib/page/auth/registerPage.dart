@@ -644,13 +644,14 @@ class _RegisterPageState extends State<RegisterPage> {
         print("process 4 - ไปหน้า Wrapper เพื่อเช็คข้อมูลผู้ใช้และเข้าสู่ระบบ");
         print(selectedCountries.toString());
 
-        try {
-          await NotiService.subscribeToPreferredCountries(selectedCountries);
-        } catch (e) {
-          print('Subscribe preferred countries failed: $e');
-        }
-
         Get.offAll(() => const Homepage());
+
+        //ให้ Notification Subscribe ทำงานเบื้องหลังแบบ asynchronous (Non-blocking)
+        NotiService.subscribeToPreferredCountries(selectedCountries).catchError(
+          (e) {
+            print('Subscribe preferred countries failed: $e');
+          },
+        );
       } else {
         if (!mounted) return;
         print(result);
